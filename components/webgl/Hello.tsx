@@ -6,6 +6,7 @@ Command: npx gltfjsx@6.5.3 public/models/hello.glb --types --keepnames --output 
 import * as THREE from 'three'
 import React from 'react'
 import { useGLTF } from '@react-three/drei'
+import type { ThreeElements } from '@react-three/fiber'
 import { GLTF } from 'three-stdlib'
 
 type GLTFResult = GLTF & {
@@ -17,8 +18,8 @@ type GLTFResult = GLTF & {
   }
 }
 
-export function Hello(props: JSX.IntrinsicElements['group']) {
-  const { nodes, materials } = useGLTF('/models/hello.glb') as GLTFResult
+export function Hello(props: ThreeElements['group']) {
+  const { nodes, materials } = useGLTF('/models/hello.glb') as unknown as GLTFResult
   return (
     <group {...props} dispose={null}>
       <mesh name="g_groupNumber_0_n3d" geometry={nodes.g_groupNumber_0_n3d.geometry} material={materials.water_material3} position={[8.158, 2.861, -62.453]} scale={8.019} />
