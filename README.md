@@ -195,6 +195,10 @@ slot. Phase 3 binds it to these rects.
 
 ### Notes for whoever picks this up
 
+- **The HUD's bottom row hands off to the footer.** The footer carries its own
+  telemetry row (wireframe 1i), so an IntersectionObserver fades the HUD's
+  bottom row out once the footer is in view. The top-left wordmark never
+  hides — it's the home link.
 - **Chrome surface tokens.** Nav, HUD and footer mount above the route and
   can't see which surface a screen paints, so they read `--chrome-ink`,
   `--chrome-muted` and `--chrome-tint`. `<SurfaceTheme value="dark" />` sets

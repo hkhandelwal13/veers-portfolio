@@ -50,8 +50,32 @@ function useIstClock() {
   return time
 }
 
+/**
+ * The footer carries its own bottom telemetry row (wireframe 1i), so the HUD's
+ * bottom row would sit on top of a duplicate. Fade that row out once the footer
+ * arrives and let the footer's take over.
+ */
+function useFooterInView() {
+  const [inView, setInView] = useState(false)
+
+  useEffect(() => {
+    const footer = document.querySelector('footer')
+    if (!footer) return
+
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting))
+    observer.observe(footer)
+    return () => observer.disconnect()
+  }, [])
+
+  return inView
+}
+
 export function Hud({ status }: { status: string }) {
   const time = useIstClock()
+  const footerInView = useFooterInView()
+  // Only the bottom row defers to the footer; the top-left wordmark is the
+  // home link and stays visible on every screen.
+  const handoff = footerInView ? styles.handedOff : ''
 
   return (
     <div className={styles.hud}>
@@ -61,7 +85,7 @@ export function Hud({ status }: { status: string }) {
         </Link>
       </div>
 
-      <div className={`${styles.corner} ${styles.bottomLeft}`}>
+      <div className={`${styles.corner} ${styles.bottomLeft} ${handoff}`}>
         <span>
           GMT+5:30 IN
           {/* suppressHydrationWarning isn't needed — time is null on the
@@ -70,11 +94,11 @@ export function Hud({ status }: { status: string }) {
         </span>
       </div>
 
-      <div className={`${styles.corner} ${styles.bottomCenter}`}>
+      <div className={`${styles.corner} ${styles.bottomCenter} ${handoff}`}>
         <span>{status}</span>
       </div>
 
-      <div className={`${styles.corner} ${styles.bottomRight}`}>
+      <div className={`${styles.corner} ${styles.bottomRight} ${handoff}`}>
         <span className={styles.ring} aria-hidden="true" />
       </div>
     </div>
