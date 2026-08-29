@@ -1,0 +1,169 @@
+/* Work card — wireframe 1c, default + hover states.
+   Phase 4 adds the preview loop and the dot-matrix reveal; the poster and the
+   overlay structure they need are already here. */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+/* 16:9 poster — the frame the WebGL plane will eventually track. */
+.poster {
+  position: relative;
+  aspect-ratio: var(--card-ratio);
+  border: 1px solid var(--ink);
+  overflow: hidden;
+}
+
+.posterLabel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* --- Hover overlay ---------------------------------------------------------
+   Dark panel carrying the category badge, title, role and a view affordance.
+   Revealed on hover and on keyboard focus, so it is never mouse-only. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--dark-bg);
+  color: var(--on-dark);
+  opacity: 0;
+  transition: opacity var(--dur-med) var(--ease-out);
+}
+
+.link:hover .overlay,
+.link:focus-visible .overlay {
+  opacity: 1;
+}
+
+/* Stands in for the preview loop until Phase 4. */
+.overlayFill {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--dark-surface-2) 0 6px,
+    var(--dark-surface) 6px 12px
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--on-dark-muted);
+}
+
+.badge {
+  position: absolute;
+  top: var(--s3);
+  left: var(--s3);
+  background: var(--accent-2);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+}
+
+.overlayMeta {
+  position: absolute;
+  left: var(--s3);
+  right: var(--s3);
+  bottom: var(--s3);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--s4);
+}
+
+.overlayTitle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.overlayName {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.overlayRole {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--on-dark-muted);
+}
+
+.view {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label-sm);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* --- Meta row (always visible, below the poster) --------------------------- */
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s4);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.year {
+  color: var(--muted);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--fill);
+  padding: 3px 7px;
+}
+
+@media (max-width: 640px) {
+  .meta {
+    font-size: var(--fs-label-sm);
+  }
+
+  /* Touch has no hover; the overlay would only ever flash on tap. */
+  .overlay {
+    display: none;
+  }
+}

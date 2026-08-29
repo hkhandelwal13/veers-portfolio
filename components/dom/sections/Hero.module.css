@@ -1,0 +1,165 @@
+/* Home / hero — wireframe 1b (1440 x 900). */
+
+.hero {
+  position: relative;
+  z-index: var(--z-content);
+  min-height: 100svh;
+  padding-top: var(--nav-h);
+  padding-inline: var(--margin);
+  /* Leaves room for the HUD's bottom row. */
+  padding-bottom: calc(var(--hud-inset) + var(--s9));
+}
+
+/* The 3D slot is positioned against this box, so its percentage bounds map to
+   the hero frame exactly as they do in the wireframe. */
+.frame {
+  position: relative;
+  min-height: calc(100svh - var(--nav-h) - var(--hud-inset) - var(--s9));
+}
+
+/* Row 1 — tagline left, intro right (both clear of the 3D rect). */
+.top {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s9);
+  padding-top: var(--s8);
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: var(--s4);
+}
+
+.taglineBlock {
+  max-width: 380px;
+}
+
+.tagline {
+  font-family: var(--font-display);
+  font-size: var(--fs-h3);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+}
+
+.intro {
+  max-width: 320px;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--muted);
+}
+
+/* Row 2 — the display headline. Sits above the 3D layer per the wireframe
+   annotation ("overlaps the 3D layer visually, z-index above"). */
+.headline {
+  position: absolute;
+  left: 0;
+  bottom: var(--s9);
+  z-index: 2;
+  max-width: 15ch;
+  color: var(--ink);
+}
+
+.showreel {
+  position: absolute;
+  right: 0;
+  bottom: calc(var(--s9) + var(--s2));
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s4);
+  border: 1px solid var(--ink);
+  padding: var(--s4) var(--s5);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: transparent;
+  transition: background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.showreel:hover {
+  background: var(--accent-2);
+}
+
+.playGlyph {
+  width: 0;
+  height: 0;
+  border-left: 12px solid currentColor;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+}
+
+/* Scroll cue */
+.cue {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.cueLine {
+  width: 1px;
+  height: 34px;
+  background: var(--muted);
+}
+
+@media (max-width: 1024px) {
+  /* Below desktop the wireframe stacks the hero: reserved 3D block, then copy,
+     then the CTA. The section becomes a flow container so the slot — which
+     drops out of absolute positioning at this breakpoint — lands in order. */
+  .hero {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s6);
+    padding-bottom: calc(var(--hud-inset) + var(--s8));
+  }
+
+  .top {
+    flex-direction: column;
+    gap: var(--s5);
+  }
+
+  .taglineBlock,
+  .intro {
+    max-width: none;
+  }
+
+  /* Below desktop the wireframe stacks: 3D block, then headline, then CTA —
+     so the absolute composition unwinds into normal flow. */
+  .frame {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s6);
+    min-height: 0;
+  }
+
+  .headline,
+  .showreel,
+  .cue {
+    position: static;
+    transform: none;
+  }
+
+  .headline {
+    max-width: none;
+  }
+
+  .showreel {
+    align-self: flex-start;
+  }
+
+  .cue {
+    display: none;
+  }
+}

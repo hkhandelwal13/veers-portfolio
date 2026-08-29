@@ -1,0 +1,90 @@
+/* Four-corner telemetry overlay (PHASE2_KICKOFF "HUD motif").
+   One instance, mounted in the site layout, shared by every screen. */
+
+.hud {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-hud);
+  /* The overlay must never swallow clicks — only its interactive children
+     opt back in. */
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: var(--hud-size);
+  letter-spacing: var(--hud-tracking);
+  text-transform: uppercase;
+  color: var(--chrome-muted);
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+/* Handed off to the footer's own telemetry row. */
+.handedOff {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    visibility 0s linear var(--dur-fast);
+}
+
+.corner {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
+/* Top-left holds the wordmark, aligned to the nav row so the two read as one
+   bar. The nav itself deliberately does not repeat it. */
+.topLeft {
+  top: 0;
+  left: var(--margin);
+  height: var(--nav-h);
+  transition: height var(--dur-fast) var(--ease-out);
+}
+
+.bottomLeft {
+  bottom: var(--hud-inset);
+  left: var(--margin);
+}
+
+.bottomCenter {
+  bottom: var(--hud-inset);
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.bottomRight {
+  bottom: var(--hud-inset);
+  right: var(--margin);
+}
+
+.wordmark {
+  pointer-events: auto;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--chrome-ink);
+}
+
+.ring {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--chrome-muted);
+  border-radius: 50%;
+}
+
+/* The centre slot has no room beside the corners below desktop; the
+   wireframe's mobile frame shows just the two ends. */
+@media (max-width: 1024px) {
+  .bottomCenter {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+
+  .bottomRight .ring {
+    width: 14px;
+    height: 14px;
+  }
+}
