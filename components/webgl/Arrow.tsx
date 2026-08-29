@@ -6,6 +6,7 @@ Command: npx gltfjsx@6.5.3 public/models/arrow.glb --types --keepnames --output 
 import * as THREE from 'three'
 import React from 'react'
 import { useGLTF } from '@react-three/drei'
+import type { ThreeElements } from '@react-three/fiber'
 import { GLTF } from 'three-stdlib'
 
 type GLTFResult = GLTF & {
@@ -17,8 +18,8 @@ type GLTFResult = GLTF & {
   }
 }
 
-export function Arrow(props: JSX.IntrinsicElements['group']) {
-  const { nodes, materials } = useGLTF('/models/arrow.glb') as GLTFResult
+export function Arrow(props: ThreeElements['group']) {
+  const { nodes, materials } = useGLTF('/models/arrow.glb') as unknown as GLTFResult
   return (
     <group {...props} dispose={null}>
       <mesh name="g_groupNumber_0_n3d" geometry={nodes.g_groupNumber_0_n3d.geometry} material={materials.matte_material11} position={[-5.549, 2.201, -2.095]} scale={1.534} />

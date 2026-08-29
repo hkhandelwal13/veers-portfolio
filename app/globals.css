@@ -1,0 +1,353 @@
+/* =============================================================================
+   PLACEHOLDER DESIGN TOKENS
+   -----------------------------------------------------------------------------
+   Every value below is a stand-in until the Figma handoff lands (see
+   DESIGN_BRIEF.md §1 Foundations). When the real foundations list arrives,
+   replace the values in :root only — component CSS should never hard-code a
+   colour, size or radius, so the swap stays contained to this block.
+
+   The grid values are the important ones: per DESIGN_BRIEF, the layout grid
+   literally drives the WebGL layer (planes are positioned from each card's
+   on-screen rect), so columns / gutter / margin / card-ratio must stay numeric
+   and consistent.
+   ========================================================================== */
+
+:root {
+  /* --- Colour: retro-futurist, translucent iMac-G3 cast ------------------- */
+  --c-bg:            #07090f;
+  --c-bg-elevated:   #0d111b;
+  --c-surface:       #141a28;
+  --c-glass:         rgb(150 205 255 / 0.06);
+  --c-glass-border:  rgb(180 220 255 / 0.14);
+  --c-glass-hi:      rgb(255 255 255 / 0.28);
+
+  --c-text:          #eef3fb;
+  --c-text-muted:    #9aa8bf;
+  --c-text-subtle:   #5d6b83;
+
+  --c-accent:        #35d2e0; /* bondi blue */
+  --c-accent-warm:   #ff7a3d; /* tangerine  */
+  --c-line:          rgb(180 220 255 / 0.10);
+
+  /* --- Typography --------------------------------------------------------- */
+  --font-sans: var(--font-tiktok-sans), ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  --fs-display: clamp(3.5rem, 11vw, 10rem);
+  --fs-h1:      clamp(2.5rem, 6vw, 4.5rem);
+  --fs-h2:      clamp(1.75rem, 3.5vw, 2.75rem);
+  --fs-h3:      clamp(1.25rem, 2vw, 1.5rem);
+  --fs-body:    clamp(1rem, 1.1vw, 1.125rem);
+  --fs-small:   0.875rem;
+  --fs-label:   0.75rem;
+
+  --lh-tight: 0.95;
+  --lh-snug:  1.15;
+  --lh-body:  1.6;
+
+  --tracking-label: 0.14em;
+  --tracking-tight: -0.03em;
+
+  /* --- Spacing scale (8-based) -------------------------------------------- */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-6: 1.5rem;
+  --s-8: 2rem;
+  --s-12: 3rem;
+  --s-16: 4rem;
+  --s-24: 6rem;
+  --s-32: 8rem;
+  --s-48: 12rem;
+
+  /* --- Grid (drives the WebGL rect-sync — keep numeric) -------------------- */
+  --grid-columns: 12;
+  --grid-gutter: 24px;
+  --grid-margin: 40px;
+  --grid-max: 1360px;
+
+  --card-ratio: 16 / 9;
+  --card-columns: 6;   /* card span, in grid columns */
+
+  /* --- Effects ------------------------------------------------------------ */
+  --radius-sm: 4px;
+  --radius-md: 10px;
+  --radius-lg: 18px;
+  --blur-glass: 18px;
+
+  /* --- Motion ------------------------------------------------------------- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 220ms;
+  --dur-med: 480ms;
+  --dur-slow: 900ms;
+
+  /* Dot-matrix reveal (Phase 4) — cells across x down. */
+  --dot-grid-x: 24;
+  --dot-grid-y: 14;
+
+  /* --- Layering ----------------------------------------------------------- */
+  --z-canvas: 1;
+  --z-content: 2;
+  --z-nav: 10;
+
+  color-scheme: dark;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --grid-columns: 6;
+    --grid-gutter: 16px;
+    --grid-margin: 20px;
+    --card-columns: 6;
+  }
+}
+
+/* --- Reset ---------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  /* Lenis drives scrolling; native smooth would fight it. */
+  scroll-behavior: auto;
+}
+
+body {
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+h1, h2, h3, h4, p, figure, blockquote {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img, video, canvas {
+  display: block;
+  max-width: 100%;
+}
+
+/* Lenis requires these while smooth scroll is active. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* --- Layout primitives ---------------------------------------------------- */
+
+.container {
+  width: 100%;
+  max-width: var(--grid-max);
+  margin-inline: auto;
+  padding-inline: var(--grid-margin);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr));
+  gap: var(--grid-gutter);
+}
+
+.label {
+  font-size: var(--fs-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--c-text-subtle);
+  font-weight: 500;
+}
+
+/* --- Reduced motion ------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --- WebGL stage ---------------------------------------------------------- */
+
+/* One fixed, full-screen canvas the whole site shares. It sits behind the DOM
+   and takes no pointer events — R3F listens on the document instead (see
+   Scene.tsx), so hover/parallax still work while links stay clickable. */
+.webgl-stage {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-canvas);
+  pointer-events: none;
+}
+
+.webgl-stage canvas {
+  display: block;
+}
+
+/* =============================================================================
+   PLACEHOLDER LAYOUT
+   Phase 2 replaces all of this with the real sections from the Figma handoff.
+   It exists so the page has height (smooth scroll needs something to scroll)
+   and so the grid contract the WebGL layer will read is already in place.
+   ========================================================================== */
+
+.hero {
+  position: relative;
+  z-index: var(--z-content);
+  min-height: 100svh;
+  display: flex;
+}
+
+.hero__inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-block: var(--s-8);
+  min-height: 100svh;
+}
+
+.hero__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-6);
+}
+
+.hero__wordmark {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  letter-spacing: var(--tracking-label);
+}
+
+.hero__nav {
+  display: flex;
+  gap: var(--s-6);
+}
+
+.hero__nav a {
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.hero__nav a:hover {
+  color: var(--c-accent);
+}
+
+/* Reserved space for the 3D word — the model renders behind it. */
+.hero__stage {
+  flex: 1;
+  min-height: 40svh;
+}
+
+.hero__bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-8);
+}
+
+.hero__tagline {
+  max-width: 34ch;
+  color: var(--c-text-muted);
+  font-size: var(--fs-body);
+}
+
+.hero__cue {
+  writing-mode: vertical-rl;
+}
+
+.section {
+  position: relative;
+  z-index: var(--z-content);
+  padding-block: var(--s-32);
+  background: linear-gradient(to bottom, transparent, var(--c-bg) 12%, var(--c-bg));
+}
+
+.section__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  max-width: 62ch;
+}
+
+.section__title {
+  font-size: var(--fs-h2);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-tight);
+  font-weight: 500;
+}
+
+.section__body {
+  color: var(--c-text-muted);
+}
+
+/* The grid the WebGL layer will mirror. Keep these numbers token-driven. */
+.work-grid {
+  list-style: none;
+  margin: var(--s-8) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr));
+  gap: var(--grid-gutter);
+}
+
+.card {
+  grid-column: span var(--card-columns);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.card__frame {
+  aspect-ratio: var(--card-ratio);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--c-glass-border);
+  background: var(--c-glass);
+  backdrop-filter: blur(var(--blur-glass));
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.card:hover .card__frame {
+  border-color: var(--c-accent);
+}
+
+.card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.card__title {
+  font-size: var(--fs-h3);
+  font-weight: 500;
+  letter-spacing: var(--tracking-tight);
+}
