@@ -1,0 +1,72 @@
+/* Reserved 3D areas. Empty positioned boxes in Phase 2 — the WebGL layer reads
+   their rects in Phase 3 and binds the model to them. Nothing renders inside.
+
+   Bounds arrive as custom properties rather than plain inline styles, so these
+   media queries can reflow them: on desktop the slot is absolutely placed
+   against the full-bleed section (720 x 360 @ 360,300 on a 1440 frame), and
+   below that it drops into normal flow at the wireframe's tablet and mobile
+   sizes (704 x 220, 350 x 180).
+
+   The dashed outline is the wireframe's own marking for these slots and is
+   development-only — `showMarker={false}` turns it off. */
+
+.slot {
+  position: absolute;
+  left: var(--slot-x);
+  top: var(--slot-y);
+  width: var(--slot-w);
+  height: var(--slot-h);
+  pointer-events: none;
+}
+
+.marked {
+  border: 1px dashed var(--accent);
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  text-align: center;
+  padding: var(--s3);
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.dims {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label-sm);
+  letter-spacing: var(--hud-tracking);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* Tablet — 704 x 220, in flow. */
+@media (max-width: 1024px) {
+  .slot {
+    position: static;
+    width: 100%;
+    height: 220px;
+  }
+}
+
+/* Mobile — 350 x 180, in flow. */
+@media (max-width: 640px) {
+  .slot {
+    height: 180px;
+  }
+
+  .label {
+    font-size: var(--fs-label-sm);
+  }
+
+  .dims {
+    font-size: var(--fs-micro);
+  }
+}

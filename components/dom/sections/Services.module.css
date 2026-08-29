@@ -1,0 +1,110 @@
+/* Services — wireframe 1f. */
+
+.section {
+  position: relative;
+  z-index: var(--z-content);
+  padding-top: calc(var(--nav-h) + var(--s8));
+  padding-bottom: calc(var(--s9) + var(--hud-inset));
+  padding-inline: var(--margin);
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--s5);
+}
+
+.heading {
+  max-width: 16ch;
+}
+
+.grid {
+  margin-top: var(--s8);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--gutter);
+}
+
+.card {
+  border: 1px solid var(--ink);
+  padding: var(--s5);
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.cardTitle {
+  font-family: var(--font-display);
+  font-size: var(--fs-h3);
+  letter-spacing: 0.04em;
+  line-height: var(--lh-snug);
+  color: var(--ink);
+  text-transform: uppercase;
+}
+
+.cardBody {
+  color: var(--muted);
+  font-size: var(--fs-body);
+}
+
+.items {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label-sm);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.cta {
+  margin-top: var(--s8);
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  flex-wrap: wrap;
+}
+
+.ctaButton {
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+  padding: var(--s3) var(--s5);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.ctaButton:hover {
+  background: var(--accent-2);
+  color: var(--ink);
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .card {
+    min-height: 0;
+  }
+
+  .head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s3);
+  }
+}

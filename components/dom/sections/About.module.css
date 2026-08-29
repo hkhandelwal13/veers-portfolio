@@ -1,0 +1,131 @@
+/* About — wireframe 1e. */
+
+.section {
+  position: relative;
+  z-index: var(--z-content);
+  padding-top: calc(var(--nav-h) + var(--s8));
+  padding-bottom: calc(var(--s9) + var(--hud-inset));
+  padding-inline: var(--margin);
+}
+
+/* 404px portrait column + fluid text column, per the wireframe. */
+.top {
+  display: grid;
+  grid-template-columns: 404px 1fr;
+  gap: var(--gutter);
+  align-items: start;
+}
+
+.portraitCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.portrait {
+  aspect-ratio: 4 / 5;
+  border: 1px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+
+.heading {
+  max-width: 18ch;
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  max-width: 60ch;
+  font-size: var(--fs-body-l);
+  color: var(--muted);
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s8);
+  padding-top: var(--s3);
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.factValue {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+/* Client logos */
+.clients {
+  padding-top: var(--s9);
+}
+
+.clientsTitle {
+  border-top: 1px solid var(--ink);
+  padding-top: var(--s4);
+}
+
+.logos {
+  margin-top: var(--s5);
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--gutter);
+}
+
+.logo {
+  height: 64px;
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--hud-tracking);
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+@media (max-width: 1024px) {
+  .top {
+    grid-template-columns: 1fr;
+    gap: var(--s7);
+  }
+
+  .portraitCol {
+    max-width: 404px;
+  }
+
+  .logos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .facts {
+    gap: var(--s5);
+  }
+
+  .logos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

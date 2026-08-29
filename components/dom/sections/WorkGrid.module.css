@@ -1,0 +1,92 @@
+/* Work grid — wireframe 1c. */
+
+/* Standalone: this section opens the page, so it clears the fixed nav. */
+.section {
+  position: relative;
+  z-index: var(--z-content);
+  padding-top: calc(var(--nav-h) + var(--s7));
+  padding-bottom: calc(var(--s9) + var(--hud-inset));
+  padding-inline: var(--margin);
+}
+
+/* Following another section (the home page), where the hero has already
+   cleared the nav — otherwise the two paddings stack into a dead gap. */
+.stacked {
+  padding-top: var(--s8);
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--s5);
+  padding-bottom: var(--s5);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+}
+
+/* Chips are non-interactive in Phase 2 — filtering is wired with real data in
+   Phase 5, and a control that looks clickable but does nothing is worse than
+   one that reads as a label. */
+.chip {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label-sm);
+  letter-spacing: var(--hud-tracking);
+  text-transform: uppercase;
+  border: 1px solid var(--fill);
+  padding: 6px 12px;
+  color: var(--muted);
+}
+
+.chipOn {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+
+/* HARD SPEC — 2 columns of 16:9 cards, 24 gap; 1 column on mobile. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--card-gap);
+}
+
+/* The chips wrap before there's room for them beside the heading. */
+@media (max-width: 1024px) {
+  .head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s4);
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--s7);
+}
+
+.moreButton {
+  border: 1px solid var(--ink);
+  padding: var(--s3) var(--s5);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.moreButton:hover {
+  background: var(--accent-2);
+}

@@ -1,0 +1,105 @@
+/* Contact — wireframe 1g. Carries the second reserved 3D slot. */
+
+.section {
+  position: relative;
+  z-index: var(--z-content);
+  min-height: 100svh;
+  padding-top: var(--nav-h);
+  padding-bottom: calc(var(--hud-inset) + var(--s9));
+  padding-inline: var(--margin);
+}
+
+.frame {
+  min-height: calc(100svh - var(--nav-h) - var(--hud-inset) - var(--s9));
+  display: flex;
+  flex-direction: column;
+}
+
+.heading {
+  position: relative;
+  z-index: 2;
+  padding-top: var(--s9);
+  max-width: 18ch;
+}
+
+.foot {
+  position: relative;
+  z-index: 2;
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--s7);
+}
+
+.emailBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.email {
+  font-family: var(--font-display);
+  font-size: var(--fs-h3);
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: var(--s1);
+  width: fit-content;
+  text-transform: uppercase;
+}
+
+.email:hover {
+  color: var(--muted);
+}
+
+.socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s7);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.social:hover {
+  color: var(--muted);
+}
+
+/* Last social is boxed in the wireframe. */
+.socialBoxed {
+  border: 1px solid var(--ink);
+  padding: var(--s2) var(--s3);
+}
+
+@media (max-width: 1024px) {
+  /* Same as the hero: the section becomes a flow container so the in-flow
+     reserved slot lands between the heading and the contact details. */
+  .section {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s6);
+    padding-bottom: calc(var(--hud-inset) + var(--s8));
+  }
+
+  .frame {
+    gap: var(--s7);
+  }
+
+  .heading {
+    padding-top: var(--s7);
+  }
+
+  .foot {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s5);
+  }
+
+  .socials {
+    gap: var(--s5);
+  }
+}

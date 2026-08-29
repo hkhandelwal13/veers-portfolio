@@ -4,7 +4,8 @@ Retro-futurist portfolio for a video editor. See **CLAUDE.md** for the full buil
 spec (it's the source of truth) and **DESIGN_BRIEF.md** for the Figma handoff ask.
 
 Stack: Next.js 16 (App Router, TypeScript) · React Three Fiber + drei · Lenis ·
-GSAP · Sanity · Cloudflare R2 for video · TikTok Sans (self-hosted).
+GSAP · Sanity · Cloudflare R2 for video · TikTok Sans + Space Mono
+(self-hosted).
 
 ---
 
@@ -127,35 +128,103 @@ public/     models/*.glb, fonts/
 
 ---
 
-## Status — Phase 1 (Scaffold) complete
+## Status — Phase 2 (Static Layout) complete
 
-Done: Next + TS + R3F + drei + Lenis + GSAP wired; client-only Canvas; the
-`hello` model as hero, auto-fitted and reacting to scroll and pointer; single
-rAF loop; TikTok Sans self-hosted; Sanity schema + Studio; placeholder tokens;
-`prefers-reduced-motion` respected.
+Every screen from `design/Veerlabs Wireframes.dc.html` is built as semantic
+components at 1440 / 768 / 390:
 
-Not started (by design): the signature shaders. Glass /
-`MeshTransmissionMaterial`, the dot-matrix reveal, hover-to-play video cards,
-loader and page transitions are Phase 4. `hello` still wears its baked
-`water_material3`.
+| Screen | Route | Wireframe |
+| --- | --- | --- |
+| Loader | overlay, once per session | 1a |
+| Home / Hero | `/` | 1b |
+| Work grid | `/work` (and on `/`) | 1c |
+| Project detail (dark) | `/work/[slug]` | 1d |
+| About | `/about` | 1e |
+| Services | `/services` | 1f |
+| Contact | `/contact` | 1g |
+| Nav + mobile menu | shared chrome | 1h |
+| Footer | shared chrome | 1i |
 
-Next up — **Phase 2**: build every section as static HTML/CSS from the design
-handoff. Then **Phase 3**: the rect-sync system that maps `getBoundingClientRect()`
-onto WebGL planes.
+Also done: the four-corner HUD as one shared overlay with a live GMT+5:30
+clock; both fonts self-hosted; tokens from PHASE2_KICKOFF.md in `:root`;
+reserved 3D placeholders; accessible markup (skip link, landmarks, one `h1`
+per screen, focus-visible, a modal mobile menu with focus trap and restore).
+
+Not built, by design: the dot-matrix reveal and glass shaders (Phase 4). The
+loader's grid, the card hover overlay and the player chrome are all static
+structure reserving the space those effects will fill.
+
+### Tokens and the two source documents
+
+`PHASE2_KICKOFF.md` is the token source of truth; the wireframes supply
+structure and spacing. Where they disagree, the kickoff won:
+
+- **Page background** — kickoff `--bg: #e7e4dd` with `--surface: #f4f2ed` for
+  panels. The wireframe painted whole screens `#f4f2ed`; if that flatter look
+  is wanted, change `--bg` to match `--surface`.
+- **Tablet margin** — kickoff 40px, wireframe 32px. Using 40, which is why the
+  tablet reserved-3D box measures 688 wide rather than the wireframe's 704.
+- **Gutter** — the kickoff gives one value (24px); the wireframes step it down
+  per breakpoint (24 / 16 / 12), which is what's implemented.
+- **Accent is still open** (kickoff flags it). The defaults are in place and
+  applied the way the wireframes actually use them: lime `--accent-2` carries
+  every interactive state that appears in an approved screen (active nav,
+  hover, scrubber), and blue `--accent` is the system accent — reserved-3D
+  outlines and focus rings, exactly its role in the wireframes.
+
+### Reserved 3D placeholders
+
+Empty positioned boxes, marked `data-webgl="hero-hello"` and
+`data-webgl="wordmark"`. Verified bounds:
+
+| Breakpoint | Measured |
+| --- | --- |
+| Desktop 1440 | 720 × 360 @ x360 y300 — exact spec |
+| Tablet 768 | 688 × 220, in flow |
+| Mobile 390 | 350 × 180, in flow — exact spec |
+
+Desktop bounds are percentages of the full-bleed section (25% / 33.3% / 50% /
+40%), so they hold at any width; below desktop they drop into normal flow at
+the wireframes' tablet and mobile sizes. Bounds are passed as CSS custom
+properties rather than literal inline styles precisely so the stylesheet can
+reflow them. `showMarker={false}` hides the dashed dev outline.
+
+The Phase-1 Canvas is untouched and still renders the `hello` model fitted to
+the viewport, so it currently floats near — but is not bound to — the hero
+slot. Phase 3 binds it to these rects.
 
 ### Notes for whoever picks this up
 
-- **Design tokens are placeholders.** Every value is in `:root` in
-  `app/globals.css`. Swap that block at handoff; no component hard-codes a
-  colour or size.
-- The grid values (`--grid-columns`, `--grid-gutter`, `--card-ratio`) are the
-  contract between CSS and WebGL from Phase 3 on. Cards already carry
-  `data-webgl-slot` for the rect-sync system to find.
+- **Chrome surface tokens.** Nav, HUD and footer mount above the route and
+  can't see which surface a screen paints, so they read `--chrome-ink`,
+  `--chrome-muted` and `--chrome-tint`. `<SurfaceTheme value="dark" />` sets
+  `data-surface` on `<html>` to flip them; the project detail page uses it.
+  Without this the active nav link renders in ink on a dark page — invisible.
+- **The mobile menu's `visibility` is stepped, not eased.** It flips to visible
+  immediately on open and is delayed to the end of the fade on close. Easing it
+  leaves the panel hidden when focus moves in, and a hidden element silently
+  refuses focus.
+- **`MobileMenu`'s `onClose` must be referentially stable** (it's a
+  `useCallback` in `Nav`). An unstable one re-runs the focus effect on every
+  parent render, and its cleanup drags focus back to the trigger.
+- The grid values (`--columns`, `--gutter`, `--card-ratio`) are the contract
+  between CSS and WebGL from Phase 3 on.
+- Filter chips and "Load more" are deliberately non-interactive markup —
+  wiring them needs real data (Phase 5), and a control that looks clickable
+  but does nothing is worse than one that reads as a label.
+- `lib/sanity/*` is intact but unused by these screens: Phase 2 is static
+  layout against `lib/placeholder-content.ts`, and Phase 5 reconnects it.
 - Both `.glb`s are meshopt-compressed; drei's `useGLTF` decodes that locally,
   no CDN fetch. The scene's environment is built from `<Lightformer>`s rather
-  than an HDRI preset for the same reason — nothing loads from a third party.
+  than an HDRI preset for the same reason.
 - `agentRules: false` in `next.config.ts` stops `next dev` appending its own
   block to CLAUDE.md, which is the client's spec doc.
 - `npm audit` reports issues in transitive deps of the Sanity **Studio**
   (dev-only, not shipped to visitors). Fixing them needs breaking major bumps;
   left alone deliberately.
+
+### Next — Phase 3
+
+Wire the rect-sync system to the `data-webgl` placeholders: read each box's
+`getBoundingClientRect()` on the single rAF loop and position a WebGL plane
+over it.

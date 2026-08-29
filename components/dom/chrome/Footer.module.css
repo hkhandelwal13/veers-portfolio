@@ -1,0 +1,116 @@
+/* Dark footer — wireframe 1i. */
+
+.footer {
+  position: relative;
+  z-index: var(--z-content);
+  background: var(--dark-bg);
+  color: var(--on-dark-muted);
+  padding: var(--s8) var(--margin) var(--s7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s7);
+  /* Clear the HUD's bottom row, which is fixed over everything. */
+  padding-bottom: calc(var(--s7) + var(--hud-inset));
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--s8);
+}
+
+.callout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.calloutLabel {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--hud-tracking);
+  text-transform: uppercase;
+  color: var(--on-dark-muted);
+}
+
+.calloutTitle {
+  font-family: var(--font-display);
+  font-size: var(--fs-h1);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-display);
+  color: var(--on-dark);
+  max-width: 14ch;
+}
+
+.calloutTitle a:hover {
+  color: var(--accent-2);
+}
+
+.columns {
+  display: flex;
+  gap: var(--s9);
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--hud-tracking);
+  text-transform: uppercase;
+}
+
+.columnTitle {
+  color: var(--muted);
+}
+
+.column a {
+  color: var(--on-dark-muted);
+}
+
+.column a:hover {
+  color: var(--accent-2);
+}
+
+.bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s5);
+  border-top: 1px solid var(--dark-line);
+  padding-top: var(--s5);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label-sm);
+  letter-spacing: var(--hud-tracking);
+  text-transform: uppercase;
+}
+
+.toTop:hover {
+  color: var(--accent-2);
+}
+
+@media (max-width: 1024px) {
+  .top {
+    flex-direction: column;
+    gap: var(--s7);
+  }
+
+  .columns {
+    gap: var(--s8);
+  }
+}
+
+@media (max-width: 640px) {
+  .bottom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s3);
+  }
+
+  /* The telemetry readout is decorative and duplicates the HUD on mobile. */
+  .coords {
+    display: none;
+  }
+}

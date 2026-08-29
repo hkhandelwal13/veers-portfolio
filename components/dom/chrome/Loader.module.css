@@ -1,0 +1,93 @@
+/* Loader — wireframe 1a. Structure only: the dot-matrix reveal itself is
+   Phase 4, so the grid below is a static placeholder, not a shader. */
+
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-loader);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s7);
+  transition: opacity var(--dur-med) var(--ease-out),
+    visibility var(--dur-med) var(--ease-out);
+}
+
+.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.wordmark {
+  position: absolute;
+  top: var(--s6);
+  left: var(--margin);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--hud-tracking);
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+/* 120 x 120, 6 x 6 cells — the reveal grid's footprint, reserved now so
+   Phase 4 can drop the shader straight in. */
+.matrix {
+  width: 120px;
+  height: 120px;
+  border: 1px dashed var(--ink);
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  gap: 2px;
+  padding: var(--s2);
+}
+
+.cellOn {
+  background: var(--ink);
+}
+
+.cellOff {
+  background: var(--line);
+}
+
+.note {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.track {
+  width: 320px;
+  max-width: 70vw;
+  height: 2px;
+  background: var(--line);
+}
+
+.bar {
+  height: 2px;
+  background: var(--ink);
+  transition: width var(--dur-fast) linear;
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.14em;
+  color: var(--ink);
+}
+
+.status {
+  position: absolute;
+  bottom: var(--hud-inset);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label-sm);
+  letter-spacing: var(--hud-tracking);
+  text-transform: uppercase;
+  color: var(--muted);
+}

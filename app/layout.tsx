@@ -5,9 +5,10 @@ import { WebGLCanvas } from '@/components/webgl/WebGLCanvas'
 import './globals.css'
 
 /**
- * TikTok Sans, self-hosted (CLAUDE.md §3). Variable across weight 300–900 with
- * an optical-size axis, latin subset only — swap in more subsets if the copy
- * ever needs them.
+ * Type pairing per PHASE2_KICKOFF.md: TikTok Sans for display/headings/body,
+ * Space Mono for HUD, labels, meta and nav. Both self-hosted (latin subset) so
+ * nothing is fetched from Google at build or runtime. Caveat is deliberately
+ * not loaded — it was annotation ink in the wireframes.
  */
 const tiktokSans = localFont({
   src: '../public/fonts/TikTokSans-Variable.woff2',
@@ -17,21 +18,34 @@ const tiktokSans = localFont({
   fallback: ['ui-sans-serif', 'system-ui', 'sans-serif'],
 })
 
+const spaceMono = localFont({
+  src: [
+    { path: '../public/fonts/SpaceMono-Regular.woff2', weight: '400', style: 'normal' },
+    { path: '../public/fonts/SpaceMono-Bold.woff2', weight: '700', style: 'normal' },
+  ],
+  variable: '--font-space-mono',
+  display: 'swap',
+  fallback: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+})
+
 export const metadata: Metadata = {
-  title: 'Veerlabs — Video Editor',
-  description: 'Selected work in editing, colour and motion.',
+  title: {
+    default: 'Veerlabs — Video Editor',
+    template: '%s — Veerlabs',
+  },
+  description: 'Editing, colour and motion graphics. Selected work by Veerlabs.',
 }
 
 export const viewport: Viewport = {
-  themeColor: '#07090f',
+  themeColor: '#e7e4dd',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={tiktokSans.variable}>
+    <html lang="en" className={`${tiktokSans.variable} ${spaceMono.variable}`}>
       <body>
-        {/* The canvas is mounted once, outside the route tree, so it survives
-            navigation — Phase 4's dot-matrix page transitions depend on that. */}
+        {/* Mounted once, outside the route tree, so it survives navigation —
+            Phase 4's page transitions depend on that. */}
         <WebGLCanvas />
         <SmoothScrollProvider>{children}</SmoothScrollProvider>
       </body>

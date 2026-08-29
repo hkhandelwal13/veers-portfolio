@@ -1,0 +1,360 @@
+/* Project detail — wireframe 1d, dark treatment. */
+
+.page {
+  position: relative;
+  z-index: var(--z-content);
+  background: var(--dark-bg);
+  color: var(--on-dark);
+  min-height: 100svh;
+  padding-top: var(--nav-h);
+  padding-bottom: calc(var(--s9) + var(--hud-inset));
+  padding-inline: var(--margin);
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--s7);
+  padding: var(--s7) 0 var(--s5);
+}
+
+.headLeft {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.back {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--on-dark-muted);
+  width: fit-content;
+}
+
+.back:hover {
+  color: var(--accent-2);
+}
+
+.title {
+  color: var(--on-dark);
+  max-width: 20ch;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--on-dark-muted);
+  border: 1px solid var(--dark-line);
+  padding: 3px 7px;
+}
+
+/* --- Player ---------------------------------------------------------------
+   Chrome only. The real <video>, R2 sources and control wiring are Phase 5;
+   this establishes the layout and control positions they'll drop into. */
+.player {
+  position: relative;
+  aspect-ratio: var(--card-ratio);
+  border: 1px solid var(--dark-line);
+  overflow: hidden;
+}
+
+.playerFill {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--dark-surface-2) 0 6px,
+    var(--dark-surface) 6px 12px
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--on-dark-muted);
+}
+
+.playButton {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 84px;
+  height: 84px;
+  border: 1px solid var(--on-dark);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.playButton:hover {
+  background: color-mix(in srgb, var(--on-dark) 12%, transparent);
+}
+
+.playGlyph {
+  width: 0;
+  height: 0;
+  border-left: 18px solid var(--on-dark);
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  margin-left: 5px;
+}
+
+.controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: var(--s5) var(--s5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.55));
+  color: var(--on-dark);
+}
+
+.scrubber {
+  height: 3px;
+  background: color-mix(in srgb, var(--on-dark) 28%, transparent);
+}
+
+.progress {
+  position: relative;
+  height: 3px;
+  background: var(--accent-2);
+}
+
+.knob {
+  position: absolute;
+  right: -5px;
+  top: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent-2);
+}
+
+.controlRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s5);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label-sm);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.controlLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--s5);
+}
+
+.pauseGlyph {
+  display: flex;
+  gap: var(--s1);
+}
+
+.pauseGlyph span {
+  width: 4px;
+  height: 14px;
+  background: var(--on-dark);
+}
+
+.controlRight {
+  display: flex;
+  align-items: center;
+  gap: var(--s5);
+}
+
+.controlRight button:hover {
+  color: var(--accent-2);
+}
+
+/* --- Body ------------------------------------------------------------------ */
+.body {
+  padding-top: var(--s8);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gutter);
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  max-width: 56ch;
+  color: var(--on-dark-muted);
+  font-size: var(--fs-body-l);
+}
+
+.copyTitle,
+.metaTitle {
+  color: var(--muted-2);
+}
+
+.metaList {
+  display: flex;
+  flex-direction: column;
+}
+
+.metaRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s4);
+  border-top: 1px solid var(--dark-line);
+  padding: var(--s3) 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.metaKey {
+  color: var(--on-dark-muted);
+}
+
+.metaValue {
+  color: var(--on-dark);
+  text-align: right;
+}
+
+.creditsTitle {
+  padding: var(--s5) 0 var(--s3);
+}
+
+/* --- Stills ---------------------------------------------------------------- */
+.stills {
+  padding-top: var(--s8);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--gutter);
+}
+
+.still {
+  aspect-ratio: var(--card-ratio);
+  border: 1px solid var(--dark-line);
+  background: repeating-linear-gradient(
+    45deg,
+    var(--dark-surface-2) 0 6px,
+    var(--dark-surface) 6px 12px
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-label-sm);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--on-dark-muted);
+}
+
+/* --- Next project ---------------------------------------------------------- */
+.next {
+  margin-top: var(--s9);
+  border-top: 1px solid var(--on-dark);
+  padding-top: var(--s5);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s5);
+}
+
+.nextLeft {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.nextTitle {
+  font-family: var(--font-display);
+  font-size: var(--fs-h2);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--lh-snug);
+  color: var(--on-dark);
+}
+
+.next a:hover .nextTitle {
+  color: var(--accent-2);
+}
+
+.nextThumb {
+  width: 220px;
+  aspect-ratio: var(--card-ratio);
+  border: 1px solid var(--dark-line);
+  background: repeating-linear-gradient(
+    45deg,
+    var(--dark-surface-2) 0 6px,
+    var(--dark-surface) 6px 12px
+  );
+  flex: none;
+}
+
+@media (max-width: 1024px) {
+  .body {
+    grid-template-columns: 1fr;
+    gap: var(--s7);
+  }
+
+  .stills {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s4);
+  }
+}
+
+@media (max-width: 640px) {
+  .stills {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .playButton {
+    width: 56px;
+    height: 56px;
+  }
+
+  .playGlyph {
+    border-left-width: 12px;
+    border-top-width: 8px;
+    border-bottom-width: 8px;
+  }
+
+  .controlRow {
+    font-size: var(--fs-micro);
+  }
+
+  .controlLeft,
+  .controlRight {
+    gap: var(--s3);
+  }
+
+  .next {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s5);
+  }
+
+  .nextThumb {
+    width: 100%;
+  }
+}
