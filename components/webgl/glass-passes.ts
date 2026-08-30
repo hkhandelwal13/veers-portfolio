@@ -18,9 +18,12 @@ export const glassPasses: {
   star: THREE.WebGLRenderTarget | null
   /** False while the glass is offscreen, so the flare can stop entirely. */
   glassVisible: boolean
+  /** The glass material, so the flare pass can switch it to highlight-only. */
+  glassMaterial: THREE.ShaderMaterial | null
 } = {
   refraction: null,
   glassOnly: null,
   star: null,
   glassVisible: false,
+  glassMaterial: null,
 }

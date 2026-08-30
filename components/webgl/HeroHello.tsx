@@ -46,8 +46,13 @@ function createGlassUniforms() {
     // BRAND_TOKENS: Sky Blue body, Ocean Blue for the dark variant.
     uTintLight: { value: new THREE.Color('#8EBFE8') },
     uTintDark: { value: new THREE.Color('#4E76D0') },
+    // Blended in along the word's height. Ocean Blue deepens the lower strokes
+    // while Sky Blue keeps the tops luminous.
+    uTintSecondary: { value: new THREE.Color('#4E76D0') },
+    uLocalYRange: { value: new THREE.Vector2(0, 1) },
     uTintAmount: { value: 0.8 },
     uDark: { value: 0 },
+    uHighlightOnly: { value: 0 },
     uRimColor: { value: new THREE.Color('#FFF4DC') },
     uRimPower: { value: 2.6 },
     uRimStrength: { value: 0.7 },
@@ -109,9 +114,14 @@ export function HeroHello() {
         new THREE.Vector3(BAKED_SCALE, BAKED_SCALE, BAKED_SCALE),
       ),
     )
+    const raw = geometry.boundingBox!
     return {
       size: box.getSize(new THREE.Vector3()),
       center: box.getCenter(new THREE.Vector3()),
+      // Geometry-space Y range: the vertex shader sees `position` before the
+      // mesh's own transform, so the gradient has to be normalised against the
+      // raw bounds rather than the transformed ones.
+      localY: new THREE.Vector2(raw.min.y, raw.max.y),
     }
   }, [geometry])
 
@@ -159,6 +169,10 @@ export function HeroHello() {
 
     // Absent on the small-screen fallback, which uses a standard material.
     if (uniforms && uniforms.uSceneTexture) {
+      // Published so the flare pass can render this same material in
+      // highlight-only mode without reaching into the scene graph for it.
+      glassPasses.glassMaterial = material
+      uniforms.uLocalYRange.value.copy(measured.localY)
       uniforms.uSceneTexture.value = glassPasses.refraction?.texture ?? null
       uniforms.uResolution.value.set(
         state.size.width * state.viewport.dpr,

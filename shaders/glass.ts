@@ -16,13 +16,25 @@
  */
 
 export const glassVertexShader = /* glsl */ `
+uniform vec2 uLocalYRange;   // geometry-space min/max Y, for the tint gradient
+
 varying vec3 vWorldNormal;
 varying vec3 vViewDirection;
+varying float vGradient;
 
 void main() {
   vec4 worldPosition = modelMatrix * vec4(position, 1.0);
   vWorldNormal = normalize(mat3(modelMatrix) * normal);
   vViewDirection = normalize(worldPosition.xyz - cameraPosition);
+
+  // 0 at the bottom of the word, 1 at the top — drives the two-tint blend, so
+  // the glass shifts in hue down its height instead of being one flat colour.
+  vGradient = clamp(
+    (position.y - uLocalYRange.x) / max(uLocalYRange.y - uLocalYRange.x, 1e-5),
+    0.0,
+    1.0
+  );
+
   gl_Position = projectionMatrix * viewMatrix * worldPosition;
 }
 `
@@ -40,9 +52,11 @@ uniform float uThickness;      // feeds the Beer-Lambert falloff
 
 uniform vec3 uTintLight;       // Sky Blue  — light theme body
 uniform vec3 uTintDark;        // Ocean Blue — dark theme body
+uniform vec3 uTintSecondary;   // blended in along the word's height
 uniform float uTintAmount;
 uniform float uDark;           // 0 = light theme, 1 = dark
 
+uniform float uHighlightOnly;  // 1 = output just the specular, for the flare pass
 uniform vec3 uRimColor;
 uniform float uRimPower;
 uniform float uRimStrength;
@@ -50,6 +64,7 @@ uniform vec3 uLightDirection;  // ring-constrained, driven by the PointerBus
 
 varying vec3 vWorldNormal;
 varying vec3 vViewDirection;
+varying float vGradient;
 
 /**
  * Hard Light, used for the dark theme's tint.
@@ -65,12 +80,16 @@ vec3 hardLight(vec3 base, vec3 blend) {
   return mix(low, high, step(vec3(0.5), blend));
 }
 
-vec3 applyTint(vec3 color) {
-  vec3 tint = clamp(mix(uTintLight, uTintDark, clamp(uDark, 0.0, 1.0)), 0.001, 1.0);
+vec3 applyTint(vec3 color, float thickness) {
+  vec3 body = mix(uTintLight, uTintDark, clamp(uDark, 0.0, 1.0));
+  // Two tints down the word's height, so the body has some variation in it.
+  vec3 tint = clamp(mix(uTintSecondary, body, vGradient), 0.001, 1.0);
   float amount = clamp(uTintAmount, 0.0, 1.0);
 
   // Light: what survives transmission through the body, Beer-Lambert style.
-  vec3 transmitted = pow(tint, vec3(max(uThickness, 0.01)));
+  // Thickness varies per fragment, so edges absorb more than flat faces —
+  // without that the glass is one even wash and reads as paint, not glass.
+  vec3 transmitted = pow(tint, vec3(max(thickness, 0.01)));
   vec3 beer = mix(color, color * transmitted, amount);
 
   // Dark: lift rather than absorb.
@@ -98,10 +117,16 @@ void main() {
   color.g = sampleRefracted(screenUv, normal, viewDir, uIor).g;
   color.b = sampleRefracted(screenUv, normal, viewDir, uIor + uDispersion).b;
 
-  color = applyTint(color);
+  // How square-on we are looking at this fragment. Face-on sees the least
+  // material; a grazing angle looks along the body and sees much more, which is
+  // the approximation of thickness the tint uses.
+  float facingView = clamp(dot(normal, -viewDir), 0.0, 1.0);
+  float thickness = uThickness * (0.35 + 1.9 * (1.0 - facingView));
+
+  color = applyTint(color, thickness);
 
   // Fresnel — grazing angles reflect more, which is what reads as "glass".
-  float fresnel = pow(1.0 - clamp(dot(normal, -viewDir), 0.0, 1.0), uRimPower);
+  float fresnel = pow(1.0 - facingView, uRimPower);
 
   // Rim light. Constrained to the silhouette by the Fresnel term, so the
   // highlight rides the letter edges instead of flooding the front face even
@@ -109,11 +134,18 @@ void main() {
   float facing = clamp(dot(normal, normalize(uLightDirection)), 0.0, 1.0);
   float rim = fresnel * pow(facing, 2.0) * uRimStrength;
 
-  color += uRimColor * rim;
+  vec3 highlight = uRimColor * rim;
+
+  color += highlight;
   // A little plain Fresnel keeps the whole edge alive, not just the lit side.
   color += uRimColor * fresnel * 0.06;
 
-  gl_FragColor = vec4(color, 1.0);
+  // The lens flare renders the glass a second time with this set, and keys off
+  // the result. It has to be the specular alone: on a light page the glass body
+  // is bright by nature — it is refracting white paper — so a luminance
+  // threshold over the finished material flags the entire word as a highlight
+  // and blooms over the whole hero. Only the specular is actually a highlight.
+  gl_FragColor = mix(vec4(color, 1.0), vec4(highlight, 1.0), clamp(uHighlightOnly, 0.0, 1.0));
 
   #include <colorspace_fragment>
 }

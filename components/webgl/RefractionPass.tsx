@@ -170,11 +170,18 @@ export function RefractionPass() {
       // Black, not the ground colour: this target feeds a luminance threshold,
       // and clearing it to paper would make the whole frame read as a highlight
       // and put streaks over the entire page.
+      // Render the glass again, but outputting only its specular, so the
+      // threshold below sees highlights rather than the whole bright body.
+      const glassMaterial = glassPasses.glassMaterial
+      if (glassMaterial) glassMaterial.uniforms.uHighlightOnly.value = 1
+
       camera.layers.set(LAYER_GLASS)
       gl.setClearColor(BLACK, 0)
       gl.setRenderTarget(glassOnly)
       gl.clear()
       gl.render(scene, camera)
+
+      if (glassMaterial) glassMaterial.uniforms.uHighlightOnly.value = 0
 
       starPass.material.uniforms.uSource.value = glassOnly.texture
       gl.setRenderTarget(star)

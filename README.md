@@ -176,7 +176,17 @@ Tint follows BRAND_TOKENS — Sky Blue `#8EBFE8` body, Ocean Blue `#4E76D0` for
 the dark variant, blended by `uDark`, which `<SurfaceTheme>` drives. Light uses
 Beer-Lambert absorption; dark uses Hard Light, because absorption on a dark
 ground only subtracts from an already-dark image and turns the glass muddy.
-These are starting values — DECISIONS says tune live.
+Thickness is not constant: it is estimated per fragment from the angle between
+the view direction and the normal, so a grazing edge absorbs more than a
+face-on stroke. Two tints also blend along the word's local Y. Without either,
+the glass is one even wash and reads as blue paint rather than a body with
+volume. These are starting values — DECISIONS says tune live.
+
+The `uDark` path is wired to `<SurfaceTheme>` but nothing in the app reaches it
+yet: the hero is only on the light home page, and the THEME toggle that
+DECISIONS calls for ("dark-first is primary") is not built. The Hard Light
+branch is smoke-tested — it renders cleanly with no non-finite pixels — but it
+has not been art-directed against a real dark ground.
 
 The rim light takes the pointer's *angle* and discards its distance, so the
 highlight rides the letter edges instead of flooding the front face near screen
@@ -192,11 +202,18 @@ exactly what the refraction pass captures — clear glass over a flat page barel
 reads as glass, and moving colour behind it is what makes the dispersion
 legible.
 
-**Item 6 — Star-6 lens flare.** Luminance threshold, three axes, six rays. Its
-source is a render of the glass *alone*, not the finished frame — thresholding
-the frame would put rays on every bright poster card on the page. Half
+**Item 6 — Star-6 lens flare.** Luminance threshold, three axes, six rays. Half
 resolution, alternate frames, and the whole pass stops when the glass is
-offscreen (verified: 1338 flare pixels with the glass in view, 0 without).
+offscreen (verified: ~1300 flare pixels with the glass in view, 0 without).
+
+Its source is a render of the glass alone **with the material in highlight-only
+mode** — outputting just its specular term. Two narrower sources were both
+wrong: thresholding the finished frame puts rays on every bright poster card,
+and thresholding the *whole glass material* is worse on a light page, because
+the glass body is bright by nature — it is refracting white paper — so the
+entire word passes the threshold and blooms over the hero. Only the specular is
+genuinely a highlight. The article's site is dark-themed, where the distinction
+does not arise.
 
 **Item 1 — dot-matrix hover reveal.** Two textures per card; the screen is
 divided into fixed cells and a square grows inside each one as the wave spreads
