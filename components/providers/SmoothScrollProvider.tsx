@@ -2,55 +2,44 @@
 
 import { useEffect } from 'react'
 import Lenis from 'lenis'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { advance } from '@react-three/fiber'
 import { lenisOptions, prefersReducedMotion, setLenis } from '@/lib/lenis'
-import { scrollState } from '@/lib/scroll-store'
-
-gsap.registerPlugin(ScrollTrigger)
+import { attachPointerBus } from '@/lib/pointer-bus'
+import { enableFrameLoopFallback } from '@/lib/frame-loop'
+import { invalidateRects } from '@/lib/rect-sampler'
 
 /**
- * THE render loop. There is only one (CLAUDE.md §2, §11).
+ * Owns the Lenis instance and the pointer listeners — but not the frame loop.
  *
- * GSAP's ticker is the single rAF in the app. Each tick, in order:
- *   1. Lenis advances smooth scroll and writes the new offset to the DOM.
- *   2. ScrollTrigger recomputes against that fresh offset.
- *   3. R3F renders the WebGL scene with `advance()`.
+ * Lenis runs with autoRaf:false and is ticked by lib/frame-loop, which R3F
+ * drives via addEffect so scroll and render land in the same frame. This
+ * provider only enables the fallback driver, which runs until the canvas claims
+ * the loop and resumes if it ever unmounts. See lib/frame-loop.ts.
  *
- * Because step 3 runs after steps 1–2 inside the same frame, the 3D layer reads
- * the scroll position the DOM was just painted at — so WebGL planes can never
- * lag a frame behind the cards they track. The <Canvas> is mounted with
- * frameloop="never" precisely so it has no rAF of its own.
+ * Deliberately imports nothing from three or @react-three/fiber: it renders on
+ * every page, and pulling the WebGL runtime into the main bundle would defeat
+ * the dynamic, canvas-only import.
  */
 export function SmoothScrollProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    const reduced = prefersReducedMotion()
-    const lenis = new Lenis(lenisOptions(reduced))
+    const lenis = new Lenis(lenisOptions(prefersReducedMotion()))
     setLenis(lenis)
 
-    lenis.on('scroll', (e: Lenis) => {
-      scrollState.y = e.scroll
-      scrollState.velocity = e.velocity
-      scrollState.progress = e.progress
-      scrollState.direction = e.direction
-      ScrollTrigger.update()
-    })
+    const detachPointer = attachPointerBus()
+    const disableFallback = enableFrameLoopFallback()
 
-    // gsap.ticker reports seconds; Lenis and R3F both expect milliseconds.
-    const tick = (time: number) => {
-      const ms = time * 1000
-      lenis.raf(ms)
-      advance(ms)
-    }
-
-    gsap.ticker.add(tick)
-    // Without this, GSAP silently clamps deltas after a tab-switch and the
-    // scene snaps. We'd rather take the long frame.
-    gsap.ticker.lagSmoothing(0)
+    // Anything that reflows the page invalidates every cached rect. Lenis
+    // recalculates its own dimensions on resize; this covers the WebGL side.
+    const onResize = () => invalidateRects()
+    window.addEventListener('resize', onResize)
+    window.addEventListener('orientationchange', onResize)
+    // Late-loading fonts are the classic silent reflow.
+    document.fonts?.ready.then(invalidateRects)
 
     return () => {
-      gsap.ticker.remove(tick)
+      window.removeEventListener('resize', onResize)
+      window.removeEventListener('orientationchange', onResize)
+      disableFallback()
+      detachPointer()
       lenis.destroy()
       setLenis(null)
     }

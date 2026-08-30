@@ -14,12 +14,24 @@
   gap: var(--s3);
 }
 
-/* 16:9 poster — the frame the WebGL plane will eventually track. */
+/* 16:9 poster — the rect the WebGL plane tracks.
+   The CSS hatch is the fallback: it shows when the canvas never arrives (no
+   WebGL, a failed chunk). Once the stage is live the box goes transparent and
+   the mirrored plane behind it supplies the image. */
 .poster {
   position: relative;
   aspect-ratio: var(--card-ratio);
   border: 1px solid var(--ink);
   overflow: hidden;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--surface-2) 0 6px,
+    #e8e5de 6px 12px
+  );
+}
+
+:global(html[data-webgl='live']) .poster {
+  background: none;
 }
 
 .posterLabel {

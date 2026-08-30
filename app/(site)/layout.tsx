@@ -1,6 +1,7 @@
 import { Nav } from '@/components/dom/chrome/Nav'
 import { Footer } from '@/components/dom/chrome/Footer'
 import { Loader } from '@/components/dom/chrome/Loader'
+import { WebGLDebug } from '@/components/dom/WebGLDebug'
 
 /**
  * Shared chrome for every screen: nav (with the mobile menu), the loader, and
@@ -15,6 +16,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         Skip to content
       </a>
       <Loader />
+      <WebGLDebug />
       <Nav />
       <div id="main">{children}</div>
       <Footer />

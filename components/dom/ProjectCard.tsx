@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import type { PlaceholderProject } from '@/lib/placeholder-content'
+import { CARD_TARGET_PREFIX } from '@/components/webgl/card-target-id'
+import { WebGLTarget } from './WebGLTarget'
 import styles from './ProjectCard.module.css'
 
 /**
@@ -11,6 +13,10 @@ import styles from './ProjectCard.module.css'
  *
  * `forceOverlay` renders the hover state statically, which the work grid uses
  * so the design is reviewable without a pointer.
+ *
+ * The poster frame is a WebGL target: it stays transparent and the canvas draws
+ * the poster behind it, aligned to this element's rect. CSS keeps owning the
+ * grid, the ratio and the gap — see components/webgl/CardMirror.tsx.
  */
 export function ProjectCard({
   project,
@@ -22,7 +28,10 @@ export function ProjectCard({
   return (
     <article className={styles.card}>
       <Link href={`/work/${project.slug}`} className={styles.link}>
-        <div className={`${styles.poster} hatch`}>
+        <WebGLTarget
+          targetId={`${CARD_TARGET_PREFIX}${project.slug}`}
+          className={styles.poster}
+        >
           <span className={styles.posterLabel} aria-hidden="true">
             Poster 16:9
           </span>
@@ -47,7 +56,7 @@ export function ProjectCard({
               <span className={styles.view}>View ↗</span>
             </div>
           </div>
-        </div>
+        </WebGLTarget>
 
         <div className={styles.meta}>
           <h3>{project.title}</h3>

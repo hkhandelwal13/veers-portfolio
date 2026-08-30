@@ -1,6 +1,9 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  // The dev overlay badge sits over the bottom-left HUD corner and shows up in
+  // every review screenshot. Nothing depends on it.
+  devIndicators: false,
   // CLAUDE.md is the client's build spec and the source of truth for this
   // project; `next dev` otherwise appends its own agent-rules block to it.
   agentRules: false,
