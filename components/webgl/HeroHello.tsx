@@ -1,13 +1,24 @@
 'use client'
 
-import { useLayoutEffect, useRef } from 'react'
+import { useLayoutEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
+import { useGLTF } from '@react-three/drei'
+import type { GLTF } from 'three-stdlib'
 import { getTargetRect } from '@/lib/rect-sampler'
 import { getScrollSnapshot } from '@/lib/scroll-bus'
 import { pointer } from '@/lib/pointer-bus'
-import { prefersReducedMotion } from '@/lib/lenis'
-import { Hello } from './Hello'
+import {
+  canRenderGlass,
+  getCapabilities,
+  getServerCapabilities,
+  subscribeToCapabilities,
+} from '@/lib/capabilities'
+import { createRingLight } from '@/lib/ring-light'
+import { isSurfaceDark } from '@/lib/surface'
+import { glassFragmentShader, glassVertexShader } from '@/shaders/glass'
+import { glassPasses } from './glass-passes'
+import { LAYER_GLASS } from './layers'
 import { isRectVisible, rectToWorld } from './rect-space'
 
 export const HERO_TARGET_ID = 'hero-hello'
@@ -18,52 +29,102 @@ const FLOAT_AMPLITUDE = 0.02
 const TILT_X = 0.1
 const TILT_Y = 0.16
 
+/** The GLB carries this baked transform; kept so the geometry sits where it was authored. */
+const BAKED_POSITION: [number, number, number] = [8.158, 2.861, -62.453]
+const BAKED_SCALE = 8.019
+
+type HelloGLTF = GLTF & { nodes: { g_groupNumber_0_n3d: THREE.Mesh } }
+
+function createGlassUniforms() {
+  return {
+    uSceneTexture: { value: null as THREE.Texture | null },
+    uResolution: { value: new THREE.Vector2(1, 1) },
+    uIor: { value: 1.18 },
+    uDispersion: { value: 0.035 },
+    uRefractStrength: { value: 0.16 },
+    uThickness: { value: 1.1 },
+    // BRAND_TOKENS: Sky Blue body, Ocean Blue for the dark variant.
+    uTintLight: { value: new THREE.Color('#8EBFE8') },
+    uTintDark: { value: new THREE.Color('#4E76D0') },
+    uTintAmount: { value: 0.8 },
+    uDark: { value: 0 },
+    uRimColor: { value: new THREE.Color('#FFF4DC') },
+    uRimPower: { value: 2.6 },
+    uRimStrength: { value: 0.7 },
+    uLightDirection: { value: new THREE.Vector3(0.4, 0.9, 0.6) },
+  }
+}
+
+
 /**
- * Seats the `hello` model in its DOM-defined box and keeps it there.
+ * The glass `hello`, seated in its DOM-defined box.
  *
- * The model is not placed in world coordinates by hand. Every frame it reads
- * the rect the sampler measured for `data-webgl="hero-hello"` and converts it
- * to world space, so CSS keeps deciding where the hero sits at every
- * breakpoint — the 3D layer has no opinion and no media queries.
+ * Seating (Phase 3): every frame it reads the rect measured for
+ * `data-webgl="hero-hello"` and converts it to world space, so CSS keeps
+ * deciding where the hero sits at every breakpoint and the 3D layer needs no
+ * media queries. Because the rect sampler runs at useFrame priority -3 and the
+ * ScrollBus was written before that, the rect read here matches the DOM this
+ * very frame — which is what keeps the model glued during a fast scroll.
  *
- * Because the sampler runs at useFrame priority -3 and the ScrollBus was
- * written before that by the frame driver, the rect read here is the one that
- * matches the DOM position this very frame. That is what keeps the model glued
- * during a fast scroll instead of trailing it.
+ * Material (Phase 4 item 4): a screen-space refraction shader sampling the
+ * scene-without-glass that RefractionPass rendered earlier in the frame. The
+ * mesh sits on its own layer so those passes can include or exclude it.
  *
- * Material is still the model's baked `water_material3` — glass is Phase 4.
+ * Falls back to an opaque material where the glass is gated off — the word is
+ * the hero, so it renders either way.
  */
 export function HeroHello() {
   const outer = useRef<THREE.Group>(null)
-  const inner = useRef<THREE.Group>(null)
-  const bounds = useRef<{ size: THREE.Vector3; center: THREE.Vector3 } | null>(null)
-  const reduced = useRef(false)
+  const meshRef = useRef<THREE.Mesh>(null)
+  // Holds the light's angle between frames, so it belongs in a ref rather than
+  // a memo — a memo result is treated as immutable.
+  const ringLight = useRef<ReturnType<typeof createRingLight> | null>(null)
 
   const camera = useThree((state) => state.camera)
+  const { nodes } = useGLTF('/models/hello.glb') as unknown as HelloGLTF
+  const geometry = nodes.g_groupNumber_0_n3d.geometry
 
+  const initialUniforms = useMemo(() => createGlassUniforms(), [])
+
+
+  /**
+   * Bounds of the word, derived from the geometry and its baked transform.
+   *
+   * Deliberately NOT Box3.setFromObject on the mounted group: that measures in
+   * world space, so it silently folds in whatever scale the parent happens to
+   * be carrying at the moment it runs. Measure once on mount and it is right;
+   * measure again after a frame has seated the model — which React does in
+   * development, and which any remount does — and it returns the already-scaled
+   * size, shrinking the word a little more each time.
+   *
+   * Deriving from the geometry makes the result independent of when it runs.
+   */
+  const measured = useMemo(() => {
+    geometry.computeBoundingBox()
+    const box = geometry.boundingBox!.clone()
+    box.applyMatrix4(
+      new THREE.Matrix4().compose(
+        new THREE.Vector3(...BAKED_POSITION),
+        new THREE.Quaternion(),
+        new THREE.Vector3(BAKED_SCALE, BAKED_SCALE, BAKED_SCALE),
+      ),
+    )
+    return {
+      size: box.getSize(new THREE.Vector3()),
+      center: box.getCenter(new THREE.Vector3()),
+    }
+  }, [geometry])
+
+  // The passes select on layer, so the mesh has to be assigned before they run.
   useLayoutEffect(() => {
-    reduced.current = prefersReducedMotion()
-  }, [])
-
-  // Measure once — the geometry never changes. The GLB carries a baked,
-  // off-origin transform, so the inner group re-centres it and the outer group
-  // is then free to be positioned purely from the DOM rect.
-  useLayoutEffect(() => {
-    const group = inner.current
-    if (!group) return
-
-    group.position.set(0, 0, 0)
-    const box = new THREE.Box3().setFromObject(group)
-    const size = box.getSize(new THREE.Vector3())
-    const center = box.getCenter(new THREE.Vector3())
-    bounds.current = { size, center }
-    group.position.copy(center).multiplyScalar(-1)
+    meshRef.current?.layers.set(LAYER_GLASS)
+    ringLight.current = createRingLight(1)
   }, [])
 
   useFrame((state, delta) => {
     const group = outer.current
-    const measured = bounds.current
-    if (!group || !measured || measured.size.x === 0) return
+    const mesh = meshRef.current
+    if (!group || !mesh || measured.size.x === 0) return
 
     const rect = getTargetRect(HERO_TARGET_ID)
     const { viewportHeight } = getScrollSnapshot()
@@ -71,17 +132,15 @@ export function HeroHello() {
 
     if (!rect || !isRectVisible(rect, height, 400)) {
       group.visible = false
+      // Tells the flare pass it can stop entirely.
+      glassPasses.glassVisible = false
       return
     }
 
     group.visible = true
+    glassPasses.glassVisible = true
 
-    const seat = rectToWorld(
-      rect,
-      camera as THREE.PerspectiveCamera,
-      state.size.width,
-      height,
-    )
+    const seat = rectToWorld(rect, camera as THREE.PerspectiveCamera, state.size.width, height)
 
     // Contain, not cover: fit inside the box on both axes so the word is never
     // distorted or clipped by a rect whose aspect differs from the model's.
@@ -90,9 +149,32 @@ export function HeroHello() {
     const fit = Math.min(boxWidth / measured.size.x, boxHeight / measured.size.y)
     group.scale.setScalar(fit)
 
-    if (reduced.current) {
-      // Reduced motion gets the seat and nothing else, so the model sits
-      // exactly on its rect.
+    const caps = getCapabilities()
+
+    // --- Material ------------------------------------------------------------
+    // Written straight onto the material's own uniforms: three.js owns this
+    // state, not React, and it changes every frame.
+    const material = mesh.material as THREE.ShaderMaterial
+    const uniforms = material.uniforms
+
+    // Absent on the small-screen fallback, which uses a standard material.
+    if (uniforms && uniforms.uSceneTexture) {
+      uniforms.uSceneTexture.value = glassPasses.refraction?.texture ?? null
+      uniforms.uResolution.value.set(
+        state.size.width * state.viewport.dpr,
+        state.size.height * state.viewport.dpr,
+      )
+      uniforms.uDark.value = isSurfaceDark() ? 1 : 0
+
+      // The rim light follows the pointer's angle only. Under reduced motion it
+      // holds its resting angle rather than tracking.
+      const ring = caps.reducedMotion
+        ? ringLight.current?.update(0, 0, false, delta)
+        : ringLight.current?.update(pointer.cx, pointer.cy, pointer.inside, delta)
+      if (ring) uniforms.uLightDirection.value.set(ring.x, ring.y, 0.6)
+    }
+
+    if (caps.reducedMotion) {
       group.position.set(seat.x, seat.y, 0)
       group.rotation.set(0, 0, 0)
       return
@@ -100,22 +182,43 @@ export function HeroHello() {
 
     const t = state.clock.elapsedTime
     const float = Math.sin(t * 0.6) * boxHeight * FLOAT_AMPLITUDE
-
     group.position.set(seat.x, seat.y + float, 0)
 
-    // Pointer parallax. The PointerBus has already eased and recentred the
-    // reading, so this only has to map it onto the model.
     const targetY = pointer.cx * TILT_Y
     const targetX = pointer.cy * TILT_X
     group.rotation.y = THREE.MathUtils.damp(group.rotation.y, targetY, 5, delta)
     group.rotation.x = THREE.MathUtils.damp(group.rotation.x, targetX, 5, delta)
   })
 
+  // Subscribed, not read once: capabilities start at their server defaults and
+  // resolve after mount, so choosing the material from a single render-time
+  // read leaves a small screen holding the refraction shader whose pass has
+  // been gated off — a shader sampling a target nobody renders.
+  const caps = useSyncExternalStore(
+    subscribeToCapabilities,
+    getCapabilities,
+    getServerCapabilities,
+  )
+  const glass = canRenderGlass(caps)
+
   return (
     <group ref={outer} visible={false}>
-      <group ref={inner}>
-        <Hello />
+      <group position={[-measured.center.x, -measured.center.y, -measured.center.z]}>
+        <mesh ref={meshRef} geometry={geometry} position={BAKED_POSITION} scale={BAKED_SCALE}>
+          {glass ? (
+            <shaderMaterial
+              vertexShader={glassVertexShader}
+              fragmentShader={glassFragmentShader}
+              uniforms={initialUniforms}
+            />
+          ) : (
+            // Small-screen fallback: no second scene render, no refraction.
+            <meshStandardMaterial color="#8EBFE8" roughness={0.25} metalness={0.1} />
+          )}
+        </mesh>
       </group>
     </group>
   )
 }
+
+useGLTF.preload('/models/hello.glb')

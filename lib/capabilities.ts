@@ -135,3 +135,42 @@ export function canDevelopOnEnter(caps: Capabilities = current): boolean {
 export function canCurlOnScroll(caps: Capabilities = current): boolean {
   return !caps.reducedMotion && !caps.compact
 }
+
+/**
+ * Glass `hello`: two-pass refraction with chromatic dispersion.
+ *
+ * The expensive one — it renders the scene a second time every frame to give
+ * the refraction something to sample. Off on small screens, where that second
+ * pass is the difference between a smooth page and a hot phone; the model still
+ * renders, just with a cheap opaque material.
+ *
+ * Kept under reduced motion: refraction is a material, not a movement. What
+ * reduced motion switches off is the idle float and the pointer-driven rim
+ * light, handled where those are applied.
+ */
+export function canRenderGlass(caps: Capabilities = current): boolean {
+  return !caps.compact
+}
+
+/**
+ * Floating stickers behind the glass.
+ *
+ * They exist to give the refraction something with colour and movement to bend;
+ * with no glass in front of them they are just confetti, so they follow the
+ * glass. Also off under reduced motion — this is continuous ambient movement,
+ * the clearest case for honouring that preference.
+ */
+export function canRenderStickers(caps: Capabilities = current): boolean {
+  return canRenderGlass(caps) && !caps.reducedMotion
+}
+
+/**
+ * Star-6 lens flare post pass.
+ *
+ * Needs highlights to work on, so it follows the glass too. Off under reduced
+ * motion because the rays swing as the rim light moves, which is motion in
+ * everything but name.
+ */
+export function canRenderStarFlare(caps: Capabilities = current): boolean {
+  return canRenderGlass(caps) && !caps.reducedMotion
+}
