@@ -8,6 +8,9 @@ import { DebugSignals } from './DebugSignals'
 import { FrameDriver } from './FrameDriver'
 import { HeroHello } from './HeroHello'
 import { RectSampler } from './RectSampler'
+import { RefractionPass } from './RefractionPass'
+import { StarFlare } from './StarFlare'
+import { Stickers } from './Stickers'
 
 /**
  * The single WebGL stage (CLAUDE.md §2). One fixed, full-screen canvas the whole
@@ -37,6 +40,9 @@ export default function Scene() {
       <FrameDriver />
       <RectSampler />
       <DebugSignals />
+      {/* Renders the offscreen targets the glass and the flare read. Sits at
+          useFrame priority -2, after the rect sampler and before the meshes. */}
+      <RefractionPass />
 
       <ambientLight intensity={0.6} />
       <directionalLight position={[3, 4, 5]} intensity={2.2} />
@@ -47,7 +53,11 @@ export default function Scene() {
       <CardMirrors />
 
       <Suspense fallback={null}>
+        {/* Behind the glass and on the content layer, so the refraction pass
+            captures them — that is what gives the dispersion something to bend. */}
+        <Stickers />
         <HeroHello />
+        <StarFlare />
 
         {/* Procedural environment — built from Lightformers rather than an HDRI
             preset, so nothing is fetched from a CDN at runtime. */}

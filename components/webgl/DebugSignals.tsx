@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { getScrollActivity } from '@/lib/scroll-activity'
+import { getScrollSnapshot } from '@/lib/scroll-bus'
 import { pointer } from '@/lib/pointer-bus'
 
 /**
@@ -27,13 +28,19 @@ export function DebugSignals() {
     enabled.current = new URLSearchParams(window.location.search).get('webgl') === 'debug'
   }, [])
 
-  useFrame(() => {
+  useFrame((state) => {
     if (!enabled.current) return
+
+    // The seating maths divides by this height; when it disagrees with the
+    // canvas the model lands in the wrong place, and the two are otherwise
+    // invisible from outside.
+    const busHeight = getScrollSnapshot().viewportHeight
+    const canvasHeight = state.size.height
 
     const activity = getScrollActivity().toFixed(3)
     const px = pointer.x.toFixed(3)
     const py = pointer.y.toFixed(3)
-    const key = `${activity}|${px}|${py}|${pointer.inside}`
+    const key = `${activity}|${px}|${py}|${pointer.inside}|${busHeight}|${canvasHeight}`
     if (key === last.current) return
     last.current = key
 
@@ -41,6 +48,7 @@ export function DebugSignals() {
     root.dataset.scrollActivity = activity
     root.dataset.pointerUv = `${px},${py}`
     root.dataset.pointerInside = String(pointer.inside)
+    root.dataset.viewportHeights = `bus=${Math.round(busHeight)} canvas=${Math.round(canvasHeight)}`
   })
 
   return null
