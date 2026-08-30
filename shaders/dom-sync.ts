@@ -11,8 +11,8 @@
  * columns, gaps and ratios freely, and WebGL only ever follows the resulting
  * rectangle.
  *
- * Phase 4 layers the dot-matrix hover reveal on top of that mapping. The
- * develop-on-enter and scroll-velocity curl are still to come.
+ * Phase 4 layers three effects on top of that mapping: the dot-matrix hover
+ * reveal, the develop-on-enter polarity blend, and the scroll-velocity curl.
  */
 
 export const domSyncVertexShader = /* glsl */ `
@@ -35,11 +35,38 @@ uniform sampler2D uMap;        // base — the poster
 uniform sampler2D uMapReveal;  // what the reveal uncovers
 uniform vec4 uRect;            // xy = origin (bottom-left), zw = size
 uniform float uOpacity;
-uniform float uRevealProgress; // 0..1
-uniform float uCellPx;         // dot-matrix cell size, CSS px
-uniform vec2 uViewportPx;      // viewport size, CSS px
+uniform float uRevealProgress;  // 0..1
+uniform float uCellPx;          // dot-matrix cell size, CSS px
+uniform vec2 uViewportPx;       // viewport size, CSS px
+uniform float uPolarity;        // 0 = negative, 1 = original colour
+uniform float uCurlStrength;    // 0 = flat, higher = more flex
 
 varying vec2 vScreenUv;
+
+/**
+ * Scroll-velocity curl.
+ *
+ * A semicircular profile across the card's height: zero at the middle, rising
+ * toward the top and bottom edges. Compressing the sampled X there magnifies
+ * the image at the extremes while the centre barely moves, so the card appears
+ * to flex as the page moves.
+ *
+ * Applied in card-local space, not screen space, so every card flexes about
+ * its own centre by the same amount — the article describes the middle of the
+ * *image* holding still — and so the flex cannot drag the card's edges off the
+ * DOM rect they are mirroring.
+ */
+vec2 applyCurl(vec2 localUv) {
+  float centered = 2.0 * localUv.y - 1.0;
+  float profile = 1.0 - sqrt(max(0.0, 1.0 - centered * centered));
+  float scale = 1.0 - profile * uCurlStrength;
+  return vec2((localUv.x - 0.5) * scale + 0.5, localUv.y);
+}
+
+/** Develop-on-enter: blend from the negative back to the original colour. */
+vec3 applyPolarity(vec3 rgb) {
+  return mix(1.0 - rgb, rgb, clamp(uPolarity, 0.0, 1.0));
+}
 
 void main() {
   vec2 size = max(uRect.zw, vec2(1e-5));
@@ -49,7 +76,11 @@ void main() {
   vec2 edge = min(localUv, 1.0 - localUv);
   float inside = step(0.0, edge.x) * step(0.0, edge.y);
 
-  vec4 base = texture2D(uMap, clamp(localUv, 0.0, 1.0));
+  // The mask stays on the undistorted UV: the curl flexes the picture inside
+  // the card, it must not move the card's own boundary.
+  vec2 sampleUv = clamp(applyCurl(localUv), 0.0, 1.0);
+
+  vec4 base = texture2D(uMap, sampleUv);
 
   // --- Dot-matrix reveal --------------------------------------------------
   // The wave spreads from the centre of the CARD, so the distance is measured
@@ -87,13 +118,20 @@ void main() {
   float aa = max(fwidth(squareDist), 1e-4);
   float squareMask = 1.0 - smoothstep(extent - aa, extent + aa, squareDist);
 
-  vec4 revealed = texture2D(uMapReveal, clamp(localUv, 0.0, 1.0));
+  vec4 revealed = texture2D(uMapReveal, sampleUv);
   vec4 color = mix(base, revealed, squareMask);
 
+  color.rgb = applyPolarity(color.rgb);
   color.a *= inside * uOpacity;
 
   if (color.a <= 0.001) discard;
 
   gl_FragColor = color;
+
+  // Textures are tagged sRGB, so three decodes them to linear when sampling.
+  // A raw ShaderMaterial gets no automatic encode on the way out, so without
+  // this the whole card renders noticeably darker than the CSS fallback it is
+  // supposed to replace — measured 191,184,169 against 227,223,215.
+  #include <colorspace_fragment>
 }
 `

@@ -159,7 +159,11 @@ public/     models/*.glb, fonts/
 Running item-by-item per PHASE4_KICKOFF.md, each built fresh from the method in
 `design/haoqi-article.md`.
 
-**Item 1 — dot-matrix hover reveal: done.** Two textures per card; the screen is
+**Items 1–3 done: dot-matrix hover reveal, develop-on-enter,
+scroll-velocity curl.** All three ride on the same mirrored card mesh, so they
+share one shader and one set of shutoffs.
+
+**Item 1 — dot-matrix hover reveal.** Two textures per card; the screen is
 divided into fixed cells and a square grows inside each one as the wave spreads
 from the card's centre, uncovering the second texture. `uRect` maps fullscreen
 UV into card-local UV and the wave distance is aspect-corrected, so the front
@@ -184,6 +188,29 @@ The DOM overlay that used to be an opaque dark panel is now a bottom scrim
 carrying only the badge, title, role and view affordance — an opaque background
 there would hide the effect it belongs to.
 
+**Item 2 — develop-on-enter.** A card blends up from its negative over 0.8s
+when it enters the viewport, and snaps back to zero once it has fully left so
+it replays on return. The cull margin keeps a card alive slightly beyond the
+viewport, so "entered" is tested separately and strictly — the card has to be
+genuinely on screen before it starts developing.
+
+**Item 3 — scroll-velocity curl.** A semicircular profile across the card's
+height compresses the sampled X near the top and bottom, so cards flex slightly
+with scroll speed while their middles hold still.
+
+- **The signal lives on the frame loop**, not in each card. `lib/scroll-activity.ts`
+  derives it once per frame straight after the ScrollBus is written, so every
+  card reads the same number for the same frame.
+- **Fast attack, slow release** (25ms / 175ms). A trackpad produces constant
+  small velocity fluctuations; one time constant turns those into flicker,
+  whereas rising quickly and falling gently reads as momentum. `dt` is clamped
+  so a backgrounded tab waking up cannot spike the signal on its first frame
+  back.
+- **Applied in card-local space, not screen space.** The article describes the
+  middle of the *image* holding still, and card-local keeps the flex from
+  dragging a card's edges off the DOM rect it is mirroring — the `inside` mask
+  deliberately stays on the undistorted UV.
+
 ### Effect shutoffs
 
 `lib/capabilities.ts` is the single place shutoff conditions are decided, added
@@ -191,23 +218,38 @@ now rather than retrofitted (the article's closing lesson). It watches three
 live media queries — reduced motion, hover capability, compact viewport — and
 exposes one named gate per effect.
 
-Verified in a real browser for the hover reveal:
+Verified in a real browser at production constants:
 
-| Condition | Behaviour |
-| --- | --- |
-| Desktop hover | reveals (dark 0 → 0.985) |
-| Keyboard focus | reveals — never mouse-only |
-| Touch (`hover: none`, via CDP media emulation) | holds the poster (0.003) |
-| `prefers-reduced-motion` | still reveals, but snaps — the second image is content |
-| Scrolled offscreen | progress resets, so it replays on return |
+| Effect | Reduced motion | Touch / no hover | Small screen | Offscreen |
+| --- | --- | --- | --- | --- |
+| Hover reveal | reveals, but snaps | holds the poster (0.003) | — | resets, replays |
+| Develop on enter | skipped entirely | unaffected | kept — one mix | resets, replays |
+| Scroll curl | off | — | off | mesh hidden |
 
-`?webgl=debug` now also reflects the live capability values onto `<html>`
+Measurements: hover reveals 0 → 0.985 dark and holds at 0.003 under
+`hover: none`; develop swings 189 → 225 brightness on re-entry and is flat under
+reduced motion; the curl signal reads 0 at rest, peaks at 0.99 during a fast
+scroll and decays to 0.004, showing the intended fast attack and slow release.
+
+Two notes on how that was checked. Timing-based effects were also verified with
+their constants temporarily slowed, because a screenshot round-trip is ~300ms
+and cannot resolve a 450ms sweep otherwise. And emulating a touch device needs
+`hasTouch` set at context creation as well as the CDP media override —
+without it Playwright resets the emulated features on navigation and the
+override is silently discarded, which makes a broken shutoff look like a
+working one.
+
+`?webgl=debug` reflects the live capability values onto `<html>`
 (`data-cap-hover`, `data-cap-reduced-motion`, `data-cap-compact`), so you can
-see *why* an effect is off on a given device without reading the source.
+see *why* an effect is off on a given device without reading the source. It
+also publishes the live effect signals (`data-scroll-activity`,
+`data-pointer-uv`, `data-pointer-inside`) — the per-frame numbers that drive
+the effects never reach React, which otherwise makes it impossible to tell a
+wrong shader from a stuck input.
 
 ### Still to come in Phase 4
 
-Develop-on-enter, scroll-velocity curl, the glass `hello` (FBO two-pass
+The glass `hello` (FBO two-pass
 refraction/dispersion, ring-constrained rim light, Beer-Lambert / Hard-Light
 tint), floating stickers, the Star-6 lens flare, dot-matrix transitions,
 ScrambleLines, and the watery cursor.

@@ -6,7 +6,13 @@ import { useFrame } from '@react-three/fiber'
 import { getTargetRect } from '@/lib/rect-sampler'
 import { getScrollSnapshot } from '@/lib/scroll-bus'
 import { getHoverIntent } from '@/lib/hover-bus'
-import { canAnimateCardReveal, getCapabilities } from '@/lib/capabilities'
+import {
+  canAnimateCardReveal,
+  canCurlOnScroll,
+  canDevelopOnEnter,
+  getCapabilities,
+} from '@/lib/capabilities'
+import { getScrollActivity } from '@/lib/scroll-activity'
 import { domSyncFragmentShader, domSyncVertexShader } from '@/shaders/dom-sync'
 import { getPlaceholderPosterTexture, getPlaceholderRevealTexture } from './placeholder-poster'
 import { isRectVisible, rectToUniform } from './rect-space'
@@ -23,6 +29,10 @@ const CELL_PX = 14
  * metadata scrim land together.
  */
 const REVEAL_SECONDS = 0.45
+/** Seconds for a card to develop from negative to full colour on entry. */
+const DEVELOP_SECONDS = 0.8
+/** Curl at full scroll speed. Small on purpose — it should read as give, not warp. */
+const CURL_MAX = 0.06
 
 function createUniforms() {
   return {
@@ -33,6 +43,8 @@ function createUniforms() {
     uRevealProgress: { value: 0 },
     uCellPx: { value: CELL_PX },
     uViewportPx: { value: new THREE.Vector2(1, 1) },
+    uPolarity: { value: 1 },
+    uCurlStrength: { value: 0 },
   }
 }
 
@@ -50,17 +62,22 @@ function createUniforms() {
  * rather than a React-held object that merely shares its reference — which is
  * also what keeps it clear of React's immutability rules.
  *
+ * Carries three of the Phase 4 card effects: the dot-matrix hover reveal, the
+ * develop-on-enter polarity blend, and the scroll-velocity curl.
+ *
  * Shutoffs, all present from the start:
- *   offscreen       the mesh is hidden and its progress reset, so a card that
- *                   scrolls away and comes back replays from the beginning
+ *   offscreen       the mesh is hidden and both progresses reset, so a card
+ *                   that scrolls away and comes back replays from the start
  *   no hover        touch devices hold the poster; a tap should follow the
  *                   link, not start an animation
  *   reduced motion  the reveal still happens — the second image is content —
- *                   but snaps rather than sweeping
+ *                   but snaps; develop and curl are skipped outright
+ *   small screen    curl is off; flinging a touch list makes it read as wobble
  */
 export function CardMirror({ targetId }: { targetId: string }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const progress = useRef(0)
+  const develop = useRef(0)
 
   const initialUniforms = useMemo(() => createUniforms(), [])
 
@@ -79,8 +96,9 @@ export function CardMirror({ targetId }: { targetId: string }) {
     // far offscreen — a fullscreen quad is too expensive to draw for nothing.
     if (!uniforms.uMap.value || !rect || !isRectVisible(rect, height)) {
       mesh.visible = false
-      // Reset offscreen so the reveal replays on the card's next visit.
+      // Reset offscreen so both effects replay on the card's next visit.
       progress.current = 0
+      develop.current = 0
       uniforms.uRevealProgress.value = 0
       return
     }
@@ -105,6 +123,26 @@ export function CardMirror({ targetId }: { targetId: string }) {
     }
 
     uniforms.uRevealProgress.value = progress.current
+
+    // --- Develop on enter ---------------------------------------------------
+    // The cull margin above keeps a card alive slightly beyond the viewport, so
+    // "entered" is tested separately and strictly: the card has to be actually
+    // on screen before it starts developing.
+    const onScreen = rect.y < height && rect.y + rect.height > 0
+
+    if (!canDevelopOnEnter(caps)) {
+      develop.current = 1
+    } else if (!onScreen) {
+      // Snap back rather than easing down — the point is to be reset and ready,
+      // not to play the transition in reverse on the way out.
+      develop.current = 0
+    } else {
+      develop.current = Math.min(develop.current + delta / DEVELOP_SECONDS, 1)
+    }
+    uniforms.uPolarity.value = develop.current
+
+    // --- Scroll-velocity curl -----------------------------------------------
+    uniforms.uCurlStrength.value = canCurlOnScroll(caps) ? CURL_MAX * getScrollActivity() : 0
   })
 
   return (
