@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import Lenis from 'lenis'
 import { lenisOptions, prefersReducedMotion, setLenis } from '@/lib/lenis'
 import { attachPointerBus } from '@/lib/pointer-bus'
+import { watchCapabilities } from '@/lib/capabilities'
 import { enableFrameLoopFallback } from '@/lib/frame-loop'
 import { invalidateRects } from '@/lib/rect-sampler'
 
@@ -25,6 +26,10 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
     setLenis(lenis)
 
     const detachPointer = attachPointerBus()
+    // Effect shutoffs read from here. Until this runs, capabilities hold their
+    // server defaults — which deliberately assume no hover — so every gated
+    // effect stays off rather than flashing on before we know the device.
+    const unwatchCapabilities = watchCapabilities()
     const disableFallback = enableFrameLoopFallback()
 
     // Anything that reflows the page invalidates every cached rect. Lenis
@@ -39,6 +44,7 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
       window.removeEventListener('resize', onResize)
       window.removeEventListener('orientationchange', onResize)
       disableFallback()
+      unwatchCapabilities()
       detachPointer()
       lenis.destroy()
       setLenis(null)

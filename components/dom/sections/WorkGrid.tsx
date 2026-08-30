@@ -8,7 +8,7 @@ import styles from './WorkGrid.module.css'
  * HARD SPEC from the wireframe: 2 columns of 16:9 cards with a 24px gap on
  * desktop and tablet, 1 column on mobile.
  *
- * The second card renders its hover state statically so both states are
+ * The second card is held open so the resting and revealed states are
  * reviewable side by side, exactly as the wireframe presents them.
  */
 export function WorkGrid({
@@ -44,7 +44,7 @@ export function WorkGrid({
           <ProjectCard
             key={project.slug}
             project={project}
-            forceOverlay={showHoverExample && i === 1}
+            forceReveal={showHoverExample && i === 1}
           />
         ))}
       </div>

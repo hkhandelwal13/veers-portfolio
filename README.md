@@ -148,11 +148,76 @@ components/
 lib/
   lenis.ts  scroll-store.ts  r2.ts  sanity/
 sanity/     schema, structure, env
-shaders/    dom-sync.ts (glass + dot-matrix are Phase 4)
+shaders/    dom-sync.ts (card mirror + dot-matrix reveal; glass is Phase 4)
 public/     models/*.glb, fonts/
 ```
 
 ---
+
+## Status — Phase 4 in progress
+
+Running item-by-item per PHASE4_KICKOFF.md, each built fresh from the method in
+`design/haoqi-article.md`.
+
+**Item 1 — dot-matrix hover reveal: done.** Two textures per card; the screen is
+divided into fixed cells and a square grows inside each one as the wave spreads
+from the card's centre, uncovering the second texture. `uRect` maps fullscreen
+UV into card-local UV and the wave distance is aspect-corrected, so the front
+reaches all four edges together instead of arriving at the sides first.
+
+Two decisions worth knowing:
+
+- **The cells are anchored to the screen, not the card.** That is what makes the
+  grid read as one matrix laid over the page rather than a texture belonging to
+  each card, and it is the rule the loader and page transitions will follow.
+- **Constant-speed sweep, not exponential damping.** Damping front-loads the
+  motion and then crawls, so the squares pop near the centre and the growth is
+  over before the eye catches it. The wavefront now crosses at a steady rate
+  over ~450ms, roughly matching `--dur-med` so the WebGL reveal and the DOM
+  metadata scrim land together.
+- **Squares overshoot the cell.** Stopping at exactly half a cell leaves a
+  hairline of base texture at every boundary, so a fully revealed card keeps a
+  grid stamped over it permanently. Past that the squares close up and the
+  matrix is visible only while the reveal is moving.
+
+The DOM overlay that used to be an opaque dark panel is now a bottom scrim
+carrying only the badge, title, role and view affordance — an opaque background
+there would hide the effect it belongs to.
+
+### Effect shutoffs
+
+`lib/capabilities.ts` is the single place shutoff conditions are decided, added
+now rather than retrofitted (the article's closing lesson). It watches three
+live media queries — reduced motion, hover capability, compact viewport — and
+exposes one named gate per effect.
+
+Verified in a real browser for the hover reveal:
+
+| Condition | Behaviour |
+| --- | --- |
+| Desktop hover | reveals (dark 0 → 0.985) |
+| Keyboard focus | reveals — never mouse-only |
+| Touch (`hover: none`, via CDP media emulation) | holds the poster (0.003) |
+| `prefers-reduced-motion` | still reveals, but snaps — the second image is content |
+| Scrolled offscreen | progress resets, so it replays on return |
+
+`?webgl=debug` now also reflects the live capability values onto `<html>`
+(`data-cap-hover`, `data-cap-reduced-motion`, `data-cap-compact`), so you can
+see *why* an effect is off on a given device without reading the source.
+
+### Still to come in Phase 4
+
+Develop-on-enter, scroll-velocity curl, the glass `hello` (FBO two-pass
+refraction/dispersion, ring-constrained rim light, Beer-Lambert / Hard-Light
+tint), floating stickers, the Star-6 lens flare, dot-matrix transitions,
+ScrambleLines, and the watery cursor.
+
+**Blocked on design assets** (PHASE4_KICKOFF "Depends on"): the sticker PNG set,
+glass tint colour(s), the light/dark theme decision, and the two-image card
+decision. The reveal currently uncovers a generated dark preview panel; whether
+that becomes a second still or the muted R2 preview clip is that open decision.
+Nothing downstream cares which — CardMirror samples two textures and the shader
+blends them, whatever they are.
 
 ## Status — Phase 3 (DOM ↔ WebGL foundation) complete
 

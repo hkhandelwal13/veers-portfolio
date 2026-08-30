@@ -1,52 +1,62 @@
 import * as THREE from 'three'
 
 /**
- * Placeholder poster texture — the 45° hatch the Phase-2 CSS drew, moved onto
- * the GPU so the mirrored plane has something to show.
+ * Placeholder card textures — the two images the dot-matrix reveal blends
+ * between (PHASE4_KICKOFF item 1).
  *
- * Phase 5 replaces this with the real poster from Sanity; the mirroring code
- * does not care which texture it samples. Drawn once and shared by every card,
- * since they are all currently identical.
+ * `poster` is the resting frame: the 45° hatch the CSS drew in Phase 2, moved
+ * onto the GPU. `reveal` is what the matrix uncovers: the dark preview panel
+ * the wireframe shows on hover.
+ *
+ * Phase 5 replaces both with real content — the poster from Sanity, and the
+ * reveal either with a second image or a muted R2 preview clip as a
+ * VideoTexture. Nothing downstream cares which: CardMirror samples two
+ * textures and the shader blends them, whatever they are.
  */
 
-const SIZE = 512
+const WIDTH = 512
+const HEIGHT = Math.round((WIDTH * 9) / 16)
+
 /**
  * Stripe period at texture scale. The CSS fallback draws a 12px period; a
  * 628px-wide desktop card stretches this 512px texture by ~1.23, so 10px here
  * lands at ~12.3px on screen and the two paths read the same. Smaller cards
- * come out finer — exact parity is not worth chasing for a placeholder that
- * Phase 5 replaces with the real poster.
+ * come out finer — exact parity is not worth chasing for a placeholder.
  */
 const STRIPE = 10
 
-let cached: THREE.CanvasTexture | null = null
+type Palette = { base: string; stripe: string }
 
-export function getPlaceholderPosterTexture(): THREE.CanvasTexture | null {
-  if (cached) return cached
+/** Mirrors the CSS tokens; kept here so the two placeholders cannot drift. */
+const POSTER: Palette = { base: '#e8e5de', stripe: '#dedad1' }
+const REVEAL: Palette = { base: '#232327', stripe: '#2a2a2e' }
+
+let posterTexture: THREE.CanvasTexture | null = null
+let revealTexture: THREE.CanvasTexture | null = null
+
+function drawHatch(palette: Palette, angleDown: boolean): THREE.CanvasTexture | null {
   if (typeof document === 'undefined') return null
 
   const canvas = document.createElement('canvas')
-  canvas.width = SIZE
-  canvas.height = Math.round((SIZE * 9) / 16)
+  canvas.width = WIDTH
+  canvas.height = HEIGHT
 
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
 
-  // Base — the lighter of the two CSS hatch tones.
-  ctx.fillStyle = '#e8e5de'
+  ctx.fillStyle = palette.base
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-  // 45° stripes in the darker tone.
-  ctx.save()
-  ctx.strokeStyle = '#dedad1'
+  ctx.strokeStyle = palette.stripe
   ctx.lineWidth = STRIPE / 2
   ctx.beginPath()
   for (let x = -canvas.height; x < canvas.width + canvas.height; x += STRIPE) {
     ctx.moveTo(x, 0)
-    ctx.lineTo(x + canvas.height, canvas.height)
+    // The reveal leans the other way, so the swap is legible even between two
+    // hatches of similar density.
+    ctx.lineTo(angleDown ? x + canvas.height : x - canvas.height, canvas.height)
   }
   ctx.stroke()
-  ctx.restore()
 
   const texture = new THREE.CanvasTexture(canvas)
   // Drawn top-left like every canvas; flipY (the default) turns it the right
@@ -55,12 +65,22 @@ export function getPlaceholderPosterTexture(): THREE.CanvasTexture | null {
   texture.minFilter = THREE.LinearFilter
   texture.magFilter = THREE.LinearFilter
   texture.generateMipmaps = false
-
-  cached = texture
   return texture
 }
 
-export function disposePlaceholderPosterTexture() {
-  cached?.dispose()
-  cached = null
+export function getPlaceholderPosterTexture(): THREE.CanvasTexture | null {
+  posterTexture ??= drawHatch(POSTER, true)
+  return posterTexture
+}
+
+export function getPlaceholderRevealTexture(): THREE.CanvasTexture | null {
+  revealTexture ??= drawHatch(REVEAL, false)
+  return revealTexture
+}
+
+export function disposePlaceholderTextures() {
+  posterTexture?.dispose()
+  revealTexture?.dispose()
+  posterTexture = null
+  revealTexture = null
 }
