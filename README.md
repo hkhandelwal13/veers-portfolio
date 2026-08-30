@@ -89,21 +89,47 @@ Import the repo, add the same env vars, deploy. Nothing to do yet.
 The one architectural decision everything else hangs off (CLAUDE.md §2):
 **CSS owns layout; WebGL follows.**
 
-`components/providers/SmoothScrollProvider.tsx` holds the **only**
-`requestAnimationFrame` in the app. Each tick, in order:
+There is exactly one `requestAnimationFrame` in the app, and R3F owns it.
+`components/webgl/FrameDriver.tsx` registers an `addEffect` callback that runs
+`lib/frame-loop.ts`, which each frame does, in this order:
 
-1. Lenis advances smooth scroll and writes the offset to the DOM
-2. GSAP ScrollTrigger recomputes against that fresh offset
-3. R3F renders via `advance()`
+1. `lenis.raf()` — smooth scroll advances and writes the DOM
+2. `updateScrollBus()` — records what Lenis just produced, for this frame
+3. `commitPointerBus()` — eases the pointer, republishes its snapshot
 
-The `<Canvas>` is mounted `frameloop="never"` precisely so it has no loop of its
-own. Because step 3 runs after 1–2 *in the same frame*, the 3D layer always reads
-the scroll position the DOM was just painted at — so WebGL can never lag a frame
-behind the elements it tracks. **Never add a second rAF or a second Lenis
-instance** (use `getLenis()`); that's what breaks the sync.
+R3F then walks its `useFrame` subscribers and renders. `addEffect` fires before
+any subscriber and before `gl.render`, so the order within a frame is:
+
+```
+addEffect      lenis.raf → ScrollBus → PointerBus
+useFrame(-3)   RectSampler refreshes DOM rects
+useFrame(0)    meshes consume those rects
+gl.render      the frame is drawn
+```
+
+That ordering is the whole point. With Lenis and R3F each owning their own rAF,
+R3F could run first and read *last* frame's scroll while the DOM had already
+moved — a one-frame slip that no amount of interpolation tuning fixes, because
+the cause is execution order. Measured on this build: at ~9000px/s the model
+stays within **2.7px** of its DOM rect, and the residual alternates with scroll
+direction rather than accumulating, so it is measurement quantisation rather
+than lag.
+
+**Never add a second rAF or a second Lenis instance** (use `getLenis()`).
+
+**The fallback matters.** The canvas is a dynamic, client-only import and may
+never mount — no WebGL, a failed chunk, an old device. Lenis runs with
+`autoRaf: false`, so an unticked Lenis is a page that cannot scroll at all.
+`SmoothScrollProvider` therefore starts a fallback rAF that drives the same
+`runFrame`, and `claimFrameLoop()` / `releaseFrameLoop()` make sure exactly one
+driver is live at a time. Verified by stubbing out `getContext('webgl')`:
+scrolling still works and the CSS poster fallback comes back.
 
 Per-frame code is deliberately imperative — mutate refs in `useFrame`, read
-scroll from `lib/scroll-store.ts`. Don't put per-frame values in React state.
+`getScrollSnapshot()` and `pointer` directly. Don't put per-frame values in
+React state. React reads the buses only through `lib/use-scroll.ts`, and only
+where scroll genuinely changes DOM output (the nav's scrolled state uses
+`useScrollFlag`, which returns a boolean so React bails out until it flips).
 
 ---
 
@@ -122,11 +148,72 @@ components/
 lib/
   lenis.ts  scroll-store.ts  r2.ts  sanity/
 sanity/     schema, structure, env
-shaders/    (Phase 4)
+shaders/    dom-sync.ts (glass + dot-matrix are Phase 4)
 public/     models/*.glb, fonts/
 ```
 
 ---
+
+## Status — Phase 3 (DOM ↔ WebGL foundation) complete
+
+Built fresh from the method described in `design/haoqi-article.md` and the
+public sources it credits (Lenis host-raf; JOYCO WebGL Scroll Sync), per
+PHASE3_KICKOFF.md.
+
+| System | Where |
+| --- | --- |
+| ScrollBus — one snapshot per frame | `lib/scroll-bus.ts` |
+| PointerBus — one 0–1 UV, `inside` flag, recentres | `lib/pointer-bus.ts` |
+| The single frame loop + fallback | `lib/frame-loop.ts` |
+| DomTargetRectSampler | `lib/rect-sampler.ts` |
+| R3F driver / sampler runner | `components/webgl/FrameDriver.tsx`, `RectSampler.tsx` |
+| `uRect` card mirroring | `components/webgl/CardMirror.tsx`, `shaders/dom-sync.ts` |
+| `hello` seated in its DOM rect | `components/webgl/HeroHello.tsx` |
+
+**The rect cache.** Measuring every registered element every frame means a
+forced synchronous layout per element, so the sampler keeps a cache three ways:
+every rect is shifted by the frame's scroll delta (scrolling moves them all by
+exactly the same amount); targets near the viewport are re-measured every frame
+anyway; distant ones refresh every ~12 frames, staggered by index so they never
+bunch onto one frame. Nothing touches React state.
+
+**Verified in the browser**, not just by reading the code:
+
+- Model seated at **720 × 360 @ x360 y300** on desktop, in flow at 350 × 180 on
+  mobile; card boxes measure **628 × 353** at 1440 — the wireframe's hard spec.
+- Scroll lock: worst slip **2.7px** at ~9000px/s, non-accumulating.
+- Cards mirrored at 1440 / 768 / 390, with zero pixel variance immediately
+  outside each box — the `inside` mask clips correctly and the Y-flip is right.
+- Pointer parallax swings the model **33px**; it settles to within **1.1px** of
+  centre on pointer-leave and **1.5px** on window blur.
+- Under `prefers-reduced-motion` the model's centroid is *identical* to two
+  decimal places across every pointer position — it sits exactly on its seat
+  with no float and no parallax.
+
+### Checking alignment yourself
+
+Append `?webgl=debug` to any page (e.g. `/?webgl=debug`) to outline every
+`data-webgl` rect. The outline is drawn with `outline`, not `border`, and has no
+fill, so it adds no box size and cannot tint what it is measuring.
+
+### Not built yet, by design
+
+No glass, stickers, dot-matrix, curl, or post-processing — all Phase 4. `hello`
+still wears its baked `water_material3`, and the mirrored cards sample a flat
+placeholder poster texture (Phase 5 swaps in the real poster from Sanity; the
+mirroring code does not care which texture it samples).
+
+Two deliberate departures from the kickoff, both noted where they occur:
+
+- **GSAP is no longer in the loop.** Phase 1 drove the frame from
+  `gsap.ticker`; R3F drives it now, and leaving GSAP's ticker running would be
+  the second rAF CLAUDE.md §11 forbids. Nothing currently uses GSAP. When
+  Phase 4 adds timelines, wire them by removing `gsap.updateRoot` from
+  `gsap.ticker` and calling it from `runFrame` instead.
+- **No camera parallax.** `rectToWorld` already accounts for the camera's
+  position, so animating it is safe — but with the model glued to its rect, a
+  moving camera would move everything *except* the model, which is not the
+  effect the kickoff is after. Model parallax only.
 
 ## Status — Phase 2 (Static Layout) complete
 
@@ -199,6 +286,10 @@ slot. Phase 3 binds it to these rects.
   telemetry row (wireframe 1i), so an IntersectionObserver fades the HUD's
   bottom row out once the footer is in view. The top-left wordmark never
   hides — it's the home link.
+- **`lib/` stays free of three.js.** The buses, the frame loop and the rect
+  cache are plain modules, and `WebGLTarget` / `card-target-id` sit on the DOM
+  side of the bridge. `SmoothScrollProvider` renders on every page, so importing
+  the WebGL runtime there would defeat the dynamic canvas-only import.
 - **Chrome surface tokens.** Nav, HUD and footer mount above the route and
   can't see which surface a screen paints, so they read `--chrome-ink`,
   `--chrome-muted` and `--chrome-tint`. `<SurfaceTheme value="dark" />` sets

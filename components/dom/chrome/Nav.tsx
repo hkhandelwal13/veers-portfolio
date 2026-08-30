@@ -2,16 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useCallback, useState, useSyncExternalStore } from 'react'
+import { useCallback, useState } from 'react'
+import { useScrollFlag } from '@/lib/use-scroll'
 import { MobileMenu } from './MobileMenu'
 import styles from './Nav.module.css'
-
-/** Scroll position as an external store — the idiomatic way to read a browser
- *  API in React, and it gives a correct server snapshot for free. */
-function subscribeToScroll(onChange: () => void) {
-  window.addEventListener('scroll', onChange, { passive: true })
-  return () => window.removeEventListener('scroll', onChange)
-}
 
 export const NAV_LINKS = [
   { href: '/work', label: 'Work' },
@@ -32,12 +26,10 @@ export function Nav() {
   const [menuOpen, setMenuOpen] = useState(false)
   const closeMenu = useCallback(() => setMenuOpen(false), [])
 
-  // Read-only — Lenis owns the scroll loop, this just observes it.
-  const scrolled = useSyncExternalStore(
-    subscribeToScroll,
-    () => window.scrollY > 24,
-    () => false,
-  )
+  // Reads the ScrollBus, not window.scrollY — one scroll source for DOM and
+  // WebGL alike. A boolean means React bails out until the threshold flips,
+  // so this costs one render per state change, not one per frame.
+  const scrolled = useScrollFlag((s) => s.scrollTop > 24)
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`)
 

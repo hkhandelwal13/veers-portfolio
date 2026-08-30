@@ -7,8 +7,9 @@
    below that it drops into normal flow at the wireframe's tablet and mobile
    sizes (704 x 220, 350 x 180).
 
-   The dashed outline is the wireframe's own marking for these slots and is
-   development-only — `showMarker={false}` turns it off. */
+   The dashed outline is the wireframe's own marking for these slots. It is off
+   by default; `?webgl=debug` turns it on for every slot at once, which is how
+   you check that the canvas is drawing where the DOM says it should. */
 
 .slot {
   position: absolute;
@@ -29,6 +30,14 @@
   gap: var(--s2);
   text-align: center;
   padding: var(--s3);
+}
+
+/* Alignment overlay — see components/dom/WebGLDebug.tsx (?webgl=debug).
+   Outline, not border, so it adds no box size; and no fill, so it cannot tint
+   the very thing it is there to check. */
+:global(html[data-webgl-debug]) .slot {
+  outline: 1px dashed var(--accent);
+  outline-offset: -1px;
 }
 
 .label {
