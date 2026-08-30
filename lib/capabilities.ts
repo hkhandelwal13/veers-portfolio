@@ -109,3 +109,29 @@ export function getServerCapabilities(): Capabilities {
 export function canAnimateCardReveal(caps: Capabilities = current): boolean {
   return caps.hoverCapable
 }
+
+/**
+ * Develop-on-enter: cards fade up from a negative as they come into view.
+ *
+ * Skipped entirely under reduced motion — unlike the hover reveal, nothing is
+ * withheld by skipping it, since the end state is the same poster either way.
+ * Kept on small screens: it costs one mix in the fragment shader, and the
+ * mobile budget's "static posters" is about not playing video, not about
+ * refusing a fade.
+ */
+export function canDevelopOnEnter(caps: Capabilities = current): boolean {
+  return !caps.reducedMotion
+}
+
+/**
+ * Scroll-velocity curl: cards flex slightly with scroll speed.
+ *
+ * Off under reduced motion — it is motion tied to motion, the most likely of
+ * these effects to provoke discomfort. Off on small screens too: touch
+ * scrolling is fast and flingy, so the curl reads as wobble rather than
+ * momentum, and this is exactly the kind of ornament the mobile budget exists
+ * to drop.
+ */
+export function canCurlOnScroll(caps: Capabilities = current): boolean {
+  return !caps.reducedMotion && !caps.compact
+}

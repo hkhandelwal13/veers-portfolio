@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { AdaptiveDpr, Environment, Lightformer, Preload } from '@react-three/drei'
 import { CardMirrors } from './CardMirrors'
+import { DebugSignals } from './DebugSignals'
 import { FrameDriver } from './FrameDriver'
 import { HeroHello } from './HeroHello'
 import { RectSampler } from './RectSampler'
@@ -35,6 +36,7 @@ export default function Scene() {
           them at the default priority. */}
       <FrameDriver />
       <RectSampler />
+      <DebugSignals />
 
       <ambientLight intensity={0.6} />
       <directionalLight position={[3, 4, 5]} intensity={2.2} />

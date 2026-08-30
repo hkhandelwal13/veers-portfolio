@@ -4,9 +4,10 @@
  * Everything time-based in the app advances here, in a fixed order, once per
  * frame (CLAUDE.md §2, §11):
  *
- *   1. lenis.raf()      — smooth scroll advances and writes the DOM
- *   2. updateScrollBus  — records what Lenis just produced, for this frame
- *   3. commitPointerBus — eases the pointer and republishes its snapshot
+ *   1. lenis.raf()          — smooth scroll advances and writes the DOM
+ *   2. updateScrollBus      — records what Lenis just produced, for this frame
+ *   3. updateScrollActivity — smooths that into the 0..1 speed signal
+ *   4. commitPointerBus     — eases the pointer, republishes its snapshot
  *
  * WebGL then renders later in the same frame, reading the snapshot from step 2.
  * That ordering is the whole point: it is what removes the one-frame slip you
@@ -25,6 +26,7 @@
 
 import { getLenis } from './lenis'
 import { commitPointerBus } from './pointer-bus'
+import { updateScrollActivity } from './scroll-activity'
 import { updateScrollBus } from './scroll-bus'
 
 let lastTimeMs = 0
@@ -48,7 +50,11 @@ export function runFrame(timeMs: number) {
   // Read straight after raf() rather than binding lenis.on('scroll'): the event
   // only fires when the offset actually changes, and the bus also wants a
   // reading on the frames where it did not.
-  updateScrollBus(lenis)
+  const scroll = updateScrollBus(lenis)
+
+  // Derived here, once, so every consumer of the curl reads the same number
+  // for the same frame.
+  updateScrollActivity(scroll, deltaSeconds)
 
   commitPointerBus(deltaSeconds)
 }
