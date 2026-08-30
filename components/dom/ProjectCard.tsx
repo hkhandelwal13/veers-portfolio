@@ -1,49 +1,72 @@
+'use client'
+
 import Link from 'next/link'
+import { useEffect } from 'react'
 import type { PlaceholderProject } from '@/lib/placeholder-content'
 import { CARD_TARGET_PREFIX } from '@/components/webgl/card-target-id'
+import { clearHoverIntent, setHoverIntent } from '@/lib/hover-bus'
 import { WebGLTarget } from './WebGLTarget'
 import styles from './ProjectCard.module.css'
 
 /**
- * Work card — wireframe 1c.
- *
- * Phase 2 builds both states structurally: the default poster frame, and the
- * hover overlay (badge + title + role + view affordance) that the preview loop
- * will play behind in Phase 4. No video and no reveal yet.
- *
- * `forceOverlay` renders the hover state statically, which the work grid uses
- * so the design is reviewable without a pointer.
+ * Work card — wireframe 1c, with the Phase 4 dot-matrix hover reveal.
  *
  * The poster frame is a WebGL target: it stays transparent and the canvas draws
  * the poster behind it, aligned to this element's rect. CSS keeps owning the
  * grid, the ratio and the gap — see components/webgl/CardMirror.tsx.
+ *
+ * Hover and focus are pushed to the hover bus rather than React state: the
+ * reveal is drawn on the GPU, so re-rendering the grid on every pointer cross
+ * would buy nothing. Focus is wired alongside hover so the reveal is never
+ * mouse-only.
+ *
+ * `forceReveal` holds a card open, which the work grid uses to show the default
+ * and revealed states side by side, exactly as the wireframe presents them.
  */
 export function ProjectCard({
   project,
-  forceOverlay = false,
+  forceReveal = false,
 }: {
   project: PlaceholderProject
-  forceOverlay?: boolean
+  forceReveal?: boolean
 }) {
+  const targetId = `${CARD_TARGET_PREFIX}${project.slug}`
+
+  useEffect(() => {
+    if (forceReveal) setHoverIntent(targetId, true)
+    return () => clearHoverIntent(targetId)
+  }, [targetId, forceReveal])
+
+  const open = () => {
+    if (!forceReveal) setHoverIntent(targetId, true)
+  }
+  const close = () => {
+    if (!forceReveal) setHoverIntent(targetId, false)
+  }
+
   return (
     <article className={styles.card}>
-      <Link href={`/work/${project.slug}`} className={styles.link}>
-        <WebGLTarget
-          targetId={`${CARD_TARGET_PREFIX}${project.slug}`}
-          className={styles.poster}
-        >
+      <Link
+        href={`/work/${project.slug}`}
+        className={styles.link}
+        onPointerEnter={open}
+        onPointerLeave={close}
+        onFocus={open}
+        onBlur={close}
+      >
+        <WebGLTarget targetId={targetId} className={styles.poster}>
           <span className={styles.posterLabel} aria-hidden="true">
             Poster 16:9
           </span>
 
+          {/* Metadata only. The imagery underneath it is the WebGL reveal, so
+              this layer must not paint over the card — just a scrim strong
+              enough to keep the text legible. */}
           <div
             className={styles.overlay}
-            style={forceOverlay ? { opacity: 1 } : undefined}
+            style={forceReveal ? { opacity: 1 } : undefined}
             aria-hidden="true"
           >
-            {/* Phase 4 replaces this fill with the muted R2 preview loop. */}
-            <div className={styles.overlayFill}>Preview loop</div>
-
             {project.categories[0] && (
               <span className={styles.badge}>{project.categories[0]}</span>
             )}

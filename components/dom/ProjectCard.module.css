@@ -48,13 +48,20 @@
 }
 
 /* --- Hover overlay ---------------------------------------------------------
-   Dark panel carrying the category badge, title, role and a view affordance.
-   Revealed on hover and on keyboard focus, so it is never mouse-only. */
+   Metadata only: the badge, title, role and view affordance. The imagery it
+   sits on is the WebGL dot-matrix reveal, so this layer is a bottom scrim
+   rather than a panel — an opaque background here would hide the very effect
+   it belongs to. Shown on hover and on keyboard focus, never mouse-only. */
 .overlay {
   position: absolute;
   inset: 0;
-  background: var(--dark-bg);
   color: var(--on-dark);
+  background: linear-gradient(
+    to top,
+    rgb(22 22 26 / 0.78) 0%,
+    rgb(22 22 26 / 0.34) 34%,
+    rgb(22 22 26 / 0) 62%
+  );
   opacity: 0;
   transition: opacity var(--dur-med) var(--ease-out);
 }
@@ -62,25 +69,6 @@
 .link:hover .overlay,
 .link:focus-visible .overlay {
   opacity: 1;
-}
-
-/* Stands in for the preview loop until Phase 4. */
-.overlayFill {
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    45deg,
-    var(--dark-surface-2) 0 6px,
-    var(--dark-surface) 6px 12px
-  );
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: var(--fs-label);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--on-dark-muted);
 }
 
 .badge {
