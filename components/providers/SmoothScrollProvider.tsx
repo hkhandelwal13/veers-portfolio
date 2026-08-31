@@ -7,6 +7,7 @@ import { attachPointerBus } from '@/lib/pointer-bus'
 import { watchCapabilities } from '@/lib/capabilities'
 import { enableFrameLoopFallback } from '@/lib/frame-loop'
 import { invalidateRects } from '@/lib/rect-sampler'
+import { attachThemeShortcut, initTheme } from '@/lib/theme'
 
 /**
  * Owns the Lenis instance and the pointer listeners — but not the frame loop.
@@ -31,6 +32,11 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
     // effect stays off rather than flashing on before we know the device.
     const unwatchCapabilities = watchCapabilities()
     const disableFallback = enableFrameLoopFallback()
+    // Adopts whatever the head's bootstrap script already painted with, and
+    // mirrors it into lib/surface for the shaders. Registered here, once, so
+    // the two <ThemeToggle>s don't each bind the A shortcut.
+    initTheme()
+    const detachThemeShortcut = attachThemeShortcut()
 
     // Anything that reflows the page invalidates every cached rect. Lenis
     // recalculates its own dimensions on resize; this covers the WebGL side.
@@ -43,6 +49,7 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
     return () => {
       window.removeEventListener('resize', onResize)
       window.removeEventListener('orientationchange', onResize)
+      detachThemeShortcut()
       disableFallback()
       unwatchCapabilities()
       detachPointer()

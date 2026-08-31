@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
+import Script from 'next/script'
 import { SmoothScrollProvider } from '@/components/providers/SmoothScrollProvider'
 import { WebGLCanvas } from '@/components/webgl/WebGLCanvas'
+import { DEFAULT_THEME, themeBootstrapScript } from '@/lib/theme'
 import './globals.css'
 
 /**
@@ -37,13 +39,30 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#e7e4dd',
+  // The default theme's ground. The toggle rewrites this tag's content, so the
+  // browser chrome follows the page instead of pinning to one palette.
+  themeColor: DEFAULT_THEME === 'dark' ? '#0a1038' : '#cbe2f5',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${tiktokSans.variable} ${spaceMono.variable}`}>
+    // The bootstrap script below writes data-theme onto this element before
+    // React hydrates, which is exactly the mismatch this suppresses.
+    <html
+      lang="en"
+      className={`${tiktokSans.variable} ${spaceMono.variable}`}
+      suppressHydrationWarning
+    >
       <body>
+        {/* Runs before first paint. Reading the stored theme in an effect
+            instead would paint the default first and swap after hydration — a
+            full-page flash on every load for anyone on the non-default.
+            next/script rather than a bare <script>: React 19 warns on inline
+            script elements it sees during a client render, and this one is in
+            the layout, which is part of every render. */}
+        <Script id="theme-bootstrap" strategy="beforeInteractive">
+          {themeBootstrapScript}
+        </Script>
         {/* Mounted once, outside the route tree, so it survives navigation —
             Phase 4's page transitions depend on that. */}
         <WebGLCanvas />

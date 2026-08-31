@@ -1,0 +1,12 @@
+.stage {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-route);
+  pointer-events: none;
+}
+
+.sheet {
+  --dm-color: var(--bg);
+  --dm-grow: 260ms;
+  --dm-stagger: 360ms;
+}

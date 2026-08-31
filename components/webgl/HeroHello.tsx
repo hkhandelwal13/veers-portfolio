@@ -16,6 +16,7 @@ import {
 } from '@/lib/capabilities'
 import { createRingLight } from '@/lib/ring-light'
 import { isSurfaceDark } from '@/lib/surface'
+import { getServerTheme, getTheme, subscribeToTheme } from '@/lib/theme'
 import { glassFragmentShader, glassVertexShader } from '@/shaders/glass'
 import { glassPasses } from './glass-passes'
 import { LAYER_GLASS } from './layers'
@@ -56,6 +57,9 @@ function createGlassUniforms() {
     uRimColor: { value: new THREE.Color('#FFF4DC') },
     uRimPower: { value: 2.6 },
     uRimStrength: { value: 0.7 },
+    // Tight and bright: the streak along the top of each stroke.
+    uSpecPower: { value: 48 },
+    uSpecStrength: { value: 1.15 },
     uLightDirection: { value: new THREE.Vector3(0.4, 0.9, 0.6) },
   }
 }
@@ -214,6 +218,9 @@ export function HeroHello() {
     getServerCapabilities,
   )
   const glass = canRenderGlass(caps)
+  // The fallback has no refraction to tint, so its body colour is the only
+  // thing carrying the theme. Same two brand blues the shader mixes between.
+  const theme = useSyncExternalStore(subscribeToTheme, getTheme, getServerTheme)
 
   return (
     <group ref={outer} visible={false}>
@@ -227,7 +234,11 @@ export function HeroHello() {
             />
           ) : (
             // Small-screen fallback: no second scene render, no refraction.
-            <meshStandardMaterial color="#8EBFE8" roughness={0.25} metalness={0.1} />
+            <meshStandardMaterial
+              color={theme === 'dark' ? '#4E76D0' : '#8EBFE8'}
+              roughness={0.25}
+              metalness={0.1}
+            />
           )}
         </mesh>
       </group>

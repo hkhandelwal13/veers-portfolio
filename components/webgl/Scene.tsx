@@ -63,9 +63,9 @@ export default function Scene() {
             preset, so nothing is fetched from a CDN at runtime. */}
         <Environment resolution={256}>
           <Lightformer intensity={2} position={[0, 3, 4]} scale={[8, 3, 1]} color="#f4f2ed" />
-          <Lightformer intensity={1.4} position={[-4, 0, 2]} scale={[3, 6, 1]} color="#e7e4dd" />
+          <Lightformer intensity={1.4} position={[-4, 0, 2]} scale={[3, 6, 1]} color="#e4f0fa" />
           <Lightformer intensity={1} position={[4, -1, 2]} scale={[3, 6, 1]} color="#b8e614" />
-          <Lightformer intensity={0.6} position={[0, -3, -3]} scale={[8, 3, 1]} color="#16161a" />
+          <Lightformer intensity={0.6} position={[0, -3, -3]} scale={[8, 3, 1]} color="#16205c" />
         </Environment>
 
         <Preload all />

@@ -56,6 +56,9 @@ uniform vec3 uTintSecondary;   // blended in along the word's height
 uniform float uTintAmount;
 uniform float uDark;           // 0 = light theme, 1 = dark
 
+uniform float uSpecPower;      // Blinn-Phong exponent — higher is tighter
+uniform float uSpecStrength;
+
 uniform float uHighlightOnly;  // 1 = output just the specular, for the flare pass
 uniform vec3 uRimColor;
 uniform float uRimPower;
@@ -73,6 +76,11 @@ varying float vGradient;
  * a light ground, but on a dark one it only ever subtracts from an already dark
  * image and the glass goes muddy. Hard Light lifts the colour instead, which is
  * an art-direction decision rather than a second physical model.
+ *
+ * It only works if there is something behind the glass to lift. Every channel
+ * of the tint below 0.5 *multiplies* the scene, so against a near-black page
+ * the result is a flat slab of whichever channel survives. That is why the dark
+ * theme's ground is a deep blue and not near-black — see globals.css.
  */
 vec3 hardLight(vec3 base, vec3 blend) {
   vec3 low = 2.0 * base * blend;
@@ -81,9 +89,15 @@ vec3 hardLight(vec3 base, vec3 blend) {
 }
 
 vec3 applyTint(vec3 color, float thickness) {
-  vec3 body = mix(uTintLight, uTintDark, clamp(uDark, 0.0, 1.0));
-  // Two tints down the word's height, so the body has some variation in it.
-  vec3 tint = clamp(mix(uTintSecondary, body, vGradient), 0.001, 1.0);
+  float dark = clamp(uDark, 0.0, 1.0);
+
+  // The two ends of the height gradient swap with the theme, so the word keeps
+  // a hue shift down its body either way. Light runs pale-over-deep; dark runs
+  // deep-over-pale, which is the direction that keeps the top edge legible
+  // against the page rather than dissolving into it.
+  vec3 body = mix(uTintLight, uTintDark, dark);
+  vec3 secondary = mix(uTintSecondary, uTintLight, dark);
+  vec3 tint = clamp(mix(secondary, body, vGradient), 0.001, 1.0);
   float amount = clamp(uTintAmount, 0.0, 1.0);
 
   // Light: what survives transmission through the body, Beer-Lambert style.
@@ -95,7 +109,7 @@ vec3 applyTint(vec3 color, float thickness) {
   // Dark: lift rather than absorb.
   vec3 lifted = mix(color, hardLight(clamp(color, 0.0, 1.0), tint), amount);
 
-  return mix(beer, lifted, clamp(uDark, 0.0, 1.0));
+  return mix(beer, lifted, dark);
 }
 
 /** Samples the scene behind the glass along one refracted direction. */
@@ -134,7 +148,14 @@ void main() {
   float facing = clamp(dot(normal, normalize(uLightDirection)), 0.0, 1.0);
   float rim = fresnel * pow(facing, 2.0) * uRimStrength;
 
-  vec3 highlight = uRimColor * rim;
+  // Blinn-Phong specular from the same ring light. The Fresnel rim above is
+  // broad by nature — it follows the whole silhouette — and broad is what makes
+  // glass read as matte plastic. This is the tight, bright streak that runs
+  // along the top of each stroke and says "polished".
+  vec3 halfway = normalize(normalize(uLightDirection) - viewDir);
+  float specular = pow(clamp(dot(normal, halfway), 0.0, 1.0), uSpecPower) * uSpecStrength;
+
+  vec3 highlight = uRimColor * (rim + specular);
 
   color += highlight;
   // A little plain Fresnel keeps the whole edge alive, not just the lit side.
