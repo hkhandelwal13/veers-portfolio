@@ -14,6 +14,8 @@ import {
   getServerCapabilities,
   subscribeToCapabilities,
 } from '@/lib/capabilities'
+import { getHeroObjectDissolve, getHeroProgress } from '@/lib/hero-progress'
+import { RIPPLE_LIFE, rippleAges, rippleCenters } from '@/lib/ripple'
 import { createRingLight } from '@/lib/ring-light'
 import { isSurfaceDark } from '@/lib/surface'
 import { getServerTheme, getTheme, subscribeToTheme } from '@/lib/theme'
@@ -32,6 +34,17 @@ export const HERO_TARGET_ID = 'hero-hello'
  * strict contain leaves it looking like a small object in a large box.
  */
 const HERO_FILL = 1.3
+
+/**
+ * The exit, driven by lib/hero-progress.
+ *
+ * The word does not simply leave with the scroll — it recedes and turns as it
+ * goes, so the section arriving underneath reads as taking over rather than as
+ * covering something up.
+ */
+const EXIT_SHRINK = 0.62
+const EXIT_TUMBLE_Y = 2.1
+const EXIT_TUMBLE_X = 0.55
 
 /** Idle float, as a fraction of the seated height — small enough to read as breathing. */
 const FLOAT_AMPLITUDE = 0.02
@@ -70,6 +83,19 @@ function createGlassUniforms() {
     uSpecPower: { value: 48 },
     uSpecStrength: { value: 1.15 },
     uLightDirection: { value: new THREE.Vector3(0.4, 0.9, 0.6) },
+
+    // The pointer's wake. Amplitude is larger than the backdrop's because it
+    // is bending a refraction, not a pattern — the same displacement reads as
+    // much less movement once it has been through the glass.
+    uRippleCenter: { value: rippleCenters },
+    uRippleAge: { value: rippleAges },
+    uRippleLife: { value: RIPPLE_LIFE },
+    uRippleAmp: { value: 0.03 },
+    uWakeNormal: { value: 2.4 },
+    uAspect: { value: 1 },
+
+    uDissolve: { value: 0 },
+    uDotPx: { value: 14 },
   }
 }
 
@@ -163,6 +189,9 @@ export function HeroHello() {
     group.visible = true
     glassPasses.glassVisible = true
 
+    // Drives the whole exit: scale, rotation, and the dot dissolve below.
+    const progress = getHeroProgress()
+
     const seat = rectToWorld(rect, camera as THREE.PerspectiveCamera, state.size.width, height)
 
     // Contain, not cover: fit inside the box on both axes so the word is never
@@ -170,7 +199,7 @@ export function HeroHello() {
     const boxWidth = rect.width * seat.unitsPerPixel
     const boxHeight = rect.height * seat.unitsPerPixel
     const fit = Math.min(boxWidth / measured.size.x, boxHeight / measured.size.y)
-    group.scale.setScalar(fit * HERO_FILL)
+    group.scale.setScalar(fit * HERO_FILL * (1 - EXIT_SHRINK * progress))
 
     const caps = getCapabilities()
 
@@ -192,6 +221,8 @@ export function HeroHello() {
         state.size.height * state.viewport.dpr,
       )
       uniforms.uDark.value = isSurfaceDark() ? 1 : 0
+      uniforms.uAspect.value = state.size.width / Math.max(state.size.height, 1)
+      uniforms.uDissolve.value = getHeroObjectDissolve()
 
       // The rim light follows the pointer's angle only. Under reduced motion it
       // holds its resting angle rather than tracking.
@@ -203,7 +234,7 @@ export function HeroHello() {
 
     if (caps.reducedMotion) {
       group.position.set(seat.x, seat.y, 0)
-      group.rotation.set(0, 0, 0)
+      group.rotation.set(EXIT_TUMBLE_X * progress, EXIT_TUMBLE_Y * progress, 0)
       return
     }
 
@@ -211,8 +242,10 @@ export function HeroHello() {
     const float = Math.sin(t * 0.6) * boxHeight * FLOAT_AMPLITUDE
     group.position.set(seat.x, seat.y + float, 0)
 
-    const targetY = pointer.cx * TILT_Y
-    const targetX = pointer.cy * TILT_X
+    // Pointer parallax and the scroll tumble are added, not blended: the tilt
+    // stays responsive the whole way out instead of being taken over.
+    const targetY = pointer.cx * TILT_Y + EXIT_TUMBLE_Y * progress
+    const targetX = pointer.cy * TILT_X + EXIT_TUMBLE_X * progress
     group.rotation.y = THREE.MathUtils.damp(group.rotation.y, targetY, 5, delta)
     group.rotation.x = THREE.MathUtils.damp(group.rotation.x, targetX, 5, delta)
   })
@@ -240,6 +273,9 @@ export function HeroHello() {
               vertexShader={glassVertexShader}
               fragmentShader={glassFragmentShader}
               uniforms={initialUniforms}
+              // The dissolve writes alpha. Depth is still written, so stickers
+              // behind the word stay occluded while it is solid.
+              transparent
             />
           ) : (
             // Small-screen fallback: no second scene render, no refraction.

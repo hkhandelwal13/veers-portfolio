@@ -12,6 +12,8 @@ import {
   type StickerAtlas,
 } from '@/lib/sticker-atlas'
 import { getTargetRect } from '@/lib/rect-sampler'
+import { getHeroObjectDissolve, getHeroProgress } from '@/lib/hero-progress'
+import { RIPPLE_LIFE, rippleAges, rippleCenters } from '@/lib/ripple'
 import { getScrollSnapshot } from '@/lib/scroll-bus'
 import { stickerFragmentShader, stickerVertexShader } from '@/shaders/stickers'
 import { HERO_TARGET_ID } from './HeroHello'
@@ -88,7 +90,21 @@ export function Stickers() {
     return () => controller.abort()
   }, [])
 
-  const uniforms = useMemo(() => ({ uAtlas: { value: texture } }), [texture])
+  const uniforms = useMemo(
+    () => ({
+      uAtlas: { value: texture },
+      uFade: { value: 1 },
+      uDissolve: { value: 0 },
+      uDotPx: { value: 14 },
+      uRippleCenter: { value: rippleCenters },
+      uRippleAge: { value: rippleAges },
+      uRippleLife: { value: RIPPLE_LIFE },
+      uRippleAmp: { value: 0.02 },
+      uAspect: { value: 1 },
+      uRippleWorld: { value: new THREE.Vector2(1, 1) },
+    }),
+    [texture],
+  )
 
   // Deterministic layout: a fixed seed sequence rather than Math.random, so the
   // arrangement is the same on every load and a screenshot means something.
@@ -171,6 +187,22 @@ export function Stickers() {
     }
     mesh.visible = true
 
+    // --- Hero exit -----------------------------------------------------------
+    // Shrink and fade together, then dissolve into the same dot grid the
+    // background and the glass use.
+    const progress = getHeroProgress()
+    const material = mesh.material as THREE.ShaderMaterial
+    material.uniforms.uFade.value = 1 - progress * 0.85
+    material.uniforms.uDissolve.value = getHeroObjectDissolve()
+    material.uniforms.uAspect.value = state.size.width / Math.max(state.size.height, 1)
+    // The wake is a UV displacement; stickers move in world units, so it is
+    // converted through the same scale that maps the viewport at this depth.
+    material.uniforms.uRippleWorld.value.set(
+      bandWidth * 2.2,
+      bandHeight * 2.2,
+    )
+    const exitScale = 1 - 0.55 * progress
+
     const step = delta / FALL_SECONDS
     for (let i = 0; i < particles.length; i++) {
       const particle = particles[i]
@@ -188,7 +220,7 @@ export function Stickers() {
         particle.z,
       )
       dummy.rotation.set(0, 0, particle.rotation)
-      const size = particle.scale * bandWidth * depthScale
+      const size = particle.scale * bandWidth * depthScale * exitScale
       const aspect = atlas.stickers[particle.sticker].aspect
       dummy.scale.set(size * aspect, size, 1)
       dummy.updateMatrix()

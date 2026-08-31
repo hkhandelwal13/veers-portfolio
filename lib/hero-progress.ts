@@ -1,0 +1,43 @@
+/**
+ * How far the hero has been scrolled away — 0 at rest, 1 once it is gone.
+ *
+ * One number drives the whole exit choreography: the word shrinks and turns on
+ * it, the stickers shrink and fade on it, and the background dissolves into a
+ * dot matrix on it. Deriving it in one place is what keeps those three moving
+ * as one gesture rather than three animations that happen to overlap.
+ *
+ * A derived read rather than a stored value, so it needs no place in the frame
+ * order: the ScrollBus was already written this frame (frame-loop step 2), and
+ * everything below runs later. Any two callers in the same frame get the same
+ * answer by construction.
+ *
+ * It assumes the hero sits at the top of the document, which it does — the
+ * only screen with one is the home page. Consumers all bail when the hero's
+ * rect is absent, so the value is never read anywhere it would be wrong.
+ */
+
+import { getScrollSnapshot } from './scroll-bus'
+
+/** Scroll distance the exit is spread over, as a share of the viewport. */
+const TRAVEL = 0.95
+
+/**
+ * The objects lag the ground.
+ *
+ * The background starts turning immediately, but the word and the stickers hold
+ * their shape for the first quarter of the travel and then break up. Dissolving
+ * everything on the same curve means the word is already gone by the time there
+ * is enough of a dot field to see it dissolve into.
+ */
+export function getHeroObjectDissolve(): number {
+  const p = getHeroProgress()
+  const t = (p - 0.28) / 0.72
+  return t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t)
+}
+
+export function getHeroProgress(): number {
+  const { scrollTop, viewportHeight } = getScrollSnapshot()
+  if (viewportHeight <= 0) return 0
+  const raw = scrollTop / (viewportHeight * TRAVEL)
+  return raw <= 0 ? 0 : raw >= 1 ? 1 : raw
+}

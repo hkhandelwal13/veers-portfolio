@@ -1,5 +1,11 @@
 /* Home / hero — wireframe 1b (1440 x 900). */
 
+.fieldTarget {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 .hero {
   position: relative;
   z-index: var(--z-content);
@@ -117,7 +123,13 @@
   /* Below desktop the wireframe stacks the hero: reserved 3D block, then copy,
      then the CTA. The section becomes a flow container so the slot — which
      drops out of absolute positioning at this breakpoint — lands in order. */
-  .hero {
+  .fieldTarget {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hero {
     min-height: 0;
     display: flex;
     flex-direction: column;

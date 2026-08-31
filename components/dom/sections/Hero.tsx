@@ -1,4 +1,5 @@
 import { WebGLSlot } from '@/components/dom/WebGLSlot'
+import { WebGLTarget } from '@/components/dom/WebGLTarget'
 import { SITE } from '@/lib/placeholder-content'
 import styles from './Hero.module.css'
 import { Scramble } from '@/components/dom/Scramble'
@@ -13,6 +14,9 @@ import { Scramble } from '@/components/dom/Scramble'
 export function Hero() {
   return (
     <section className={styles.hero} aria-labelledby="hero-heading">
+      {/* The WebGL ground is seated on this, not on the viewport, so it scrolls
+          away with the section instead of covering whatever comes next. */}
+      <WebGLTarget targetId="hero-field" className={styles.fieldTarget} aria-hidden="true" />
       {/* Reserved for the 3D "hello" — 720x360 @ 360,300 on the 1440x900
           frame. Positioned against the full-bleed section, not the padded
           content frame, so the percentages resolve against the whole viewport

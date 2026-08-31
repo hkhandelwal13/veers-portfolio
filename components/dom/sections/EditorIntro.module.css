@@ -1,0 +1,136 @@
+.section {
+  position: relative;
+  z-index: var(--z-content);
+  background: var(--section-ground);
+  color: var(--section-ink);
+  padding: var(--s9) var(--margin);
+  /* Tall enough that it is the whole screen once the hero has gone, which is
+     what lets the ground change read as a scene change. */
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+}
+
+.inner {
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: var(--s9);
+  align-items: center;
+}
+
+.portrait {
+  position: relative;
+  margin: 0;
+}
+
+.portraitFill {
+  aspect-ratio: 4 / 5;
+  border: 1px solid color-mix(in srgb, var(--section-ink) 22%, transparent);
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--section-ink) 5%, transparent) 0 6px,
+    transparent 6px 12px
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.portraitLabel {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--section-muted);
+}
+
+/* The handwritten mark over the corner of the frame, as in the reference. */
+.signature {
+  position: absolute;
+  top: calc(var(--s7) * -1);
+  left: calc(var(--s5) * -1);
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 1.4rem + 4vw, 4rem);
+  font-weight: 300;
+  font-style: italic;
+  letter-spacing: -0.04em;
+  color: var(--accent-2);
+  pointer-events: none;
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--hud-tracking);
+  text-transform: uppercase;
+  color: var(--section-muted);
+}
+
+.lead {
+  font-family: var(--font-display);
+  font-size: var(--fs-h1);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-display);
+  font-weight: 500;
+  max-width: 22ch;
+  text-wrap: balance;
+}
+
+.body {
+  font-size: var(--fs-body-l);
+  line-height: var(--lh-body);
+  color: var(--section-muted);
+  max-width: 46ch;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s7);
+  margin-top: var(--s4);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.fact dt {
+  color: var(--section-muted);
+}
+
+@media (max-width: 1024px) {
+  .inner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s8);
+  }
+
+  .portrait {
+    max-width: 420px;
+  }
+}
+
+@media (max-width: 640px) {
+  .section {
+    padding-block: var(--s8);
+  }
+
+  .signature {
+    top: calc(var(--s6) * -1);
+    left: 0;
+  }
+}

@@ -6,6 +6,7 @@ import { AdaptiveDpr, Environment, Lightformer, Preload } from '@react-three/dre
 import { CardMirrors } from './CardMirrors'
 import { DebugSignals } from './DebugSignals'
 import { FrameDriver } from './FrameDriver'
+import { HeroField } from './HeroField'
 import { HeroHello } from './HeroHello'
 import { RectSampler } from './RectSampler'
 import { RefractionPass } from './RefractionPass'
@@ -54,7 +55,10 @@ export default function Scene() {
 
       <Suspense fallback={null}>
         {/* Behind the glass and on the content layer, so the refraction pass
-            captures them — that is what gives the dispersion something to bend. */}
+            captures them — that is what gives the dispersion something to bend.
+            The field is also the first hero reader each frame, so it advances
+            the pointer wake the other two sample. */}
+        <HeroField />
         <Stickers />
         <HeroHello />
         <StarFlare />
