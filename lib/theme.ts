@@ -42,7 +42,7 @@ export const themeBootstrapScript = `
 `
 
 /** Browser UI chrome (address bar, PWA surround) follows the page ground. */
-const THEME_COLOR: Record<Theme, string> = { light: '#e7e4dd', dark: '#121216' }
+const THEME_COLOR: Record<Theme, string> = { light: '#cbe2f5', dark: '#0a1038' }
 
 function apply(theme: Theme) {
   current = theme

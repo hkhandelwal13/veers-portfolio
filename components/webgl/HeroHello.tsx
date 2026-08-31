@@ -53,14 +53,13 @@ function createGlassUniforms() {
     uLocalYRange: { value: new THREE.Vector2(0, 1) },
     uTintAmount: { value: 0.8 },
     uDark: { value: 0 },
-    // Dark-theme only. The glow gives the body depth against a near-black page;
-    // the edge multiplier lets the specular carry the letterforms there.
-    uDarkGlow: { value: 0.19 },
-    uDarkEdge: { value: 2.4 },
     uHighlightOnly: { value: 0 },
     uRimColor: { value: new THREE.Color('#FFF4DC') },
     uRimPower: { value: 2.6 },
     uRimStrength: { value: 0.7 },
+    // Tight and bright: the streak along the top of each stroke.
+    uSpecPower: { value: 48 },
+    uSpecStrength: { value: 1.15 },
     uLightDirection: { value: new THREE.Vector3(0.4, 0.9, 0.6) },
   }
 }

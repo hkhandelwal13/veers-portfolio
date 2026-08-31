@@ -56,8 +56,8 @@ uniform vec3 uTintSecondary;   // blended in along the word's height
 uniform float uTintAmount;
 uniform float uDark;           // 0 = light theme, 1 = dark
 
-uniform float uDarkGlow;       // dark theme: internal glow per unit thickness
-uniform float uDarkEdge;        // dark theme: multiplier on the Fresnel edge
+uniform float uSpecPower;      // Blinn-Phong exponent — higher is tighter
+uniform float uSpecStrength;
 
 uniform float uHighlightOnly;  // 1 = output just the specular, for the flare pass
 uniform vec3 uRimColor;
@@ -68,6 +68,25 @@ uniform vec3 uLightDirection;  // ring-constrained, driven by the PointerBus
 varying vec3 vWorldNormal;
 varying vec3 vViewDirection;
 varying float vGradient;
+
+/**
+ * Hard Light, used for the dark theme's tint.
+ *
+ * Beer-Lambert absorption is the physically-motivated choice and looks right on
+ * a light ground, but on a dark one it only ever subtracts from an already dark
+ * image and the glass goes muddy. Hard Light lifts the colour instead, which is
+ * an art-direction decision rather than a second physical model.
+ *
+ * It only works if there is something behind the glass to lift. Every channel
+ * of the tint below 0.5 *multiplies* the scene, so against a near-black page
+ * the result is a flat slab of whichever channel survives. That is why the dark
+ * theme's ground is a deep blue and not near-black — see globals.css.
+ */
+vec3 hardLight(vec3 base, vec3 blend) {
+  vec3 low = 2.0 * base * blend;
+  vec3 high = 1.0 - 2.0 * (1.0 - base) * (1.0 - blend);
+  return mix(low, high, step(vec3(0.5), blend));
+}
 
 vec3 applyTint(vec3 color, float thickness) {
   float dark = clamp(uDark, 0.0, 1.0);
@@ -87,20 +106,8 @@ vec3 applyTint(vec3 color, float thickness) {
   vec3 transmitted = pow(tint, vec3(max(thickness, 0.01)));
   vec3 beer = mix(color, color * transmitted, amount);
 
-  // Dark: absorption has nothing left to remove — the scene behind the glass is
-  // the near-black page — so it is replaced rather than inverted.
-  //
-  // Note this is NOT a Hard Light blend. Hard Light with a fixed tint as the
-  // blend layer collapses to very nearly a constant: every channel below 0.5
-  // multiplies an already-black scene to zero, and the survivors are whatever
-  // the tint happens to be. The word comes out as one flat slab of blue with
-  // the refraction, the dispersion and the stickers behind it all erased —
-  // paint, not glass. So: tint the little light that is there, then add an
-  // internal glow that grows with thickness. The scene's structure survives
-  // multiplication, and the depth cue comes from the body rather than from a
-  // blend mode.
-  vec3 tinted = color * mix(vec3(1.0), tint * 2.0, amount);
-  vec3 lifted = tinted + tint * uDarkGlow * clamp(thickness, 0.0, 2.0);
+  // Dark: lift rather than absorb.
+  vec3 lifted = mix(color, hardLight(clamp(color, 0.0, 1.0), tint), amount);
 
   return mix(beer, lifted, dark);
 }
@@ -141,19 +148,18 @@ void main() {
   float facing = clamp(dot(normal, normalize(uLightDirection)), 0.0, 1.0);
   float rim = fresnel * pow(facing, 2.0) * uRimStrength;
 
-  // On dark there is no transmitted colour to describe the letterforms, so the
-  // edges have to do it. Same specular, turned up.
-  float dark = clamp(uDark, 0.0, 1.0);
-  rim *= mix(1.0, uDarkEdge, dark);
+  // Blinn-Phong specular from the same ring light. The Fresnel rim above is
+  // broad by nature — it follows the whole silhouette — and broad is what makes
+  // glass read as matte plastic. This is the tight, bright streak that runs
+  // along the top of each stroke and says "polished".
+  vec3 halfway = normalize(normalize(uLightDirection) - viewDir);
+  float specular = pow(clamp(dot(normal, halfway), 0.0, 1.0), uSpecPower) * uSpecStrength;
 
-  vec3 highlight = uRimColor * rim;
+  vec3 highlight = uRimColor * (rim + specular);
 
   color += highlight;
   // A little plain Fresnel keeps the whole edge alive, not just the lit side.
-  // This one only follows uDarkEdge part of the way: it is warm white and it
-  // covers the whole silhouette, so turning it up as far as the directional rim
-  // washes the blue straight out of the body and the glass goes grey.
-  color += uRimColor * fresnel * 0.06 * mix(1.0, 1.0 + (uDarkEdge - 1.0) * 0.3, dark);
+  color += uRimColor * fresnel * 0.06;
 
   // The lens flare renders the glass a second time with this set, and keys off
   // the result. It has to be the specular alone: on a light page the glass body

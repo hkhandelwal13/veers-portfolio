@@ -51,7 +51,7 @@ export function RefractionPass() {
   // screen paints over it regardless of theme. Note that the choice below is
   // isPageSurfaceDark, not isSurfaceDark: in the dark theme --bg is already
   // dark, and reaching for the treatment there would clear a shade off.
-  const groundRef = useRef({ page: new THREE.Color('#e7e4dd'), pageDark: new THREE.Color('#16161a') })
+  const groundRef = useRef({ page: new THREE.Color('#cbe2f5'), pageDark: new THREE.Color('#0c1442') })
   const scratchColor = useRef(new THREE.Color())
 
   useEffect(() => {
@@ -82,9 +82,12 @@ export function RefractionPass() {
       uniforms: {
         uSource: { value: null as THREE.Texture | null },
         uTexel: { value: new THREE.Vector2(1, 1) },
-        uThreshold: { value: 0.62 },
+        // The specular is much hotter than it used to be, so the threshold has
+        // to be higher: at 0.62 the whole lit side of every stroke passed and
+        // the word grew a hedge of streaks instead of a few glints.
+        uThreshold: { value: 0.82 },
         uStreakScale: { value: 2.2 },
-        uIntensity: { value: 0.9 },
+        uIntensity: { value: 0.5 },
       },
       depthTest: false,
       depthWrite: false,

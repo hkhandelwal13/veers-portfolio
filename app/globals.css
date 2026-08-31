@@ -13,18 +13,22 @@
    ========================================================================== */
 
 :root {
-  /* --- Surfaces (light) --------------------------------------------------- */
-  --bg: #e7e4dd;         /* page background */
-  --surface: #f4f2ed;    /* cards / panels — the wireframe's screen ground */
-  --surface-2: #dedad1;
-  --surface-3: #e8e5de;  /* the hatch's lighter stripe */
-  --line: #c9c5bb;       /* hairlines / dividers */
-  --fill: #c0bcb2;       /* muted block fills */
+  /* --- Surfaces (light) ---------------------------------------------------
+     Sky-blue, not the warm greige the Phase 2 wireframes were drawn in. The
+     glass is the hero and it can only refract what is behind it: on a neutral
+     ground the Beer-Lambert tint has no blue to carry and the word reads as
+     grey plastic. Derived from Sky Blue #8EBFE8 (BRAND_TOKENS), tinted up. */
+  --bg: #cbe2f5;         /* page background */
+  --surface: #e4f0fa;    /* cards / panels */
+  --surface-2: #b9d6ee;
+  --surface-3: #c6dff3;  /* the hatch's lighter stripe */
+  --line: #9fc4e4;       /* hairlines / dividers */
+  --fill: #8ebfe8;       /* muted block fills — Sky Blue itself */
 
   /* --- Text ---------------------------------------------------------------- */
-  --ink: #16161a;
-  --muted: #5d5a52;
-  --muted-2: #8d8a82;
+  --ink: #0c1526;
+  --muted: #3c5a7a;
+  --muted-2: #5b7a9c;
 
   /* --- Accents ------------------------------------------------------------- */
   /* OPEN ITEM (kickoff §"Before you paste"): accent is still to be decided.
@@ -35,13 +39,15 @@
   --accent: #0047ff;     /* electric blue — system / reserved-3D / focus */
   --accent-2: #b8e614;   /* acid lime — hover / active */
 
-  /* --- Surfaces (dark — project detail / dark sections) -------------------- */
-  --dark-bg: #16161a;
-  --dark-surface: #232327;
-  --dark-surface-2: #2a2a2e;
-  --dark-line: #3a3a3e;
-  --on-dark: #f4f2ed;
-  --on-dark-muted: #8d8a82;
+  /* --- Surfaces (dark — project detail / dark sections) --------------------
+     The deep end of the same blue, so a dark section reads as the site going
+     under rather than as a different site. Derived from Ocean Blue #4E76D0. */
+  --dark-bg: #0c1442;
+  --dark-surface: #16205c;
+  --dark-surface-2: #1d2870;
+  --dark-line: #2b3888;
+  --on-dark: #eaf1fb;
+  --on-dark-muted: #8fa3d8;
 
   /* The mobile menu's ground. Semantic rather than a --dark-* value because it
      is an overlay: it has to sit clearly *above* the page in either theme, and
@@ -143,25 +149,32 @@
    ========================================================================== */
 
 [data-theme='dark'] {
-  --bg: #121216;
-  --surface: #1c1c20;
-  /* The hatch pair lifts well clear of --dark-surface: the card's reveal state
-     is that near-black panel, and poster and reveal have to stay legible
-     against each other. */
-  --surface-2: #35353b;
-  --surface-3: #3d3d44;
-  --line: #3a3a3e;
-  --fill: #4a4a52;
+  /* Deep Ocean Blue, not near-black.
+     This is the single most consequential value in the file. The glass tints
+     the *refracted scene*, and the dark path is a Hard Light blend: every
+     channel of the tint below 0.5 multiplies the scene, so against a near-black
+     ground the result collapses to a flat slab of whichever channel survives —
+     no refraction, no dispersion, no stickers. A deep blue gives the blend
+     something to lift, which is the state the reference art is in. */
+  --bg: #0a1038;
+  --surface: #131b52;
+  /* The hatch pair lifts clear of --dark-surface: the card's reveal state is
+     that deeper panel, and poster and reveal have to stay legible against
+     each other. */
+  --surface-2: #1d2870;
+  --surface-3: #24307e;
+  --line: #2b3888;
+  --fill: #3a49a0;
 
-  --ink: #f4f2ed;
-  --muted: #a5a29a;
-  --muted-2: #86837b;
+  --ink: #eaf1fb;
+  --muted: #a9bce6;
+  --muted-2: #7a8cc4;
 
-  /* Electric blue at #0047ff is 2.1:1 on this ground — too dim to serve as a
-     focus ring. Same hue, lifted. */
-  --accent: #6ea8ff;
+  /* Electric blue disappears into this ground; Sky Blue is the brand's own
+     light end and reads as a focus ring on it. */
+  --accent: #8ebfe8;
 
-  --menu-bg: #26262b;
+  --menu-bg: #16205c;
 
   color-scheme: dark;
 }

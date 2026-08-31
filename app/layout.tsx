@@ -41,7 +41,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   // The default theme's ground. The toggle rewrites this tag's content, so the
   // browser chrome follows the page instead of pinning to one palette.
-  themeColor: DEFAULT_THEME === 'dark' ? '#121216' : '#e7e4dd',
+  themeColor: DEFAULT_THEME === 'dark' ? '#0a1038' : '#cbe2f5',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
