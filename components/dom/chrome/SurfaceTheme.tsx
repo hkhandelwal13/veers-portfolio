@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { setSurfaceDark } from '@/lib/surface'
+import { setPageSurfaceDark } from '@/lib/surface'
 
 /**
  * Declares the surface the page chrome sits on.
@@ -18,12 +18,12 @@ export function SurfaceTheme({ value }: { value: 'light' | 'dark' }) {
     const previous = root.dataset.surface
     root.dataset.surface = value
     // The glass reads this per frame and cannot afford a DOM lookup.
-    setSurfaceDark(value === 'dark')
+    setPageSurfaceDark(value === 'dark')
 
     return () => {
       if (previous) root.dataset.surface = previous
       else delete root.dataset.surface
-      setSurfaceDark(previous === 'dark')
+      setPageSurfaceDark(previous === 'dark')
     }
   }, [value])
 

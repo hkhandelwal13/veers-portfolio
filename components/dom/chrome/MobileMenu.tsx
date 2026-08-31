@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react'
 import { SITE } from '@/lib/placeholder-content'
 import { getLenis } from '@/lib/lenis'
 import { NAV_LINKS } from './Nav'
+import { ThemeToggle } from './ThemeToggle'
 import styles from './MobileMenu.module.css'
 
 /**
@@ -130,7 +131,7 @@ export function MobileMenu({
       </div>
 
       <div className={styles.meta}>
-        <span>Theme[A]</span>
+        <ThemeToggle />
         <span>GMT+5:30</span>
       </div>
     </div>

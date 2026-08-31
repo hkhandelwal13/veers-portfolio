@@ -1,0 +1,32 @@
+/* Typography and colour are inherited from the row this sits in — see the
+   component's note. Only layout and the state dot belong here. */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+/* Lime, not --chrome-ink: this button also renders on the dark mobile menu,
+   where the chrome ink is whatever the *page* behind it uses. Lime carries
+   every hover state in the wireframes and reads on either ground. */
+.toggle:hover {
+  color: var(--accent-2);
+}
+
+.dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.dotFilled {
+  background: currentColor;
+}

@@ -5,7 +5,8 @@ import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { canRenderGlass, canRenderStarFlare, getCapabilities } from '@/lib/capabilities'
 import { fullscreenVertexShader, star6FragmentShader } from '@/shaders/star6'
-import { isSurfaceDark } from '@/lib/surface'
+import { isPageSurfaceDark } from '@/lib/surface'
+import { subscribeToTheme } from '@/lib/theme'
 import { glassPasses } from './glass-passes'
 import { ALL_LAYERS_MASK, LAYER_CONTENT, LAYER_GLASS, LAYER_OVERLAY } from './layers'
 
@@ -38,21 +39,33 @@ export function RefractionPass() {
 
   const frame = useRef(0)
 
-  // The page's own ground colour, read once from the CSS tokens.
+  // The page's own ground colour, read from the CSS tokens.
   //
   // The canvas is transparent and the background is painted by CSS, so as far
   // as WebGL is concerned the space behind the glass is empty — and refracting
   // an empty target renders the word solid black. Clearing to the page colour
   // is what makes refraction of "nothing" look like refraction of the page.
-  const groundRef = useRef({ light: new THREE.Color('#e7e4dd'), dark: new THREE.Color('#16161a') })
+  //
+  // Two colours, because two different things can be behind the glass. `page`
+  // is --bg, which the theme remaps; `pageDark` is the --dark-bg treatment a
+  // screen paints over it regardless of theme. Note that the choice below is
+  // isPageSurfaceDark, not isSurfaceDark: in the dark theme --bg is already
+  // dark, and reaching for the treatment there would clear a shade off.
+  const groundRef = useRef({ page: new THREE.Color('#e7e4dd'), pageDark: new THREE.Color('#16161a') })
   const scratchColor = useRef(new THREE.Color())
 
   useEffect(() => {
-    const styles = getComputedStyle(document.documentElement)
-    const light = styles.getPropertyValue('--bg').trim()
-    const dark = styles.getPropertyValue('--dark-bg').trim()
-    if (light) groundRef.current.light.set(light)
-    if (dark) groundRef.current.dark.set(dark)
+    const read = () => {
+      const styles = getComputedStyle(document.documentElement)
+      const page = styles.getPropertyValue('--bg').trim()
+      const pageDark = styles.getPropertyValue('--dark-bg').trim()
+      if (page) groundRef.current.page.set(page)
+      if (pageDark) groundRef.current.pageDark.set(pageDark)
+    }
+
+    read()
+    // --bg moves with the theme, so this cannot be a one-shot read on mount.
+    return subscribeToTheme(read)
   }, [])
 
   // A scene of its own for the streak pass — one fullscreen quad and an
@@ -150,7 +163,7 @@ export function RefractionPass() {
     //    sample itself and the flare composite cannot feed back into it.
     //    Cleared to the page's ground colour rather than to nothing, so the
     //    glass refracts the page instead of a void.
-    const ground = isSurfaceDark() ? groundRef.current.dark : groundRef.current.light
+    const ground = isPageSurfaceDark() ? groundRef.current.pageDark : groundRef.current.page
     camera.layers.set(LAYER_CONTENT)
     gl.setRenderTarget(refraction)
     gl.setClearColor(ground, 1)

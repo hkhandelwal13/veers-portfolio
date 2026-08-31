@@ -59,15 +59,16 @@
   border-bottom-color: var(--accent-2);
 }
 
-/* Theme control is a Phase 4 concern; shown here so the nav row matches the
-   wireframe's five slots, but disabled rather than faked. */
-.theme {
+/* The THEME[A] slot. <ThemeToggle> inherits its type and colour from here so
+   it matches the links either side of it on both surfaces. */
+.themeSlot {
+  display: flex;
+  align-items: center;
   font-family: var(--font-mono);
   font-size: var(--fs-label);
   letter-spacing: var(--hud-tracking);
   text-transform: uppercase;
-  color: var(--muted-2);
-  cursor: not-allowed;
+  color: var(--chrome-muted);
 }
 
 .menuButton {

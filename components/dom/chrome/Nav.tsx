@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useCallback, useState } from 'react'
 import { useScrollFlag } from '@/lib/use-scroll'
 import { MobileMenu } from './MobileMenu'
+import { ThemeToggle } from './ThemeToggle'
 import styles from './Nav.module.css'
 
 export const NAV_LINKS = [
@@ -51,10 +52,8 @@ export function Nav() {
               </Link>
             </li>
           ))}
-          <li>
-            <span className={styles.theme} title="Theme switching lands in Phase 4">
-              Theme[A]
-            </span>
+          <li className={styles.themeSlot}>
+            <ThemeToggle />
           </li>
         </ul>
 

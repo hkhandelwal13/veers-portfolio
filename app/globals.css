@@ -17,6 +17,7 @@
   --bg: #e7e4dd;         /* page background */
   --surface: #f4f2ed;    /* cards / panels — the wireframe's screen ground */
   --surface-2: #dedad1;
+  --surface-3: #e8e5de;  /* the hatch's lighter stripe */
   --line: #c9c5bb;       /* hairlines / dividers */
   --fill: #c0bcb2;       /* muted block fills */
 
@@ -115,6 +116,46 @@
   --z-loader: 50;
 
   color-scheme: light;
+}
+
+/* =============================================================================
+   DARK THEME
+   -----------------------------------------------------------------------------
+   Set by the THEME[A] toggle onto <html data-theme>, and by the inline
+   bootstrap in the document head before first paint. DECISIONS makes dark the
+   primary ("video reads better on dark"); the warm-greige system above is the
+   secondary theme.
+
+   Only the semantic tokens are remapped. Everything downstream — components,
+   the chrome tokens, the WebGL ground colour — derives from these, so the
+   theme is this one block plus the mirror into lib/surface for the shaders.
+
+   The --dark-* family is NOT remapped: it is an absolute treatment used by
+   screens that paint dark in either theme (project detail, footer, mobile
+   menu). --bg sits a shade below --dark-bg on purpose, so those keep reading
+   as raised panels rather than dissolving into the page.
+   ========================================================================== */
+
+[data-theme='dark'] {
+  --bg: #121216;
+  --surface: #1c1c20;
+  /* The hatch pair lifts well clear of --dark-surface: the card's reveal state
+     is that near-black panel, and poster and reveal have to stay legible
+     against each other. */
+  --surface-2: #35353b;
+  --surface-3: #3d3d44;
+  --line: #3a3a3e;
+  --fill: #4a4a52;
+
+  --ink: #f4f2ed;
+  --muted: #a5a29a;
+  --muted-2: #86837b;
+
+  /* Electric blue at #0047ff is 2.1:1 on this ground — too dim to serve as a
+     focus ring. Same hue, lifted. */
+  --accent: #6ea8ff;
+
+  color-scheme: dark;
 }
 
 /* Dark screens (project detail) flip the chrome's ink. */
@@ -280,7 +321,7 @@ html.lenis body {
   background: repeating-linear-gradient(
     45deg,
     var(--surface-2) 0 6px,
-    #e8e5de 6px 12px
+    var(--surface-3) 6px 12px
   );
 }
 
