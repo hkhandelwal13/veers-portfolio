@@ -12,24 +12,18 @@ import type * as THREE from 'three'
 export const glassPasses: {
   /** The scene minus the glass — what the refraction samples. */
   refraction: THREE.WebGLRenderTarget | null
-  /** Content *and* the word — what the cursor lens refracts, so it bends both. */
-  lensScene: THREE.WebGLRenderTarget | null
   /** Only the glass, half res — the flare's highlight source. */
   glassOnly: THREE.WebGLRenderTarget | null
   /** The finished six-ray streaks, half res. */
   star: THREE.WebGLRenderTarget | null
-  /** False while the cursor lens is not being drawn, so its pass can stop. */
-  lensVisible: boolean
   /** False while the glass is offscreen, so the flare can stop entirely. */
   glassVisible: boolean
   /** The glass material, so the flare pass can switch it to highlight-only. */
   glassMaterial: THREE.ShaderMaterial | null
 } = {
   refraction: null,
-  lensScene: null,
   glassOnly: null,
   star: null,
-  lensVisible: false,
   glassVisible: false,
   glassMaterial: null,
 }
