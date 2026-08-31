@@ -1,16 +1,27 @@
 import { WebGLSlot } from '@/components/dom/WebGLSlot'
+import { WebGLTarget } from '@/components/dom/WebGLTarget'
 import { SITE } from '@/lib/placeholder-content'
 import styles from './Contact.module.css'
 import { Scramble } from '@/components/dom/Scramble'
 
-/** Contact — wireframe 1g. Holds the reserved wordmark / glass slot. */
-export function Contact() {
+/**
+ * Contact — wireframe 1g. The closing screen, and the hero's arrangement
+ * repeated: its own WebGL ground, the glass wordmark, and a sticker field
+ * falling through it.
+ *
+ * `standalone` is false when it closes the home page, where the hero already
+ * owns the h1 and this becomes a section heading instead.
+ */
+export function Contact({ standalone = true }: { standalone?: boolean }) {
+  const Heading = standalone ? 'h1' : 'h2'
   return (
     <section className={styles.section} aria-labelledby="contact-heading">
+      {/* The WebGL ground is seated on this. */}
+      <WebGLTarget targetId="contact-field" className={styles.fieldTarget} aria-hidden="true" />
       <div className={styles.frame}>
-        <h1 id="contact-heading" className={`display ${styles.heading}`}>
+        <Heading id="contact-heading" className={`display ${styles.heading}`}>
           Got something that needs cutting?
-        </h1>
+        </Heading>
 
         {/* Reserved for the 3D wordmark / glass form — 720x300 @ 360,230 on the
             1440x810 frame. .frame is not a containing block, so on desktop this

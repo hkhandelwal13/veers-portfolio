@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { canRenderGlass, getCapabilities } from '@/lib/capabilities'
-import { getHeroProgress } from '@/lib/hero-progress'
 import { getTargetRect } from '@/lib/rect-sampler'
 import { subscribeToTheme } from '@/lib/theme'
 import { heroFieldFragmentShader, heroFieldVertexShader } from '@/shaders/hero-field'
@@ -12,12 +11,16 @@ import { LAYER_CONTENT } from './layers'
 import { isRectVisible, rectToWorld } from './rect-space'
 
 /**
- * The hero's ground, drawn in WebGL so the glass can refract it and the pointer
- * can move it. See shaders/hero-field for why CSS could not do either.
+ * A section's ground, drawn in WebGL so the glass has something to refract.
+ * See shaders/hero-field for why CSS could not serve.
  *
- * A plane pushed far enough back to fill the frustum behind everything else,
- * on the content layer — which is precisely the set the refraction pass
- * captures.
+ * A plane pushed far enough back to sit behind everything else, on the content
+ * layer — which is precisely the set the refraction pass captures.
+ *
+ * Parameterised because the site has two of these: the hero's, which spans
+ * three sections and dissolves into the next one's colour on scroll, and the
+ * contact screen's, which arrives out of that colour instead. They differ only
+ * in which rect they sit on and which direction their progress runs.
  */
 
 /** Behind the stickers, which sit at -4.5 and back. */
@@ -35,7 +38,7 @@ export const FIELD_TARGET_ID = 'hero-field'
  * matrix's own coverage is the only thing turning the ground black, and one
  * surface cannot disagree with itself about how far along it is.
  */
-const STAGE_TARGET_ID = 'hero-stage'
+export const STAGE_TARGET_ID = 'hero-stage'
 
 /** Reads a CSS colour into a target, leaving it alone if the token is missing. */
 function readColor(styles: CSSStyleDeclaration, token: string, target: THREE.Color) {
@@ -81,7 +84,14 @@ function readRgba(styles: CSSStyleDeclaration, token: string, target: THREE.Vect
   target.set(scratch.r, scratch.g, scratch.b, parts.length > 3 ? Number(parts[3]) : 1)
 }
 
-export function HeroField() {
+export function SectionField({
+  targetId,
+  /** 0 = the section's own ground, 1 = fully handed over to --section-ground. */
+  progress,
+}: {
+  targetId: string
+  progress: () => number
+}) {
   const meshRef = useRef<THREE.Mesh>(null)
   const camera = useThree((state) => state.camera)
 
@@ -142,8 +152,8 @@ export function HeroField() {
 
     // No glass means no refraction to feed and a device we are already sparing;
     // the CSS dressing is showing through underneath either way.
-    const rect = getTargetRect(STAGE_TARGET_ID)
-    const progress = getHeroProgress()
+    const rect = getTargetRect(targetId)
+    const value = progress()
     // Visible for as long as the stage is on screen — it is the ground for two
     // sections now, so it cannot stop when the hero's own travel is done.
     if (
@@ -183,7 +193,7 @@ export function HeroField() {
     material.uniforms.uAspect.value = state.size.width / Math.max(state.size.height, 1)
     material.uniforms.uPixelRatio.value = state.viewport.dpr
     material.uniforms.uTime.value = state.clock.elapsedTime
-    material.uniforms.uProgress.value = progress
+    material.uniforms.uProgress.value = value
   })
 
   return (

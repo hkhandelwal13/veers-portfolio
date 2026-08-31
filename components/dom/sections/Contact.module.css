@@ -1,5 +1,11 @@
 /* Contact — wireframe 1g. Carries the second reserved 3D slot. */
 
+.fieldTarget {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 .section {
   position: relative;
   z-index: var(--z-content);

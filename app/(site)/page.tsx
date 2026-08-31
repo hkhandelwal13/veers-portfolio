@@ -1,4 +1,5 @@
 import { Hud } from '@/components/dom/chrome/Hud'
+import { Contact } from '@/components/dom/sections/Contact'
 import { EditorIntro } from '@/components/dom/sections/EditorIntro'
 import { Hero } from '@/components/dom/sections/Hero'
 import { HeroStage } from '@/components/dom/sections/HeroStage'
@@ -15,6 +16,7 @@ export default function HomePage() {
         <EditorIntro />
         <WorkGrid standalone={false} />
       </HeroStage>
+      <Contact standalone={false} />
     </main>
   )
 }
