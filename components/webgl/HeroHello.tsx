@@ -15,7 +15,6 @@ import {
   subscribeToCapabilities,
 } from '@/lib/capabilities'
 import { getHeroObjectDissolve, getHeroProgress } from '@/lib/hero-progress'
-import { RIPPLE_LIFE, rippleAges, rippleCenters } from '@/lib/ripple'
 import { createRingLight } from '@/lib/ring-light'
 import { isSurfaceDark } from '@/lib/surface'
 import { getServerTheme, getTheme, subscribeToTheme } from '@/lib/theme'
@@ -58,7 +57,7 @@ const BAKED_SCALE = 8.019
 
 type HelloGLTF = GLTF & { nodes: { g_groupNumber_0_n3d: THREE.Mesh } }
 
-function createGlassUniforms() {
+export function createGlassUniforms() {
   return {
     uSceneTexture: { value: null as THREE.Texture | null },
     uResolution: { value: new THREE.Vector2(1, 1) },
@@ -84,18 +83,9 @@ function createGlassUniforms() {
     uSpecStrength: { value: 1.15 },
     uLightDirection: { value: new THREE.Vector3(0.4, 0.9, 0.6) },
 
-    // The pointer's wake. Amplitude is larger than the backdrop's because it
-    // is bending a refraction, not a pattern — the same displacement reads as
-    // much less movement once it has been through the glass.
-    uRippleCenter: { value: rippleCenters },
-    uRippleAge: { value: rippleAges },
-    uRippleLife: { value: RIPPLE_LIFE },
-    uRippleAmp: { value: 0.03 },
-    uWakeNormal: { value: 2.4 },
-    uAspect: { value: 1 },
-
     uDissolve: { value: 0 },
-    uDotPx: { value: 14 },
+    uDotPx: { value: 7 },
+    uPixelRatio: { value: 1 },
   }
 }
 
@@ -221,7 +211,7 @@ export function HeroHello() {
         state.size.height * state.viewport.dpr,
       )
       uniforms.uDark.value = isSurfaceDark() ? 1 : 0
-      uniforms.uAspect.value = state.size.width / Math.max(state.size.height, 1)
+      uniforms.uPixelRatio.value = state.viewport.dpr
       uniforms.uDissolve.value = getHeroObjectDissolve()
 
       // The rim light follows the pointer's angle only. Under reduced motion it

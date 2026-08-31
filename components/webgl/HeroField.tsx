@@ -6,7 +6,6 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { canRenderGlass, getCapabilities } from '@/lib/capabilities'
 import { getHeroProgress } from '@/lib/hero-progress'
 import { getTargetRect } from '@/lib/rect-sampler'
-import { RIPPLE_LIFE, rippleAges, rippleCenters, updateRipples } from '@/lib/ripple'
 import { subscribeToTheme } from '@/lib/theme'
 import { heroFieldFragmentShader, heroFieldVertexShader } from '@/shaders/hero-field'
 import { LAYER_CONTENT } from './layers'
@@ -18,15 +17,14 @@ import { rectToWorld } from './rect-space'
  *
  * A plane pushed far enough back to fill the frustum behind everything else,
  * on the content layer — which is precisely the set the refraction pass
- * captures. It also owns the ripple field's per-frame update, since it is the
- * first thing in the hero to read it each frame.
+ * captures.
  */
 
 /** Behind the stickers, which sit at -4.5 and back. */
 const FIELD_Z = -9
 
 /** The hero section's own rect — not the word's slot. */
-const FIELD_TARGET_ID = 'hero-field'
+export const FIELD_TARGET_ID = 'hero-field'
 
 /** Reads a CSS colour into a target, leaving it alone if the token is missing. */
 function readColor(styles: CSSStyleDeclaration, token: string, target: THREE.Color) {
@@ -85,13 +83,12 @@ export function HeroField() {
       uStreakBand: { value: new THREE.Vector4(0.59, 0.69, 1, 0.075) },
       uResolution: { value: new THREE.Vector2(1, 1) },
       uCellPx: { value: 240 },
-      uDotPx: { value: 14 },
+      // Small: the matrix is a texture the ground passes through, not a
+      // pattern to be read. Large cells read as polka dots.
+      uDotPx: { value: 7 },
       uTime: { value: 0 },
       uProgress: { value: 0 },
-      uRippleCenter: { value: rippleCenters },
-      uRippleAge: { value: rippleAges },
-      uRippleLife: { value: RIPPLE_LIFE },
-      uRippleAmp: { value: 0.02 },
+      uPixelRatio: { value: 1 },
       uAspect: { value: 1 },
     }),
     [],
@@ -135,12 +132,9 @@ export function HeroField() {
     meshRef.current?.layers.set(LAYER_CONTENT)
   }, [])
 
-  useFrame((state, delta) => {
+  useFrame((state) => {
     const mesh = meshRef.current
     if (!mesh) return
-
-    // First hero reader of the frame, so it advances the wake for everyone.
-    updateRipples(delta)
 
     // No glass means no refraction to feed and a device we are already sparing;
     // the CSS dressing is showing through underneath either way.
@@ -178,6 +172,7 @@ export function HeroField() {
       state.size.height * state.viewport.dpr,
     )
     material.uniforms.uAspect.value = state.size.width / Math.max(state.size.height, 1)
+    material.uniforms.uPixelRatio.value = state.viewport.dpr
     material.uniforms.uTime.value = state.clock.elapsedTime
     material.uniforms.uProgress.value = progress
   })

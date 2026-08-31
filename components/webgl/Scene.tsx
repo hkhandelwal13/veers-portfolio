@@ -4,9 +4,11 @@ import { Suspense } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { AdaptiveDpr, Environment, Lightformer, Preload } from '@react-three/drei'
 import { CardMirrors } from './CardMirrors'
+import { CursorLens } from './CursorLens'
 import { DebugSignals } from './DebugSignals'
 import { FrameDriver } from './FrameDriver'
 import { HeroField } from './HeroField'
+import { HeroArrow } from './HeroArrow'
 import { HeroHello } from './HeroHello'
 import { RectSampler } from './RectSampler'
 import { RefractionPass } from './RefractionPass'
@@ -61,7 +63,10 @@ export default function Scene() {
         <HeroField />
         <Stickers />
         <HeroHello />
+        <HeroArrow />
         <StarFlare />
+        {/* Last: it refracts a render that already contains the word. */}
+        <CursorLens />
 
         {/* Procedural environment — built from Lightformers rather than an HDRI
             preset, so nothing is fetched from a CDN at runtime. */}

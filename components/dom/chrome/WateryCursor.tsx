@@ -3,6 +3,7 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import {
   canRenderCursor,
+  canRenderGlass,
   getCapabilities,
   getServerCapabilities,
   subscribeToCapabilities,
@@ -47,6 +48,10 @@ export function WateryCursor() {
     getServerCapabilities,
   )
   const enabled = canRenderCursor(caps)
+  // Where WebGL is running, the liquid-glass lens *is* the cursor (see
+  // CursorLens) and this one keeps only the dot you aim with. Two lenses
+  // chasing the same pointer read as a rendering fault.
+  const lensInWebGL = canRenderGlass(caps)
 
   useEffect(() => {
     if (!enabled) return
@@ -115,7 +120,10 @@ export function WateryCursor() {
 
   return (
     <div className={styles.cursor} aria-hidden="true">
-      <div ref={lensRef} className={styles.lens} />
+      <div
+        ref={lensRef}
+        className={`${styles.lens} ${lensInWebGL ? styles.deferred : ''}`}
+      />
       <div ref={dotRef} className={styles.dot} />
     </div>
   )

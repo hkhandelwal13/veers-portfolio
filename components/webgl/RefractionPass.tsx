@@ -8,10 +8,20 @@ import { fullscreenVertexShader, star6FragmentShader } from '@/shaders/star6'
 import { isPageSurfaceDark } from '@/lib/surface'
 import { subscribeToTheme } from '@/lib/theme'
 import { glassPasses } from './glass-passes'
-import { ALL_LAYERS_MASK, LAYER_CONTENT, LAYER_GLASS, LAYER_OVERLAY } from './layers'
+import { ALL_LAYERS_MASK, LAYER_CONTENT, LAYER_GLASS, LAYER_LENS, LAYER_OVERLAY } from './layers'
 
 /** The flare's source and streaks both run at half resolution. */
 const STAR_SCALE = 0.5
+
+/**
+ * The cursor lens's scene, likewise reduced.
+ *
+ * It is the second full scene render of the frame, which is the most expensive
+ * thing on this page — and the only thing that reads it is a bead a hundred
+ * pixels across that bends everything it samples anyway. Full resolution buys
+ * detail nothing can see.
+ */
+const LENS_SCALE = 0.6
 
 const BLACK = new THREE.Color(0x000000)
 
@@ -114,16 +124,22 @@ export function RefractionPass() {
 
     const options = { type: THREE.HalfFloatType }
     const refraction = new THREE.WebGLRenderTarget(width, height, options)
+    const lensWidth = Math.max(1, Math.floor(width * LENS_SCALE))
+    const lensHeight = Math.max(1, Math.floor(height * LENS_SCALE))
+    const lensScene = new THREE.WebGLRenderTarget(lensWidth, lensHeight, options)
     const glassOnly = new THREE.WebGLRenderTarget(starWidth, starHeight, options)
     const star = new THREE.WebGLRenderTarget(starWidth, starHeight, options)
 
     glassPasses.refraction = refraction
+    glassPasses.lensScene = lensScene
     glassPasses.glassOnly = glassOnly
     glassPasses.star = star
     starRef.current?.material.uniforms.uTexel.value.set(1 / starWidth, 1 / starHeight)
 
     return () => {
       glassPasses.refraction = null
+      glassPasses.lensScene = null
+      lensScene.dispose()
       glassPasses.glassOnly = null
       glassPasses.star = null
       refraction.dispose()
@@ -145,15 +161,17 @@ export function RefractionPass() {
     if ((camera.layers.mask & ALL_LAYERS_MASK) !== ALL_LAYERS_MASK) {
       camera.layers.enable(LAYER_GLASS)
       camera.layers.enable(LAYER_OVERLAY)
+      camera.layers.enable(LAYER_LENS)
     }
 
     const caps = getCapabilities()
     if (!canRenderGlass(caps)) return
 
     const refraction = glassPasses.refraction
+    const lensScene = glassPasses.lensScene
     const glassOnly = glassPasses.glassOnly
     const star = glassPasses.star
-    if (!refraction || !glassOnly || !star) return
+    if (!refraction || !lensScene || !glassOnly || !star) return
 
     frame.current += 1
 
@@ -173,7 +191,21 @@ export function RefractionPass() {
     gl.clear()
     gl.render(scene, camera)
 
-    // 2 + 3. Highlights and streaks, only when they can be seen, and only on
+    // 2. The scene the cursor lens refracts: the same content plus the word.
+    //    Rendered after pass 1 rather than alongside it, because the word's own
+    //    material samples pass 1 — it has to be finished before the word can be
+    //    drawn correctly into anything else. The lens is excluded, so it cannot
+    //    sample itself.
+    if (glassPasses.lensVisible) {
+      camera.layers.set(LAYER_CONTENT)
+      camera.layers.enable(LAYER_GLASS)
+      gl.setRenderTarget(lensScene)
+      gl.setClearColor(ground, 1)
+      gl.clear()
+      gl.render(scene, camera)
+    }
+
+    // 3 + 4. Highlights and streaks, only when they can be seen, and only on
     //        alternate frames — the flare is soft and wide, so the halved
     //        update rate is invisible while the saving is not.
     const starPass = starRef.current
