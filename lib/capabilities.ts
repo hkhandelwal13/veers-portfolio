@@ -174,3 +174,15 @@ export function canRenderStickers(caps: Capabilities = current): boolean {
 export function canRenderStarFlare(caps: Capabilities = current): boolean {
   return canRenderGlass(caps) && !caps.reducedMotion
 }
+
+/**
+ * The watery cursor.
+ *
+ * Replaces the native pointer, so it needs a real one to replace: a touchscreen
+ * has nothing to hide and would get a blob stuck wherever the last tap landed.
+ * Off under reduced motion too — the whole effect is lag and deformation, and
+ * there is no reduced version of it worth having.
+ */
+export function canRenderCursor(caps: Capabilities = current): boolean {
+  return caps.hoverCapable && !caps.reducedMotion
+}

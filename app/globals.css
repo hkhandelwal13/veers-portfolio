@@ -49,6 +49,15 @@
   --on-dark: #eaf1fb;
   --on-dark-muted: #8fa3d8;
 
+  /* --- Stage dressing -------------------------------------------------------
+     The faint blueprint grid and the diagonal light that sit behind everything.
+     Alpha is baked into the token so one element can carry both, and so a
+     theme only has to restate these two values. */
+  --grid-mark: rgba(12, 21, 38, 0.11);
+  --grid-cell: 240px;
+  --streak-glow: rgba(255, 252, 240, 0.55);
+  --streak-band: rgba(255, 255, 255, 0.3);
+
   /* The mobile menu's ground. Semantic rather than a --dark-* value because it
      is an overlay: it has to sit clearly *above* the page in either theme, and
      --dark-bg is four levels off --bg once the page itself is dark. */
@@ -125,7 +134,10 @@
   --z-hud: 35;
   --z-menu: 40;
   --z-route: 45;
+
   --z-loader: 50;
+  /* Above everything, including the loader — it is the pointer. */
+  --z-cursor: 60;
 
   color-scheme: light;
 }
@@ -176,6 +188,12 @@
 
   --menu-bg: #16205c;
 
+  /* Cool and much weaker: on the deep ground the same alpha that reads as a
+     hairline on paper reads as fog. */
+  --grid-mark: rgba(180, 205, 255, 0.1);
+  --streak-glow: rgba(110, 145, 255, 0.16);
+  --streak-band: rgba(150, 175, 255, 0.075);
+
   color-scheme: dark;
 }
 
@@ -201,6 +219,7 @@
 /* --- Mobile 390 ------------------------------------------------------------- */
 @media (max-width: 640px) {
   :root {
+    --grid-cell: 160px;
     --margin: var(--margin-mobile);
     --gutter: 12px;
     --columns: 4;

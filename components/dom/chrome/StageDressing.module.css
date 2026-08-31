@@ -1,0 +1,60 @@
+.stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/*
+ * Grid and crosshairs come from one SVG tile used as a mask, painted with a
+ * single colour. Drawing the lines as gradients and the crosses as a second
+ * layer would mean keeping two independent sizes in step; one tile cannot fall
+ * out of alignment with itself.
+ *
+ * The tile is 240px and --grid-cell matches it at desktop, so the 1px rules
+ * land on whole pixels instead of being scaled into a smear.
+ */
+.grid {
+  position: absolute;
+  inset: 0;
+  background: var(--grid-mark);
+  --tile: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cg fill='%23fff'%3E%3Crect y='119.5' width='240' height='1' opacity='.4'/%3E%3Crect x='119.5' width='1' height='240' opacity='.4'/%3E%3Crect x='113' y='119.5' width='14' height='1'/%3E%3Crect x='119.5' y='113' width='1' height='14'/%3E%3C/g%3E%3C/svg%3E");
+  -webkit-mask-image: var(--tile);
+  mask-image: var(--tile);
+  -webkit-mask-size: var(--grid-cell) var(--grid-cell);
+  mask-size: var(--grid-cell) var(--grid-cell);
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+/*
+ * Diagonal light. Soft edges come from wide gradient stops rather than a
+ * filter: blur() over a fullscreen fixed layer is one of the most expensive
+ * things a phone can be asked to composite, and the result here is the same.
+ */
+.streaks {
+  position: absolute;
+  /* Overscanned so the drift never exposes an edge. */
+  inset: -8%;
+  background:
+    radial-gradient(58% 46% at 16% -6%, var(--streak-glow), transparent 72%),
+    repeating-linear-gradient(
+      114deg,
+      transparent 0 90px,
+      var(--streak-band) 170px,
+      transparent 250px 430px
+    );
+  animation: drift 34s ease-in-out infinite alternate;
+}
+
+/* Slow enough to be felt rather than watched. The global reduced-motion rule
+   collapses the duration, which parks it at the start of the range. */
+@keyframes drift {
+  from {
+    transform: translate3d(-1.5%, -1%, 0);
+  }
+  to {
+    transform: translate3d(1.5%, 1%, 0);
+  }
+}

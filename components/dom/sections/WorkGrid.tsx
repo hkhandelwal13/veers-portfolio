@@ -1,6 +1,7 @@
 import { ProjectCard } from '@/components/dom/ProjectCard'
 import { CATEGORIES, PROJECTS, SITE } from '@/lib/placeholder-content'
 import styles from './WorkGrid.module.css'
+import { Scramble } from '@/components/dom/Scramble'
 
 /**
  * Selected work — wireframe 1c.
@@ -26,7 +27,7 @@ export function WorkGrid({
     >
       <div className={styles.head}>
         <h2 id="work-heading" className="label">
-          Selected work — {SITE.totalProjects} projects
+          <Scramble text={`Selected work — ${SITE.totalProjects} projects`} />
         </h2>
 
         <ul className={styles.filters} aria-label="Categories">

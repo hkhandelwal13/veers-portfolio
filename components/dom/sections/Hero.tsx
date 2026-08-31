@@ -1,6 +1,7 @@
 import { WebGLSlot } from '@/components/dom/WebGLSlot'
 import { SITE } from '@/lib/placeholder-content'
 import styles from './Hero.module.css'
+import { Scramble } from '@/components/dom/Scramble'
 
 /**
  * Home / hero — wireframe 1b.
@@ -27,7 +28,10 @@ export function Hero() {
       <div className={styles.frame}>
         <div className={styles.top}>
           <div className={styles.taglineBlock}>
-            <span className={`label ${styles.eyebrow}`}>Video editor — Color — Motion</span>
+            <Scramble
+              className={`label ${styles.eyebrow}`}
+              text="Video editor — Color — Motion"
+            />
             <p className={styles.tagline}>
               Cutting commercials, music videos and documentary from assembly to
               delivery.
@@ -51,7 +55,7 @@ export function Hero() {
 
         <div className={styles.cue} aria-hidden="true">
           <span className={styles.cueLine} />
-          <span className="label">Scroll</span>
+          <Scramble className="label" text="Scroll" />
         </div>
       </div>
     </section>
