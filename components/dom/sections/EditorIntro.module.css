@@ -1,3 +1,9 @@
+/*
+ * The ground here is the fallback, not the design. While the canvas is running
+ * the hero's field paints across this section too and turns itself black under
+ * the dot matrix — a section with its own opaque background would put a line
+ * across the middle of that. See HeroStage.
+ */
 .section {
   position: relative;
   z-index: var(--z-content);
@@ -9,6 +15,10 @@
   min-height: 100svh;
   display: flex;
   align-items: center;
+}
+
+:global(html[data-webgl='live']) .section {
+  background: transparent;
 }
 
 .inner {
@@ -108,7 +118,11 @@
 }
 
 @media (max-width: 1024px) {
-  .inner {
+  :global(html[data-webgl='live']) .section {
+  background: transparent;
+}
+
+.inner {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--s8);
   }

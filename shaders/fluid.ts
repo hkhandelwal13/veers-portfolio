@@ -29,6 +29,12 @@ float dotMatrixMask(vec2 fragCoord, float progress, float cellPx) {
 
 /** The same circles, growing instead — one surface handing over to another. */
 float dotMatrixWipe(vec2 fragCoord, float progress, float cellPx) {
+  // At radius zero the antialiasing band still straddles the cell centre, and
+  // smoothstep returns 0.5 there — a half-strength dot in every cell, before
+  // the wipe has started. Across a 7px grid that is a fine even veil over the
+  // whole hero, which is exactly the tint that appeared on scroll.
+  if (progress <= 0.0) return 0.0;
+
   vec2 cell = fract(fragCoord / cellPx);
   float dist = distance(cell, vec2(0.5));
   float radius = mix(0.0, 0.8, clamp(progress, 0.0, 1.0));

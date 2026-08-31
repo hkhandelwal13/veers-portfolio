@@ -93,7 +93,7 @@ void main() {
 
   // The dressing fades out ahead of the handover, so the wipe lands on a clean
   // ground rather than on a grid it then has to cover.
-  float dressing = 1.0 - smoothstep(0.03, 0.35, uProgress);
+  float dressing = 1.0 - smoothstep(0.1, 0.5, uProgress);
 
   float glow = exp(-length((screenUv - vec2(0.16, -0.06)) * vec2(uAspect, 1.0)) * 2.1);
   color += uStreakGlow.rgb * uStreakGlow.a * glow * dressing;
@@ -116,17 +116,15 @@ void main() {
   // half its radius has covered a quarter of the ground. Starting early and
   // ending before the travel does is what makes it read as a steady handover
   // rather than as nothing, then suddenly everything.
-  float wipe = smoothstep(0.02, 0.55, uProgress);
+  float wipe = smoothstep(0.22, 1.0, uProgress);
 
-  // Biased down the section: the bottom finishes first, so the black rises out
-  // of the seam instead of arriving at it.
-  //
-  // This is what removes the dividing line. The section below is already this
-  // colour; a wipe that progresses evenly leaves a half-covered hero meeting a
-  // fully covered section, and that boundary *is* the line. Finishing at the
-  // bottom edge first means the two are the same colour wherever they touch,
-  // the whole way through.
-  float bias = mix(1.55, 0.5, vUv.y);
+  // Biased down the stage: the far end finishes first, so the black rises from
+  // below and deepens as you travel into it. Because the plane spans both
+  // sections, this also means the coverage you see at any moment is a function
+  // of where you are in the scroll — which is the whole illusion. There is no
+  // second background arriving; the ground you are already looking at is
+  // turning black underneath you.
+  float bias = mix(2.4, 0.35, vUv.y);
   color = mix(color, uGroundEnd, dotMatrixWipe(px, clamp(wipe * bias, 0.0, 1.0), uDotPx));
 
   gl_FragColor = vec4(color, 1.0);

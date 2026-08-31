@@ -19,7 +19,7 @@
 import { getScrollSnapshot } from './scroll-bus'
 
 /** Scroll distance the exit is spread over, as a share of the viewport. */
-const TRAVEL = 0.95
+const TRAVEL = 1.35
 
 /**
  * The objects lag the ground.
@@ -35,7 +35,7 @@ const TRAVEL = 0.95
  */
 export function getHeroObjectDissolve(): number {
   const p = getHeroProgress()
-  const t = (p - 0.08) / 0.37
+  const t = (p - 0.06) / 0.3
   return t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t)
 }
 

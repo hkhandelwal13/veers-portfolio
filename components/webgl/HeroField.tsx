@@ -9,7 +9,7 @@ import { getTargetRect } from '@/lib/rect-sampler'
 import { subscribeToTheme } from '@/lib/theme'
 import { heroFieldFragmentShader, heroFieldVertexShader } from '@/shaders/hero-field'
 import { LAYER_CONTENT } from './layers'
-import { rectToWorld } from './rect-space'
+import { isRectVisible, rectToWorld } from './rect-space'
 
 /**
  * The hero's ground, drawn in WebGL so the glass can refract it and the pointer
@@ -23,8 +23,19 @@ import { rectToWorld } from './rect-space'
 /** Behind the stickers, which sit at -4.5 and back. */
 const FIELD_Z = -9
 
-/** The hero section's own rect — not the word's slot. */
+/** The hero section's own rect — not the word's slot. Stickers and the arrow
+ *  key off this, so they stay inside the hero. */
 export const FIELD_TARGET_ID = 'hero-field'
+
+/**
+ * The hero *and* the section it hands over to.
+ *
+ * The ground is seated on both, as one plane, because that is what removes the
+ * dividing line: with nothing else painting a background down there, the dot
+ * matrix's own coverage is the only thing turning the ground black, and one
+ * surface cannot disagree with itself about how far along it is.
+ */
+const STAGE_TARGET_ID = 'hero-stage'
 
 /** Reads a CSS colour into a target, leaving it alone if the token is missing. */
 function readColor(styles: CSSStyleDeclaration, token: string, target: THREE.Color) {
@@ -138,9 +149,16 @@ export function HeroField() {
 
     // No glass means no refraction to feed and a device we are already sparing;
     // the CSS dressing is showing through underneath either way.
-    const rect = getTargetRect(FIELD_TARGET_ID)
+    const rect = getTargetRect(STAGE_TARGET_ID)
     const progress = getHeroProgress()
-    if (!rect || !rect.valid || !canRenderGlass(getCapabilities()) || progress >= 1) {
+    // Visible for as long as the stage is on screen — it is the ground for two
+    // sections now, so it cannot stop when the hero's own travel is done.
+    if (
+      !rect ||
+      !rect.valid ||
+      !canRenderGlass(getCapabilities()) ||
+      !isRectVisible(rect, state.size.height, 200)
+    ) {
       mesh.visible = false
       return
     }
