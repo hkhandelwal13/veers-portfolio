@@ -53,7 +53,7 @@
      The faint blueprint grid and the diagonal light that sit behind everything.
      Alpha is baked into the token so one element can carry both, and so a
      theme only has to restate these two values. */
-  --grid-mark: rgba(12, 21, 38, 0.11);
+  --grid-mark: rgba(12, 21, 38, 0.2);
   --grid-cell: 240px;
   --streak-glow: rgba(255, 252, 240, 0.55);
   --streak-band: rgba(255, 255, 255, 0.3);
@@ -190,7 +190,7 @@
 
   /* Cool and much weaker: on the deep ground the same alpha that reads as a
      hairline on paper reads as fog. */
-  --grid-mark: rgba(180, 205, 255, 0.1);
+  --grid-mark: rgba(180, 205, 255, 0.19);
   --streak-glow: rgba(110, 145, 255, 0.16);
   --streak-band: rgba(150, 175, 255, 0.075);
 

@@ -24,6 +24,15 @@ import { isRectVisible, rectToWorld } from './rect-space'
 
 export const HERO_TARGET_ID = 'hero-hello'
 
+/**
+ * How far past its reserved rect the word is allowed to grow.
+ *
+ * The slot is a layout reservation, not a frame: the reference art has the word
+ * overlapping the headline and running most of the viewport's width, and a
+ * strict contain leaves it looking like a small object in a large box.
+ */
+const HERO_FILL = 1.3
+
 /** Idle float, as a fraction of the seated height — small enough to read as breathing. */
 const FLOAT_AMPLITUDE = 0.02
 /** Pointer parallax, in radians. */
@@ -43,7 +52,7 @@ function createGlassUniforms() {
     uIor: { value: 1.18 },
     uDispersion: { value: 0.035 },
     uRefractStrength: { value: 0.16 },
-    uThickness: { value: 1.1 },
+    uThickness: { value: 1.4 },
     // BRAND_TOKENS: Sky Blue body, Ocean Blue for the dark variant.
     uTintLight: { value: new THREE.Color('#8EBFE8') },
     uTintDark: { value: new THREE.Color('#4E76D0') },
@@ -161,7 +170,7 @@ export function HeroHello() {
     const boxWidth = rect.width * seat.unitsPerPixel
     const boxHeight = rect.height * seat.unitsPerPixel
     const fit = Math.min(boxWidth / measured.size.x, boxHeight / measured.size.y)
-    group.scale.setScalar(fit)
+    group.scale.setScalar(fit * HERO_FILL)
 
     const caps = getCapabilities()
 

@@ -11,19 +11,18 @@
   padding-inline: var(--margin);
   /* Default state is transparent, sitting over the hero. */
   background: transparent;
-  border-bottom: 1px solid transparent;
   transition:
     height var(--dur-fast) var(--ease-out),
-    background-color var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out);
+    background-color var(--dur-fast) var(--ease-out);
 }
 
-/* Scrolled: tint + hairline, 56px (wireframe 1h). */
+/* Scrolled: tint only, 56px. The wireframe drew a hairline under it, but on
+   the real ground it reads as a hard rule cutting the hero in half — the blur
+   and the tint carry the state on their own. */
 .scrolled {
   height: var(--nav-h-scrolled);
   background: color-mix(in srgb, var(--chrome-tint) 90%, transparent);
   backdrop-filter: blur(10px);
-  border-bottom-color: var(--chrome-ink);
 }
 
 .links {
