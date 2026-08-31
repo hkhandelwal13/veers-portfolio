@@ -4,28 +4,45 @@
   position: fixed;
   inset: 0;
   z-index: var(--z-menu);
-  background: var(--dark-bg);
   color: var(--on-dark);
   display: flex;
   flex-direction: column;
-  /* Animated with opacity rather than display, so the transition can run.
+  /* The ground is the dot-matrix, not a background colour — same wipe as the
+     loader and the route transition, grown out of the Menu button's corner.
      visibility is stepped, not eased: it flips to visible immediately on open
      (otherwise the panel is still hidden when we move focus into it, and a
-     hidden element silently refuses focus), and is delayed to the end of the
-     fade on close so the panel doesn't vanish mid-transition. */
-  opacity: 0;
+     hidden element silently refuses focus), and is held to the end of the wipe
+     on close so the panel doesn't vanish mid-retract. */
   visibility: hidden;
-  transition:
-    opacity var(--dur-med) var(--ease-out),
-    visibility 0s linear var(--dur-med);
+  transition: visibility 0s linear var(--menu-wipe);
+  --menu-wipe: 680ms;
 }
 
 .open {
-  opacity: 1;
   visibility: visible;
-  transition:
-    opacity var(--dur-med) var(--ease-out),
-    visibility 0s linear 0s;
+  transition: visibility 0s linear 0s;
+}
+
+.sheet {
+  --dm-color: var(--menu-bg);
+  --dm-grow: 300ms;
+  --dm-stagger: 380ms;
+}
+
+/* The copy arrives after the ground does and leaves before it, so the wipe is
+   never carrying half-legible text. */
+.panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.open .panel {
+  opacity: 1;
+  transition: opacity var(--dur-med) var(--ease-out) 220ms;
 }
 
 .bar {

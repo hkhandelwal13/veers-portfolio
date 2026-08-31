@@ -43,6 +43,11 @@
   --on-dark: #f4f2ed;
   --on-dark-muted: #8d8a82;
 
+  /* The mobile menu's ground. Semantic rather than a --dark-* value because it
+     is an overlay: it has to sit clearly *above* the page in either theme, and
+     --dark-bg is four levels off --bg once the page itself is dark. */
+  --menu-bg: var(--dark-bg);
+
   /* --- Spacing (8-based) ---------------------------------------------------- */
   --s1: 4px;
   --s2: 8px;
@@ -113,6 +118,7 @@
   --z-nav: 30;
   --z-hud: 35;
   --z-menu: 40;
+  --z-route: 45;
   --z-loader: 50;
 
   color-scheme: light;
@@ -154,6 +160,8 @@
   /* Electric blue at #0047ff is 2.1:1 on this ground — too dim to serve as a
      focus ring. Same hue, lifted. */
   --accent: #6ea8ff;
+
+  --menu-bg: #26262b;
 
   color-scheme: dark;
 }

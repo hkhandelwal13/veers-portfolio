@@ -1,0 +1,99 @@
+/* Registered so `--d` is a real number in the delay calc below rather than an
+   arbitrary token stream.
+
+   inherits MUST be true. The circle is a ::after on the cell, and a pseudo
+   takes the initial value of every non-inherited property — so `inherits:
+   false` hands every cell a delay of 0 and the stagger vanishes. */
+@property --d {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+.matrix {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  pointer-events: none;
+
+  --dm-color: var(--bg);
+  /* Each cell's own growth... */
+  --dm-grow: 360ms;
+  /* ...and the spread between the first cell starting and the last. */
+  --dm-stagger: 420ms;
+}
+
+.cell {
+  position: relative;
+  display: block;
+}
+
+/* 150% of the cell: a circle that size covers the whole square (1.5 > √2), so
+   at full scale the grid reads as one solid panel with no seams. */
+.cell::after {
+  content: '';
+  position: absolute;
+  inset: -25%;
+  border-radius: 50%;
+  background: var(--dm-color);
+  transform: scale(0);
+}
+
+/*
+ * Cover and uncover are two animations rather than one played backwards,
+ * because the two directions want different stagger orders — see fromCenter.
+ *
+ * Only `transform` animates, so each cell runs on the compositor and the delay
+ * is resolved there too: the whole wipe costs no main-thread work, whatever the
+ * cell count.
+ */
+@keyframes dm-grow {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+
+@keyframes dm-shrink {
+  from { transform: scale(1); }
+  to { transform: scale(0); }
+}
+
+/* Longhands, not the shorthand: --ease-out substitutes a cubic-bezier() whose
+   own commas the `animation` shorthand mis-parses, and the casualty is the
+   delay slot — every cell ends up starting at once, which is the whole effect
+   gone. */
+.covered .cell::after,
+.opening .cell::after {
+  animation-duration: var(--dm-grow);
+  animation-timing-function: var(--ease-out);
+  animation-delay: calc(var(--d) * var(--dm-stagger));
+  animation-fill-mode: both;
+}
+
+.covered .cell::after {
+  animation-name: dm-grow;
+}
+
+.opening .cell::after {
+  animation-name: dm-shrink;
+}
+
+/*
+ * By default the cells nearest the origin move first in *both* directions, so
+ * uncovering reads as a hole opening out rather than the edges closing in.
+ *
+ * .retract flips the uncover: the farthest cells go first and the panel pulls
+ * back toward its origin. That is what a menu closing onto its own button
+ * wants; a loader or a route wipe wants the hole.
+ */
+.retract.opening .cell::after {
+  animation-delay: calc((1 - var(--d)) * var(--dm-stagger));
+}
+
+/* The global reduce rule already collapses animation-duration; this drops the
+   stagger too, so the panel appears and disappears in one step rather than
+   still rippling at 0.01ms per cell. */
+@media (prefers-reduced-motion: reduce) {
+  .matrix {
+    --dm-stagger: 0ms;
+  }
+}

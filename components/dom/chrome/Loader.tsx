@@ -1,54 +1,72 @@
 'use client'
 
 import { useEffect, useState, useSyncExternalStore } from 'react'
-import { getLenis } from '@/lib/lenis'
+import { getLenis, prefersReducedMotion } from '@/lib/lenis'
+import { DotMatrix } from './DotMatrix'
 import styles from './Loader.module.css'
 
 /**
  * Loading screen — wireframe 1a.
  *
- * Phase 2 builds the structure only: the 6x6 grid is a static placeholder that
- * reserves the reveal's footprint. The dot-matrix shader that actually drives
- * it is Phase 4, along with the same language for page transitions.
+ * The wireframe reserved a 6x6 grid with the note "dot-matrix reveal / added in
+ * code"; this is that code. The reveal is not an element on the screen, it is
+ * how the screen leaves: the loader's ground *is* the matrix, and the site is
+ * uncovered by a hole opening out from the middle. Same wipe as the route
+ * transition and the mobile menu (see DotMatrix).
  *
  * Shown once per session so it doesn't tax repeat visits. Real asset progress
- * arrives with the shader; until then it tracks font loading, which is the one
- * thing genuinely blocking first paint.
+ * arrives with the content in Phase 5; until then it tracks font loading, which
+ * is the one thing genuinely blocking first paint.
  */
 
-/** Which of the 36 cells are filled — fixed pattern, from the wireframe. */
-const CELLS = [
-  1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0,
-  1, 0, 1, 1, 0, 1, 0, 1, 1, 0,
-]
-
 const SEEN_KEY = 'vl-loaded'
+
+/** How long the wipe runs: --dm-grow + --dm-stagger on .sheet, plus slack. */
+const WIPE_MS = 960
 
 /** A loader that flashes past is worse than none, so hold it for at least this
  *  long once shown. Caps at MAX_WAIT_MS if the real signal never arrives. */
 const MIN_VISIBLE_MS = 900
 const MAX_WAIT_MS = 2500
 
-/** The flag can't change during a session, so the subscription is a no-op —
+/** The answer can't change during a session, so the subscription is a no-op —
  *  this is here to read an external store without an effect. */
 const noopSubscribe = () => () => {}
+
+/**
+ * Latched on the first client read.
+ *
+ * React calls getSnapshot on every render, and this loader writes the flag
+ * itself — so reading storage live would make the loader see "already loaded"
+ * one render after it starts its own exit, and collapse mid-wipe. What matters
+ * is whether the flag was set when the page opened.
+ */
+let seenAtStart: boolean | null = null
+
+function readSeen(): boolean {
+  seenAtStart ??= sessionStorage.getItem(SEEN_KEY) === '1'
+  return seenAtStart
+}
 
 function useAlreadyLoaded() {
   return useSyncExternalStore(
     noopSubscribe,
-    () => sessionStorage.getItem(SEEN_KEY) === '1',
+    readSeen,
     // Server can't know; assume a first visit so the markup always includes
     // the loader and the client can hide it immediately if it has been seen.
     () => false,
   )
 }
 
+type Phase = 'loading' | 'wiping' | 'done'
+
 export function Loader() {
   const alreadyLoaded = useAlreadyLoaded()
-  const [finished, setFinished] = useState(false)
+  const [phase, setPhase] = useState<Phase>('loading')
   const [progress, setProgress] = useState(0)
 
-  const done = alreadyLoaded || finished
+  const effective: Phase = alreadyLoaded ? 'done' : phase
+  const done = effective === 'done'
 
   useEffect(() => {
     if (alreadyLoaded) return
@@ -71,8 +89,13 @@ export function Loader() {
       const held = performance.now() - shownAt
       settle = setTimeout(() => {
         sessionStorage.setItem(SEEN_KEY, '1')
-        setFinished(true)
+        setPhase('wiping')
+        // The wipe uncovers the site, so scrolling can resume the moment it
+        // starts rather than after it finishes.
         getLenis()?.start()
+        // Not transitionend: under reduced motion the global rule collapses
+        // every duration to 0.01ms and the event fires before this even binds.
+        settle = setTimeout(() => setPhase('done'), prefersReducedMotion() ? 0 : WIPE_MS)
       }, Math.max(320, MIN_VISIBLE_MS - held))
     }
 
@@ -92,31 +115,33 @@ export function Loader() {
     }
   }, [alreadyLoaded])
 
+  // Nothing left to paint once the wipe is through, and the grid is a few
+  // hundred nodes — drop the lot rather than leaving it hidden.
+  if (done) return null
+
   return (
     <div
-      className={`${styles.loader} ${done ? styles.hidden : ''}`}
+      className={`${styles.loader} ${effective === 'wiping' ? styles.leaving : ''}`}
       role="status"
       aria-live="polite"
       aria-label="Loading"
-      inert={done ? true : undefined}
     >
-      <span className={styles.wordmark}>Veerlabs</span>
+      {/* The panel's own background covers the one frame before the grid has
+          measured the viewport; from then on the matrix carries the same
+          colour, and .leaving hands over to it. */}
+      <DotMatrix covered={effective === 'loading'} className={styles.sheet} />
 
-      <div className={styles.matrix} aria-hidden="true">
-        {CELLS.map((on, i) => (
-          <span key={i} className={on ? styles.cellOn : styles.cellOff} />
-        ))}
+      <div className={styles.content}>
+        <span className={styles.wordmark}>Veerlabs</span>
+
+        <div className={styles.track} aria-hidden="true">
+          <div className={styles.bar} style={{ width: `${progress}%` }} />
+        </div>
+
+        <span className={styles.count}>{String(progress).padStart(3, '0')} / 100</span>
+
+        <span className={styles.status}>Loading assets</span>
       </div>
-
-      <span className={styles.note}>Dot-matrix reveal / added in code</span>
-
-      <div className={styles.track} aria-hidden="true">
-        <div className={styles.bar} style={{ width: `${progress}%` }} />
-      </div>
-
-      <span className={styles.count}>{String(progress).padStart(3, '0')} / 100</span>
-
-      <span className={styles.status}>Loading assets</span>
     </div>
   )
 }

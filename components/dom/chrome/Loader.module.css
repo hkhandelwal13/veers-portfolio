@@ -1,23 +1,40 @@
-/* Loader — wireframe 1a. Structure only: the dot-matrix reveal itself is
-   Phase 4, so the grid below is a static placeholder, not a shader. */
+/* Loader — wireframe 1a. The reveal it reserved space for is now the panel
+   itself; see Loader.tsx. */
 
 .loader {
   position: fixed;
   inset: 0;
   z-index: var(--z-loader);
+  /* Covers the single frame before <DotMatrix> has measured the viewport.
+     .leaving hands the same colour over to the matrix. */
   background: var(--surface);
+}
+
+.sheet {
+  --dm-color: var(--surface);
+  --dm-grow: 360ms;
+  --dm-stagger: 540ms;
+}
+
+.leaving {
+  background: transparent;
+}
+
+.content {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: var(--s7);
-  transition: opacity var(--dur-med) var(--ease-out),
-    visibility var(--dur-med) var(--ease-out);
+  transition: opacity var(--dur-fast) var(--ease-out);
 }
 
-.hidden {
+/* The copy goes before the wipe does, so the matrix opens onto the site rather
+   than onto the loader's own text. */
+.leaving .content {
   opacity: 0;
-  visibility: hidden;
 }
 
 .wordmark {
@@ -29,35 +46,6 @@
   letter-spacing: var(--hud-tracking);
   text-transform: uppercase;
   color: var(--ink);
-}
-
-/* 120 x 120, 6 x 6 cells — the reveal grid's footprint, reserved now so
-   Phase 4 can drop the shader straight in. */
-.matrix {
-  width: 120px;
-  height: 120px;
-  border: 1px dashed var(--ink);
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  grid-template-rows: repeat(6, 1fr);
-  gap: 2px;
-  padding: var(--s2);
-}
-
-.cellOn {
-  background: var(--ink);
-}
-
-.cellOff {
-  background: var(--line);
-}
-
-.note {
-  font-family: var(--font-mono);
-  font-size: var(--fs-label);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
 }
 
 .track {
