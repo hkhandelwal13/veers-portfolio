@@ -30,8 +30,15 @@ const CENTER = { x: 0.5, y: 0.5 }
 /** Eased value the WebGL layer reads. Mutated in place every frame. */
 export const pointer = { x: 0.5, y: 0.5, cx: 0, cy: 0, inside: false }
 
-/** Where the pointer actually is; `pointer` chases this. */
-const target = { x: 0.5, y: 0.5 }
+/**
+ * Where the pointer actually is, unsmoothed; `pointer` chases this.
+ *
+ * Exported because the cursor needs both readings at once: a lens that lags is
+ * the whole effect, but the dot you actually click with has to sit exactly
+ * under the physical pointer.
+ */
+export const pointerRaw = { x: 0.5, y: 0.5 }
+const target = pointerRaw
 let targetInside = false
 
 const INITIAL: PointerSnapshot = Object.freeze({

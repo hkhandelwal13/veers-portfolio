@@ -8,6 +8,7 @@
  *   2. updateScrollBus      — records what Lenis just produced, for this frame
  *   3. updateScrollActivity — smooths that into the 0..1 speed signal
  *   4. commitPointerBus     — eases the pointer, republishes its snapshot
+ *   5. onFrame listeners    — DOM-side per-frame work (the cursor)
  *
  * WebGL then renders later in the same frame, reading the snapshot from step 2.
  * That ordering is the whole point: it is what removes the one-frame slip you
@@ -28,6 +29,21 @@ import { getLenis } from './lenis'
 import { commitPointerBus } from './pointer-bus'
 import { updateScrollActivity } from './scroll-activity'
 import { updateScrollBus } from './scroll-bus'
+
+/**
+ * DOM-side per-frame work — the cursor, and anything else that animates outside
+ * the canvas. WebGL uses R3F's own useFrame, which runs later in this same
+ * frame; this list is for the things that must work whether or not a canvas
+ * ever mounts.
+ */
+const frameListeners = new Set<(deltaSeconds: number) => void>()
+
+export function onFrame(listener: (deltaSeconds: number) => void) {
+  frameListeners.add(listener)
+  return () => {
+    frameListeners.delete(listener)
+  }
+}
 
 let lastTimeMs = 0
 let hostClaimed = false
@@ -57,6 +73,10 @@ export function runFrame(timeMs: number) {
   updateScrollActivity(scroll, deltaSeconds)
 
   commitPointerBus(deltaSeconds)
+
+  // Last, so DOM listeners see the scroll and pointer readings this frame
+  // produced rather than the previous one's.
+  for (const listener of frameListeners) listener(deltaSeconds)
 }
 
 function tickFallback(timeMs: number) {

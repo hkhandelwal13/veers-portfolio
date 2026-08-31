@@ -1,5 +1,6 @@
 import { SITE } from '@/lib/placeholder-content'
 import styles from './About.module.css'
+import { Scramble } from '@/components/dom/Scramble'
 
 /** About — wireframe 1e. Portrait is marked optional in the wireframe. */
 export function About() {
@@ -31,7 +32,9 @@ export function About() {
           <dl className={styles.facts}>
             {facts.map((f) => (
               <div key={f.label} className={styles.fact}>
-                <dt className="label">{f.label}</dt>
+                <dt className="label">
+                  <Scramble text={f.label} />
+                </dt>
                 <dd className={styles.factValue}>{f.value}</dd>
               </div>
             ))}

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { PlaceholderProject } from '@/lib/placeholder-content'
 import styles from './ProjectDetail.module.css'
+import { Scramble } from '@/components/dom/Scramble'
 
 /**
  * Project detail — wireframe 1d, dark treatment.
@@ -125,7 +126,7 @@ export function ProjectDetail({
 
       <nav className={styles.next} aria-label="Next project">
         <Link href={`/work/${next.slug}`} className={styles.nextLeft}>
-          <span className="label">Next project</span>
+          <Scramble className="label" text="Next project" />
           <span className={styles.nextTitle}>{next.title}</span>
         </Link>
         <div className={styles.nextThumb} aria-hidden="true" />

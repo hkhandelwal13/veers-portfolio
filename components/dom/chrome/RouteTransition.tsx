@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { prefersReducedMotion } from '@/lib/lenis'
+import { setCurtain } from '@/lib/stage-curtain'
 import { DotMatrix } from './DotMatrix'
 import styles from './RouteTransition.module.css'
 
@@ -39,6 +40,11 @@ export function RouteTransition() {
     setShownPath(pathname)
     setCovered(false)
   }
+
+  useEffect(() => {
+    setCurtain('route', covered)
+    return () => setCurtain('route', false)
+  }, [covered])
 
   const timers = useRef<{ push?: ReturnType<typeof setTimeout>; safety?: ReturnType<typeof setTimeout> }>(
     {},

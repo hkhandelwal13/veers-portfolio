@@ -1,6 +1,7 @@
 import { WebGLSlot } from '@/components/dom/WebGLSlot'
 import { SITE } from '@/lib/placeholder-content'
 import styles from './Contact.module.css'
+import { Scramble } from '@/components/dom/Scramble'
 
 /** Contact — wireframe 1g. Holds the reserved wordmark / glass slot. */
 export function Contact() {
@@ -25,7 +26,7 @@ export function Contact() {
 
         <div className={styles.foot}>
           <div className={styles.emailBlock}>
-            <span className="label">Email</span>
+            <Scramble className="label" text="Email" />
             <a className={styles.email} href={`mailto:${SITE.email}`}>
               {SITE.email}
             </a>

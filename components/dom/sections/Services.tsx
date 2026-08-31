@@ -1,5 +1,6 @@
 import { SITE } from '@/lib/placeholder-content'
 import styles from './Services.module.css'
+import { Scramble } from '@/components/dom/Scramble'
 
 /** Services — wireframe 1f. */
 export function Services() {
@@ -9,7 +10,7 @@ export function Services() {
         <h1 id="services-heading" className={`display ${styles.heading}`}>
           Three disciplines, one timeline.
         </h1>
-        <span className="label">{SITE.services.length} disciplines</span>
+        <Scramble className="label" text={`${SITE.services.length} disciplines`} />
       </div>
 
       <ul className={styles.grid}>
@@ -31,7 +32,7 @@ export function Services() {
         <a className={styles.ctaButton} href="/contact">
           Start a project
         </a>
-        <span className="label">Typical turnaround 2–4 weeks</span>
+        <Scramble className="label" text="Typical turnaround 2–4 weeks" />
       </div>
     </section>
   )

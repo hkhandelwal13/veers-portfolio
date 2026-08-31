@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import styles from './Hud.module.css'
+import { Scramble } from '@/components/dom/Scramble'
 
 /**
  * Four-corner HUD (PHASE2_KICKOFF "HUD motif") — built once, mounted in the
@@ -95,7 +96,10 @@ export function Hud({ status }: { status: string }) {
       </div>
 
       <div className={`${styles.corner} ${styles.bottomCenter} ${handoff}`}>
-        <span>{status}</span>
+        {/* The clock in the other corner deliberately does not decode: it
+            reprints every second, and a value that is always resolving reads
+            as broken rather than as arriving. */}
+        <Scramble text={status} />
       </div>
 
       <div className={`${styles.corner} ${styles.bottomRight} ${handoff}`}>

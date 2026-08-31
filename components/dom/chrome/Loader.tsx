@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { getLenis, prefersReducedMotion } from '@/lib/lenis'
+import { setCurtain } from '@/lib/stage-curtain'
 import { DotMatrix } from './DotMatrix'
 import styles from './Loader.module.css'
 
@@ -67,6 +68,13 @@ export function Loader() {
 
   const effective: Phase = alreadyLoaded ? 'done' : phase
   const done = effective === 'done'
+
+  // Held only while the panel is solid. The wipe itself counts as open: things
+  // waiting on the curtain should start as the hole opens, not after it lands.
+  useEffect(() => {
+    setCurtain('loader', effective === 'loading')
+    return () => setCurtain('loader', false)
+  }, [effective])
 
   useEffect(() => {
     if (alreadyLoaded) return
