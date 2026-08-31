@@ -46,6 +46,12 @@
     border-color var(--dur-fast) var(--ease-out);
 }
 
+/* Handed over to the WebGL lens. Kept in the tree rather than unmounted so the
+   frame loop's writes stay valid and the hover state keeps tracking. */
+.lens.deferred {
+  opacity: 0;
+}
+
 /* Over something you can act on: opens up and takes the lime.
    Compounded with .lens rather than left as a bare class: both would otherwise
    be single-class selectors deciding on source order, which is not something to

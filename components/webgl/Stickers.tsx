@@ -13,9 +13,9 @@ import {
 } from '@/lib/sticker-atlas'
 import { getTargetRect } from '@/lib/rect-sampler'
 import { getHeroObjectDissolve, getHeroProgress } from '@/lib/hero-progress'
-import { RIPPLE_LIFE, rippleAges, rippleCenters } from '@/lib/ripple'
 import { getScrollSnapshot } from '@/lib/scroll-bus'
 import { stickerFragmentShader, stickerVertexShader } from '@/shaders/stickers'
+import { FIELD_TARGET_ID } from './HeroField'
 import { HERO_TARGET_ID } from './HeroHello'
 import { LAYER_CONTENT } from './layers'
 import { rectToWorld } from './rect-space'
@@ -34,20 +34,22 @@ const Z_OFFSET = -4.5
 /** Seconds for one fall, top to bottom of the band. */
 const FALL_SECONDS = 9
 
-/**
- * Width and height of the field they fall through, as multiples of the hero's
- * reserved rect. The rect is half the viewport wide, so 1.9 fills it nearly
- * edge to edge; the height overshoots so nothing pops in or out at the seam.
- */
-const SPREAD_X = 1.9
-const SPREAD_Y = 2.3
+/** Height of the field they fall through, as a multiple of the hero section. */
+const SPREAD_Y = 1.25
 
 type Particle = {
   sticker: number
-  /** 0..1 down the band; wraps. */
+  /** 0..1 down the field; wraps independently of every other particle. */
   progress: number
   speed: number
-  x: number
+  /** 0..1 across the field. Drifts as it falls, and wraps on its own. */
+  lane: number
+  /** Sideways travel per fall, signed — the reason no two paths are parallel. */
+  drift: number
+  /** Phase and rate of the sway laid over that drift. */
+  swayPhase: number
+  swayRate: number
+  swayAmount: number
   z: number
   scale: number
   rotation: number
@@ -95,13 +97,8 @@ export function Stickers() {
       uAtlas: { value: texture },
       uFade: { value: 1 },
       uDissolve: { value: 0 },
-      uDotPx: { value: 14 },
-      uRippleCenter: { value: rippleCenters },
-      uRippleAge: { value: rippleAges },
-      uRippleLife: { value: RIPPLE_LIFE },
-      uRippleAmp: { value: 0.02 },
-      uAspect: { value: 1 },
-      uRippleWorld: { value: new THREE.Vector2(1, 1) },
+      uDotPx: { value: 7 },
+      uPixelRatio: { value: 1 },
     }),
     [texture],
   )
@@ -120,14 +117,17 @@ export function Stickers() {
     }
     particlesRef.current = Array.from({ length: INSTANCE_BUDGET }, (_, i) => ({
       sticker: i % atlas.stickers.length,
+      // Independent on every axis. Sharing a fall rate, or a fixed column,
+      // is what made them read as one group moving together rather than as a
+      // field: the eye picks up the common motion long before the positions.
       progress: random(),
-      speed: 0.6 + random() * 0.8,
-      // Spread across the whole hero rather than a narrow band over the word.
-      // They read as a field the hero sits in, and the ones that pass behind
-      // the glass are the ones the refraction picks up — but the field has to
-      // exist for those to feel like part of something.
-      x: (random() - 0.5) * SPREAD_X,
-      z: Z_OFFSET - random() * 1.2,
+      speed: 0.45 + random() * 0.95,
+      lane: random(),
+      drift: (random() - 0.5) * 0.55,
+      swayPhase: random() * Math.PI * 2,
+      swayRate: 0.25 + random() * 0.55,
+      swayAmount: 0.02 + random() * 0.06,
+      z: Z_OFFSET - random() * 1.6,
       scale: 0.075 + random() * 0.075,
       rotation: random() * Math.PI * 2,
       spin: (random() - 0.5) * 0.5,
@@ -166,12 +166,14 @@ export function Stickers() {
       return
     }
 
-    // They only exist to be seen through the glass, so they follow the hero's
-    // rect: same band, same scale, and gone when it is.
-    const rect = getTargetRect(HERO_TARGET_ID)
+    // The whole hero section, not the word's slot: they are a field the hero
+    // sits in, and a field measured against a half-width rect only ever covers
+    // half the screen.
+    const rect = getTargetRect(FIELD_TARGET_ID)
+    const slot = getTargetRect(HERO_TARGET_ID)
     const { viewportHeight } = getScrollSnapshot()
     const height = viewportHeight || state.size.height
-    if (!rect || !rect.valid) {
+    if (!rect || !rect.valid || !slot || !slot.valid) {
       mesh.visible = false
       return
     }
@@ -180,6 +182,9 @@ export function Stickers() {
     const seat = rectToWorld(rect, camera, state.size.width, height)
     const bandHeight = rect.height * seat.unitsPerPixel * SPREAD_Y
     const bandWidth = rect.width * seat.unitsPerPixel
+    // Size still keys off the word's slot, so a sticker stays the same size
+    // relative to the word whatever the section's own height happens to be.
+    const sizeBase = slot.width * seat.unitsPerPixel
 
     if (Math.abs(seat.y) > bandHeight * 3) {
       mesh.visible = false
@@ -194,19 +199,19 @@ export function Stickers() {
     const material = mesh.material as THREE.ShaderMaterial
     material.uniforms.uFade.value = 1 - progress * 0.85
     material.uniforms.uDissolve.value = getHeroObjectDissolve()
-    material.uniforms.uAspect.value = state.size.width / Math.max(state.size.height, 1)
-    // The wake is a UV displacement; stickers move in world units, so it is
-    // converted through the same scale that maps the viewport at this depth.
-    material.uniforms.uRippleWorld.value.set(
-      bandWidth * 2.2,
-      bandHeight * 2.2,
-    )
+    material.uniforms.uPixelRatio.value = state.viewport.dpr
     const exitScale = 1 - 0.55 * progress
 
     const step = delta / FALL_SECONDS
+    const time = state.clock.elapsedTime
     for (let i = 0; i < particles.length; i++) {
       const particle = particles[i]
-      particle.progress = (particle.progress + step * particle.speed) % 1
+      const advance = step * particle.speed
+      particle.progress = (particle.progress + advance) % 1
+      // Horizontal travel is tied to the fall, so a slow sticker drifts slowly
+      // — the two axes belong to the same journey rather than running on
+      // separate clocks.
+      particle.lane = (particle.lane + advance * particle.drift + 1) % 1
       particle.rotation += particle.spin * delta
 
       // Sitting behind the glass means perspective shrinks them. Scaling by
@@ -214,13 +219,14 @@ export function Stickers() {
       // band they fall through — the same as if they were at the word's depth.
       const depthScale = (camera.position.z - particle.z) / Math.max(camera.position.z, 0.001)
 
+      const sway = Math.sin(time * particle.swayRate + particle.swayPhase) * particle.swayAmount
       dummy.position.set(
-        seat.x + particle.x * bandWidth * 0.5 * depthScale,
+        seat.x + (particle.lane - 0.5 + sway) * bandWidth * depthScale,
         seat.y + (bandHeight * 0.5 - particle.progress * bandHeight) * depthScale,
         particle.z,
       )
       dummy.rotation.set(0, 0, particle.rotation)
-      const size = particle.scale * bandWidth * depthScale * exitScale
+      const size = particle.scale * sizeBase * depthScale * exitScale
       const aspect = atlas.stickers[particle.sticker].aspect
       dummy.scale.set(size * aspect, size, 1)
       dummy.updateMatrix()
