@@ -13,8 +13,9 @@ import { dissolveChunk } from './fluid'
  *     dot-matrix wipe on scroll, so the black (or white) the editor intro
  *     paints in has already arrived by the time that section does.
  *
- * It draws the same blueprint grid and diagonal light as the CSS dressing, from
- * the same tokens, so the two match where they meet.
+ * It draws the diagonal light, not the grid: the grid is one CSS layer drawn
+ * over the whole site (see StageDressing), and a second copy here would double
+ * every line inside the hero.
  */
 
 export const heroFieldVertexShader = /* glsl */ `
@@ -31,12 +32,10 @@ precision highp float;
 
 uniform vec3 uGround;      // --bg
 uniform vec3 uGroundEnd;   // what the section below is painted in
-uniform vec4 uGridMark;    // rgb + alpha, from --grid-mark
 uniform vec4 uStreakGlow;
 uniform vec4 uStreakBand;
 
 uniform vec2 uResolution;   // framebuffer pixels
-uniform float uCellPx;      // grid pitch, --grid-cell
 uniform float uDotPx;       // dot-matrix pitch for the handover
 uniform float uTime;
 uniform float uProgress;    // hero scroll progress, 0..1
@@ -46,28 +45,6 @@ uniform float uAspect;
 varying vec2 vUv;
 
 ${dissolveChunk}
-
-/** Hairlines plus a crosshair at each intersection — the CSS tile, in maths. */
-float gridMask(vec2 px) {
-  vec2 cell = mod(px, uCellPx) - uCellPx * 0.5;
-  vec2 d = abs(cell);
-
-  // Crisper than the CSS tile's soft 0.4: the ask was for the lines to read
-  // more clearly, not for more ink on the page.
-  float lines = max(
-    1.0 - smoothstep(0.0, 0.9, d.x),
-    1.0 - smoothstep(0.0, 0.9, d.y)
-  ) * 0.85;
-
-  // The cross is the same two rules, clipped to a short span around the centre.
-  float crossArm = 7.0;
-  float cross = max(
-    (1.0 - smoothstep(0.0, 0.9, d.x)) * step(d.y, crossArm),
-    (1.0 - smoothstep(0.0, 0.9, d.y)) * step(d.x, crossArm)
-  );
-
-  return max(lines, cross);
-}
 
 /** Soft diagonal bands, drifting. Matches the CSS repeating-linear-gradient. */
 float streakMask(vec2 uv) {
@@ -98,13 +75,6 @@ void main() {
   float glow = exp(-length((screenUv - vec2(0.16, -0.06)) * vec2(uAspect, 1.0)) * 2.1);
   color += uStreakGlow.rgb * uStreakGlow.a * glow * dressing;
   color += uStreakBand.rgb * uStreakBand.a * streakMask(screenUv) * 0.5 * dressing;
-  // Blended, not added. The mark is near-black on the light theme and pale on
-  // the dark one; adding it draws a perfect nothing on light grounds, which is
-  // exactly what the hero's grid was doing while the CSS dressing — which
-  // paints the colour rather than adding it — looked right on every other
-  // section.
-  color = mix(color, uGridMark.rgb, uGridMark.a * gridMask(px) * dressing);
-
   // The handover, as the same dot-matrix rule used everywhere else: a circle
   // per cell, growing in the *next section's* colour until the circles merge
   // and the ground simply is that colour.

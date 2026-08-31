@@ -89,11 +89,9 @@ export function HeroField() {
     () => ({
       uGround: { value: new THREE.Color('#0a1038') },
       uGroundEnd: { value: new THREE.Color('#000000') },
-      uGridMark: { value: new THREE.Vector4(0.7, 0.8, 1, 0.19) },
       uStreakGlow: { value: new THREE.Vector4(0.43, 0.57, 1, 0.16) },
       uStreakBand: { value: new THREE.Vector4(0.59, 0.69, 1, 0.075) },
       uResolution: { value: new THREE.Vector2(1, 1) },
-      uCellPx: { value: 240 },
       // Small: the matrix is a texture the ground passes through, not a
       // pattern to be read. Large cells read as polka dots.
       uDotPx: { value: 7 },
@@ -117,10 +115,8 @@ export function HeroField() {
   const paletteRef = useRef({
     ground: new THREE.Color('#0a1038'),
     groundEnd: new THREE.Color('#000000'),
-    gridMark: new THREE.Vector4(0.7, 0.8, 1, 0.19),
     streakGlow: new THREE.Vector4(0.43, 0.57, 1, 0.16),
     streakBand: new THREE.Vector4(0.59, 0.69, 1, 0.075),
-    cellPx: 240,
   })
 
   useEffect(() => {
@@ -129,11 +125,8 @@ export function HeroField() {
       const palette = paletteRef.current
       readColor(styles, '--bg', palette.ground)
       readColor(styles, '--section-ground', palette.groundEnd)
-      readRgba(styles, '--grid-mark', palette.gridMark)
       readRgba(styles, '--streak-glow', palette.streakGlow)
       readRgba(styles, '--streak-band', palette.streakBand)
-      const cell = parseFloat(styles.getPropertyValue('--grid-cell'))
-      if (Number.isFinite(cell)) palette.cellPx = cell
     }
     read()
     return subscribeToTheme(read)
@@ -181,10 +174,8 @@ export function HeroField() {
     const palette = paletteRef.current
     material.uniforms.uGround.value.copy(palette.ground)
     material.uniforms.uGroundEnd.value.copy(palette.groundEnd)
-    material.uniforms.uGridMark.value.copy(palette.gridMark)
     material.uniforms.uStreakGlow.value.copy(palette.streakGlow)
     material.uniforms.uStreakBand.value.copy(palette.streakBand)
-    material.uniforms.uCellPx.value = palette.cellPx
     material.uniforms.uResolution.value.set(
       state.size.width * state.viewport.dpr,
       state.size.height * state.viewport.dpr,

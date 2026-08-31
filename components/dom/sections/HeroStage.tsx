@@ -2,7 +2,7 @@ import { WebGLTarget } from '@/components/dom/WebGLTarget'
 import styles from './HeroStage.module.css'
 
 /**
- * The hero and the section it hands over to, as one surface.
+ * The hero and everything it hands over to, as one surface.
  *
  * They used to be two: a WebGL ground that stopped at the hero's edge, and a
  * section below painting its own opaque black. Whatever the wipe was doing at
@@ -10,8 +10,9 @@ import styles from './HeroStage.module.css'
  * a fully covered one is a boundary however smoothly either side is animating.
  *
  * So there is no second background. The dot matrix *is* how the ground turns
- * black — its coverage keeps rising across both sections, and the editor intro
- * simply has nothing of its own to paint. One surface cannot have a seam.
+ * black — its coverage keeps rising across every section wrapped here, and none
+ * of them has anything of its own to paint. One surface cannot have a seam,
+ * wherever you happen to be looking at it.
  *
  * The intro keeps a CSS ground for the case where the canvas never mounts; see
  * EditorIntro.module.css.

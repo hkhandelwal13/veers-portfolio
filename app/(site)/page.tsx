@@ -8,11 +8,13 @@ export default function HomePage() {
   return (
     <main>
       <Hud status="0174 X 0129 Y" />
+      {/* All three share one WebGL ground, so none of the boundaries between
+          them is a colour change — see HeroStage. */}
       <HeroStage>
         <Hero />
         <EditorIntro />
+        <WorkGrid standalone={false} />
       </HeroStage>
-      <WorkGrid standalone={false} />
     </main>
   )
 }
