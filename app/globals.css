@@ -136,6 +136,12 @@
   /* --- Layering ------------------------------------------------------------- */
   --z-canvas: 1;
   --z-content: 2;
+  /* Above the sections' own backgrounds, below the chrome. The grid is part of
+     the page's ground, but sections that paint their own colour — the project
+     detail, the footer, the editor intro — would each hide it if it sat behind
+     them. Drawn over the top instead, which is also what the reference does:
+     its rules cross the portrait and the wordmark alike. */
+  --z-grid: 20;
   --z-nav: 30;
   --z-hud: 35;
   --z-menu: 40;

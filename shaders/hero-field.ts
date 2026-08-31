@@ -13,8 +13,9 @@ import { dissolveChunk } from './fluid'
  *     dot-matrix wipe on scroll, so the black (or white) the editor intro
  *     paints in has already arrived by the time that section does.
  *
- * It draws the same blueprint grid and diagonal light as the CSS dressing, from
- * the same tokens, so the two match where they meet.
+ * It draws the diagonal light, not the grid: the grid is one CSS layer drawn
+ * over the whole site (see StageDressing), and a second copy here would double
+ * every line inside the hero.
  */
 
 export const heroFieldVertexShader = /* glsl */ `
@@ -31,12 +32,10 @@ precision highp float;
 
 uniform vec3 uGround;      // --bg
 uniform vec3 uGroundEnd;   // what the section below is painted in
-uniform vec4 uGridMark;    // rgb + alpha, from --grid-mark
 uniform vec4 uStreakGlow;
 uniform vec4 uStreakBand;
 
 uniform vec2 uResolution;   // framebuffer pixels
-uniform float uCellPx;      // grid pitch, --grid-cell
 uniform float uDotPx;       // dot-matrix pitch for the handover
 uniform float uTime;
 uniform float uProgress;    // hero scroll progress, 0..1
@@ -46,28 +45,6 @@ uniform float uAspect;
 varying vec2 vUv;
 
 ${dissolveChunk}
-
-/** Hairlines plus a crosshair at each intersection — the CSS tile, in maths. */
-float gridMask(vec2 px) {
-  vec2 cell = mod(px, uCellPx) - uCellPx * 0.5;
-  vec2 d = abs(cell);
-
-  // Crisper than the CSS tile's soft 0.4: the ask was for the lines to read
-  // more clearly, not for more ink on the page.
-  float lines = max(
-    1.0 - smoothstep(0.0, 0.9, d.x),
-    1.0 - smoothstep(0.0, 0.9, d.y)
-  ) * 0.85;
-
-  // The cross is the same two rules, clipped to a short span around the centre.
-  float crossArm = 7.0;
-  float cross = max(
-    (1.0 - smoothstep(0.0, 0.9, d.x)) * step(d.y, crossArm),
-    (1.0 - smoothstep(0.0, 0.9, d.y)) * step(d.x, crossArm)
-  );
-
-  return max(lines, cross);
-}
 
 /** Soft diagonal bands, drifting. Matches the CSS repeating-linear-gradient. */
 float streakMask(vec2 uv) {
@@ -93,18 +70,11 @@ void main() {
 
   // The dressing fades out ahead of the handover, so the wipe lands on a clean
   // ground rather than on a grid it then has to cover.
-  float dressing = 1.0 - smoothstep(0.03, 0.35, uProgress);
+  float dressing = 1.0 - smoothstep(0.1, 0.5, uProgress);
 
   float glow = exp(-length((screenUv - vec2(0.16, -0.06)) * vec2(uAspect, 1.0)) * 2.1);
   color += uStreakGlow.rgb * uStreakGlow.a * glow * dressing;
   color += uStreakBand.rgb * uStreakBand.a * streakMask(screenUv) * 0.5 * dressing;
-  // Blended, not added. The mark is near-black on the light theme and pale on
-  // the dark one; adding it draws a perfect nothing on light grounds, which is
-  // exactly what the hero's grid was doing while the CSS dressing — which
-  // paints the colour rather than adding it — looked right on every other
-  // section.
-  color = mix(color, uGridMark.rgb, uGridMark.a * gridMask(px) * dressing);
-
   // The handover, as the same dot-matrix rule used everywhere else: a circle
   // per cell, growing in the *next section's* colour until the circles merge
   // and the ground simply is that colour.
@@ -116,17 +86,15 @@ void main() {
   // half its radius has covered a quarter of the ground. Starting early and
   // ending before the travel does is what makes it read as a steady handover
   // rather than as nothing, then suddenly everything.
-  float wipe = smoothstep(0.02, 0.55, uProgress);
+  float wipe = smoothstep(0.22, 1.0, uProgress);
 
-  // Biased down the section: the bottom finishes first, so the black rises out
-  // of the seam instead of arriving at it.
-  //
-  // This is what removes the dividing line. The section below is already this
-  // colour; a wipe that progresses evenly leaves a half-covered hero meeting a
-  // fully covered section, and that boundary *is* the line. Finishing at the
-  // bottom edge first means the two are the same colour wherever they touch,
-  // the whole way through.
-  float bias = mix(1.55, 0.5, vUv.y);
+  // Biased down the stage: the far end finishes first, so the black rises from
+  // below and deepens as you travel into it. Because the plane spans both
+  // sections, this also means the coverage you see at any moment is a function
+  // of where you are in the scroll — which is the whole illusion. There is no
+  // second background arriving; the ground you are already looking at is
+  // turning black underneath you.
+  float bias = mix(2.4, 0.35, vUv.y);
   color = mix(color, uGroundEnd, dotMatrixWipe(px, clamp(wipe * bias, 0.0, 1.0), uDotPx));
 
   gl_FragColor = vec4(color, 1.0);

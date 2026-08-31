@@ -1,7 +1,17 @@
+/* The light sits behind everything. */
 .stage {
   position: fixed;
   inset: 0;
   z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* The grid sits in front of it — see --z-grid. */
+.gridStage {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-grid);
   pointer-events: none;
   overflow: hidden;
 }
