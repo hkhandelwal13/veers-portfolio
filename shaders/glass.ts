@@ -13,7 +13,13 @@
  *
  * Tint follows BRAND_TOKENS: Sky Blue body, Ocean Blue for the dark variant.
  * Light and dark are blended differently on purpose (see applyTint).
+ *
+ * Shares the hero's two screen-space rules with the backdrop and the stickers:
+ * the pointer's wake bends both the surface and what it refracts, and the
+ * scroll dissolve breaks it into dots.
  */
+
+import { dissolveChunk, rippleChunk } from './fluid'
 
 export const glassVertexShader = /* glsl */ `
 uniform vec2 uLocalYRange;   // geometry-space min/max Y, for the tint gradient
@@ -60,14 +66,21 @@ uniform float uSpecPower;      // Blinn-Phong exponent — higher is tighter
 uniform float uSpecStrength;
 
 uniform float uHighlightOnly;  // 1 = output just the specular, for the flare pass
+
+uniform float uDissolve;       // hero exit: dot-matrix progress
+uniform float uDotPx;
 uniform vec3 uRimColor;
 uniform float uRimPower;
 uniform float uRimStrength;
 uniform vec3 uLightDirection;  // ring-constrained, driven by the PointerBus
+uniform float uWakeNormal;     // how hard the wake bends the surface itself
 
 varying vec3 vWorldNormal;
 varying vec3 vViewDirection;
 varying float vGradient;
+
+${rippleChunk}
+${dissolveChunk}
 
 /**
  * Hard Light, used for the dark theme's tint.
@@ -113,10 +126,10 @@ vec3 applyTint(vec3 color, float thickness) {
 }
 
 /** Samples the scene behind the glass along one refracted direction. */
-vec3 sampleRefracted(vec2 screenUv, vec3 normal, vec3 viewDir, float ior) {
+vec3 sampleRefracted(vec2 screenUv, vec3 normal, vec3 viewDir, float ior, vec2 wake) {
   vec3 refracted = refract(viewDir, normal, 1.0 / ior);
   vec2 offset = refracted.xy * uRefractStrength;
-  return texture2D(uSceneTexture, clamp(screenUv + offset, 0.001, 0.999)).rgb;
+  return texture2D(uSceneTexture, clamp(screenUv + offset + wake, 0.001, 0.999)).rgb;
 }
 
 void main() {
@@ -124,12 +137,23 @@ void main() {
   vec3 normal = normalize(vWorldNormal);
   vec3 viewDir = normalize(vViewDirection);
 
+  // The pointer's wake, in the same screen UV the refraction samples in. Screen
+  // UV runs down and GL's runs up, so the y component is flipped on the way in.
+  vec2 wakeUv = vec2(screenUv.x, 1.0 - screenUv.y);
+  vec2 wake = rippleOffset(wakeUv);
+  wake.y = -wake.y;
+
+  // The surface is perturbed by the wake as well as the sample: without it the
+  // image behind the glass ripples while the glass itself stays glassy still,
+  // which reads as a video playing behind a window rather than as water.
+  normal = normalize(normal + vec3(wake * uWakeNormal, 0.0));
+
   // Chromatic dispersion: the three channels bend by slightly different
   // amounts, which is what puts colour along the edges rather than a grey blur.
   vec3 color;
-  color.r = sampleRefracted(screenUv, normal, viewDir, uIor - uDispersion).r;
-  color.g = sampleRefracted(screenUv, normal, viewDir, uIor).g;
-  color.b = sampleRefracted(screenUv, normal, viewDir, uIor + uDispersion).b;
+  color.r = sampleRefracted(screenUv, normal, viewDir, uIor - uDispersion, wake).r;
+  color.g = sampleRefracted(screenUv, normal, viewDir, uIor, wake).g;
+  color.b = sampleRefracted(screenUv, normal, viewDir, uIor + uDispersion, wake).b;
 
   // How square-on we are looking at this fragment. Face-on sees the least
   // material; a grazing angle looks along the body and sees much more, which is
@@ -166,7 +190,16 @@ void main() {
   // is bright by nature — it is refracting white paper — so a luminance
   // threshold over the finished material flags the entire word as a highlight
   // and blooms over the whole hero. Only the specular is actually a highlight.
-  gl_FragColor = mix(vec4(color, 1.0), vec4(highlight, 1.0), clamp(uHighlightOnly, 0.0, 1.0));
+  // Same dissolve rule as the backdrop and the stickers. The flare pass reads
+  // this material too, so the mask applies there as well and the highlights
+  // break up with the body rather than outliving it.
+  float alpha = dotMatrixMask(gl_FragCoord.xy, uDissolve, uDotPx);
+
+  gl_FragColor = mix(
+    vec4(color, alpha),
+    vec4(highlight, alpha),
+    clamp(uHighlightOnly, 0.0, 1.0)
+  );
 
   #include <colorspace_fragment>
 }

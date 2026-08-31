@@ -12,6 +12,8 @@ import {
   type StickerAtlas,
 } from '@/lib/sticker-atlas'
 import { getTargetRect } from '@/lib/rect-sampler'
+import { getHeroObjectDissolve, getHeroProgress } from '@/lib/hero-progress'
+import { RIPPLE_LIFE, rippleAges, rippleCenters } from '@/lib/ripple'
 import { getScrollSnapshot } from '@/lib/scroll-bus'
 import { stickerFragmentShader, stickerVertexShader } from '@/shaders/stickers'
 import { HERO_TARGET_ID } from './HeroHello'
@@ -19,7 +21,7 @@ import { LAYER_CONTENT } from './layers'
 import { rectToWorld } from './rect-space'
 
 /** Fixed budget — the count never grows with content. */
-const INSTANCE_BUDGET = 14
+const INSTANCE_BUDGET = 24
 /**
  * How far behind the glass they sit, in world units.
  *
@@ -31,6 +33,14 @@ const INSTANCE_BUDGET = 14
 const Z_OFFSET = -4.5
 /** Seconds for one fall, top to bottom of the band. */
 const FALL_SECONDS = 9
+
+/**
+ * Width and height of the field they fall through, as multiples of the hero's
+ * reserved rect. The rect is half the viewport wide, so 1.9 fills it nearly
+ * edge to edge; the height overshoots so nothing pops in or out at the seam.
+ */
+const SPREAD_X = 1.9
+const SPREAD_Y = 2.3
 
 type Particle = {
   sticker: number
@@ -80,7 +90,21 @@ export function Stickers() {
     return () => controller.abort()
   }, [])
 
-  const uniforms = useMemo(() => ({ uAtlas: { value: texture } }), [texture])
+  const uniforms = useMemo(
+    () => ({
+      uAtlas: { value: texture },
+      uFade: { value: 1 },
+      uDissolve: { value: 0 },
+      uDotPx: { value: 14 },
+      uRippleCenter: { value: rippleCenters },
+      uRippleAge: { value: rippleAges },
+      uRippleLife: { value: RIPPLE_LIFE },
+      uRippleAmp: { value: 0.02 },
+      uAspect: { value: 1 },
+      uRippleWorld: { value: new THREE.Vector2(1, 1) },
+    }),
+    [texture],
+  )
 
   // Deterministic layout: a fixed seed sequence rather than Math.random, so the
   // arrangement is the same on every load and a screenshot means something.
@@ -98,12 +122,13 @@ export function Stickers() {
       sticker: i % atlas.stickers.length,
       progress: random(),
       speed: 0.6 + random() * 0.8,
-      // A narrow band that overlaps the word, not the whole hero: they are
-      // there to be seen *through* the glass, so anything outside its silhouette
-      // is just clutter competing with the headline.
-      x: (random() - 0.5) * 0.85,
+      // Spread across the whole hero rather than a narrow band over the word.
+      // They read as a field the hero sits in, and the ones that pass behind
+      // the glass are the ones the refraction picks up — but the field has to
+      // exist for those to feel like part of something.
+      x: (random() - 0.5) * SPREAD_X,
       z: Z_OFFSET - random() * 1.2,
-      scale: 0.045 + random() * 0.05,
+      scale: 0.075 + random() * 0.075,
       rotation: random() * Math.PI * 2,
       spin: (random() - 0.5) * 0.5,
     }))
@@ -153,10 +178,7 @@ export function Stickers() {
 
     const camera = state.camera as THREE.PerspectiveCamera
     const seat = rectToWorld(rect, camera, state.size.width, height)
-    // 1.4 rather than something taller: the perspective compensation below
-    // already widens the band, and stickers drifting up into the nav or down
-    // past the headline stop reading as "behind the word".
-    const bandHeight = rect.height * seat.unitsPerPixel * 1.4
+    const bandHeight = rect.height * seat.unitsPerPixel * SPREAD_Y
     const bandWidth = rect.width * seat.unitsPerPixel
 
     if (Math.abs(seat.y) > bandHeight * 3) {
@@ -164,6 +186,22 @@ export function Stickers() {
       return
     }
     mesh.visible = true
+
+    // --- Hero exit -----------------------------------------------------------
+    // Shrink and fade together, then dissolve into the same dot grid the
+    // background and the glass use.
+    const progress = getHeroProgress()
+    const material = mesh.material as THREE.ShaderMaterial
+    material.uniforms.uFade.value = 1 - progress * 0.85
+    material.uniforms.uDissolve.value = getHeroObjectDissolve()
+    material.uniforms.uAspect.value = state.size.width / Math.max(state.size.height, 1)
+    // The wake is a UV displacement; stickers move in world units, so it is
+    // converted through the same scale that maps the viewport at this depth.
+    material.uniforms.uRippleWorld.value.set(
+      bandWidth * 2.2,
+      bandHeight * 2.2,
+    )
+    const exitScale = 1 - 0.55 * progress
 
     const step = delta / FALL_SECONDS
     for (let i = 0; i < particles.length; i++) {
@@ -182,7 +220,7 @@ export function Stickers() {
         particle.z,
       )
       dummy.rotation.set(0, 0, particle.rotation)
-      const size = particle.scale * bandWidth * depthScale
+      const size = particle.scale * bandWidth * depthScale * exitScale
       const aspect = atlas.stickers[particle.sticker].aspect
       dummy.scale.set(size * aspect, size, 1)
       dummy.updateMatrix()
