@@ -1,4 +1,6 @@
+import Image from 'next/image'
 import { Scramble } from '@/components/dom/Scramble'
+import { WebGLTarget } from '@/components/dom/WebGLTarget'
 import { SITE } from '@/lib/placeholder-content'
 import styles from './EditorIntro.module.css'
 
@@ -13,17 +15,29 @@ import styles from './EditorIntro.module.css'
  * The hero's WebGL ground travels toward --section-ground as it dissolves, so
  * by the time this scrolls up the handover has already happened underneath.
  *
- * Layout and copy are a placeholder to hold the shape: the portrait, the
- * signature and the real introduction land with the design handoff.
+ * The portrait is a real photograph, and the WebGL layer draws a 2.5D version
+ * of it over the top — same image, displaced by an offline depth map so it
+ * parallaxes with the pointer. The <img> is the fallback, not a placeholder:
+ * where the canvas never mounts it is simply the portrait.
+ *
+ * Copy is still placeholder, pending the real introduction.
  */
 export function EditorIntro() {
   return (
     <section className={styles.section} aria-labelledby="editor-heading">
       <div className={styles.inner}>
         <figure className={styles.portrait}>
-          <div className={styles.portraitFill} aria-hidden="true">
-            <span className={styles.portraitLabel}>Portrait 4:5</span>
-          </div>
+          <WebGLTarget targetId="editor-face" className={styles.portraitFrame}>
+            <Image
+              className={styles.portraitImage}
+              src="/face-color.png"
+              alt="Portrait of the editor"
+              width={900}
+              height={1125}
+              sizes="(max-width: 1024px) 90vw, 40vw"
+              priority={false}
+            />
+          </WebGLTarget>
           <figcaption className={styles.signature} aria-hidden="true">
             Veer
           </figcaption>

@@ -4,6 +4,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { canRenderStarFlare, getCapabilities } from '@/lib/capabilities'
+import { getHeroObjectDissolve } from '@/lib/hero-progress'
 import { fullscreenVertexShader, starCompositeFragmentShader } from '@/shaders/star6'
 import { glassPasses } from './glass-passes'
 import { LAYER_OVERLAY } from './layers'
@@ -43,7 +44,15 @@ export function StarFlare() {
 
     // Nothing to composite while the glass is offscreen or the effect is gated
     // off — and the streak target is stale then anyway.
-    if (!star || !glassPasses.glassVisible || !canRenderStarFlare(getCapabilities())) {
+    // Also off once the word starts dissolving. The pass that fills this target
+    // stops there (see RefractionPass), and compositing a stale buffer leaves a
+    // white haze frozen over the hero for the rest of the scroll.
+    if (
+      !star ||
+      !glassPasses.glassVisible ||
+      getHeroObjectDissolve() > 0.02 ||
+      !canRenderStarFlare(getCapabilities())
+    ) {
       mesh.visible = false
       return
     }

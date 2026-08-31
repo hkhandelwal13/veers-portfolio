@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
+import { MeshTransmissionMaterial } from '@react-three/drei'
 import {
   canRenderCursor,
   canRenderGlass,
@@ -11,10 +12,6 @@ import {
 import { getHeroProgress } from '@/lib/hero-progress'
 import { pointer, pointerRaw } from '@/lib/pointer-bus'
 import { getTargetRect } from '@/lib/rect-sampler'
-import { isSurfaceDark } from '@/lib/surface'
-import { glassFragmentShader, glassVertexShader } from '@/shaders/glass'
-import { glassPasses } from './glass-passes'
-import { createGlassUniforms } from './HeroHello'
 import { FIELD_TARGET_ID } from './HeroField'
 import { LAYER_LENS } from './layers'
 
@@ -32,12 +29,20 @@ import { LAYER_LENS } from './layers'
  * a smooth magnifying bubble. It morphs slowly on its own axis so the highlight
  * travels even when the pointer is at rest.
  *
- * Sits on its own layer so the pass that feeds it can exclude it — a lens that
- * refracts a picture of itself feeds back into a smear within a few frames.
+ * drei's MeshTransmissionMaterial rather than the word's screen-space shader.
+ * The word's version samples a flat picture of the scene, which is enough for a
+ * large shallow object but reads as a tinted disc on a small round one — it has
+ * no thickness to travel through. Transmission renders its own view through the
+ * body, and its distortion terms are what make the surface crawl. It manages
+ * its own buffer and hides itself while filling it, so the second full pass
+ * this used to need is gone.
+ *
+ * Still on its own layer, so it stays out of the word's refraction: the word
+ * sampling the lens sampling the word is a feedback smear within a few frames.
  */
 
-/** Radius in world units at the depth it sits — roughly a 45px bead. */
-const RADIUS = 0.19
+/** Radius in world units at the depth it sits — roughly a 150px bead. */
+const RADIUS = 0.32
 
 /** How hard it chases the pointer. Lower lags more. */
 const FOLLOW_LAMBDA = 13
@@ -45,36 +50,8 @@ const FOLLOW_LAMBDA = 13
 export function CursorLens() {
   const meshRef = useRef<THREE.Mesh>(null)
   const positionRef = useRef(new THREE.Vector3())
-  const uniforms = useMemo(() => {
-    const created = createGlassUniforms()
-    // Much clearer than the word: this is a lens, not a coloured object.
-    //
-    // Refraction strength is a *screen UV* offset, so it does not scale with
-    // the object — at 0.42 a small bead pushed every sample nearly half a
-    // screen away, hit the sampler's clamp, and came back as a flat disc of
-    // whatever colour the frame's edge happened to be.
-    created.uTintAmount.value = 0.05
-    created.uRefractStrength.value = 0.2
-    created.uDispersion.value = 0.095
-    created.uIor.value = 1.34
-    // Thin: thickness drives the tint's depth, and a bead that absorbs like the
-    // word does comes out as a dark marble rather than as a piece of glass.
-    created.uThickness.value = 0.28
-    // A thinner Fresnel ring: the wide one the word uses reads as a dark
-    // rim all the way round a bead this small, which is what makes it look
-    // like a marble instead of a drop.
-    created.uRimPower.value = 3.6
-    created.uRimStrength.value = 1.15
-    created.uSpecStrength.value = 1.5
-    created.uLocalYRange.value.set(-RADIUS, RADIUS)
-    return created
-  }, [])
-
   useEffect(() => {
     meshRef.current?.layers.set(LAYER_LENS)
-    return () => {
-      glassPasses.lensVisible = false
-    }
   }, [])
 
   useFrame((state, delta) => {
@@ -91,7 +68,6 @@ export function CursorLens() {
       !!rect?.valid &&
       getHeroProgress() < 0.9
 
-    glassPasses.lensVisible = active
     mesh.visible = active
     if (!active) return
 
@@ -122,24 +98,30 @@ export function CursorLens() {
     mesh.scale.set(1 + stretch, 1 - stretch * 0.5, 1)
     mesh.rotation.z = angle
 
-    const material = mesh.material as THREE.ShaderMaterial
-    material.uniforms.uSceneTexture.value = glassPasses.lensScene?.texture ?? null
-    material.uniforms.uResolution.value.set(
-      state.size.width * state.viewport.dpr,
-      state.size.height * state.viewport.dpr,
-    )
-    material.uniforms.uDark.value = isSurfaceDark() ? 1 : 0
-    material.uniforms.uPixelRatio.value = state.viewport.dpr
   })
 
   return (
     <mesh ref={meshRef} visible={false} frustumCulled={false} renderOrder={10}>
-      <icosahedronGeometry args={[RADIUS, 6]} />
-      <shaderMaterial
-        vertexShader={glassVertexShader}
-        fragmentShader={glassFragmentShader}
-        uniforms={uniforms}
-        transparent
+      <icosahedronGeometry args={[RADIUS, 12]} />
+      <MeshTransmissionMaterial
+        // One sample and a small buffer: this is a bead in constant motion, and
+        // the cost of transmission is the buffer render, which happens every
+        // frame whatever the pointer is doing.
+        samples={2}
+        resolution={256}
+        transmission={1}
+        thickness={0.9}
+        roughness={0.06}
+        ior={1.5}
+        chromaticAberration={0.09}
+        anisotropy={0.15}
+        // The liquid part: a moving warp through the body, rather than a fixed
+        // lens shape. temporalDistortion is what keeps it crawling at rest.
+        distortion={0.55}
+        distortionScale={0.45}
+        temporalDistortion={0.18}
+        backside
+        backsideThickness={0.35}
       />
     </mesh>
   )

@@ -21,7 +21,7 @@ import { LAYER_CONTENT } from './layers'
 import { rectToWorld } from './rect-space'
 
 /** Fixed budget — the count never grows with content. */
-const INSTANCE_BUDGET = 24
+const INSTANCE_BUDGET = 15
 /**
  * How far behind the glass they sit, in world units.
  *
@@ -32,7 +32,7 @@ const INSTANCE_BUDGET = 24
  */
 const Z_OFFSET = -4.5
 /** Seconds for one fall, top to bottom of the band. */
-const FALL_SECONDS = 9
+const FALL_SECONDS = 17
 
 /** Height of the field they fall through, as a multiple of the hero section. */
 const SPREAD_Y = 1.25
@@ -121,7 +121,7 @@ export function Stickers() {
       // is what made them read as one group moving together rather than as a
       // field: the eye picks up the common motion long before the positions.
       progress: random(),
-      speed: 0.45 + random() * 0.95,
+      speed: 0.5 + random() * 0.7,
       lane: random(),
       drift: (random() - 0.5) * 0.55,
       swayPhase: random() * Math.PI * 2,

@@ -57,7 +57,7 @@ float gridMask(vec2 px) {
   float lines = max(
     1.0 - smoothstep(0.0, 0.9, d.x),
     1.0 - smoothstep(0.0, 0.9, d.y)
-  ) * 0.62;
+  ) * 0.85;
 
   // The cross is the same two rules, clipped to a short span around the centre.
   float crossArm = 7.0;
@@ -93,12 +93,17 @@ void main() {
 
   // The dressing fades out ahead of the handover, so the wipe lands on a clean
   // ground rather than on a grid it then has to cover.
-  float dressing = 1.0 - smoothstep(0.05, 0.5, uProgress);
+  float dressing = 1.0 - smoothstep(0.03, 0.35, uProgress);
 
   float glow = exp(-length((screenUv - vec2(0.16, -0.06)) * vec2(uAspect, 1.0)) * 2.1);
   color += uStreakGlow.rgb * uStreakGlow.a * glow * dressing;
   color += uStreakBand.rgb * uStreakBand.a * streakMask(screenUv) * 0.5 * dressing;
-  color += uGridMark.rgb * uGridMark.a * gridMask(px) * dressing;
+  // Blended, not added. The mark is near-black on the light theme and pale on
+  // the dark one; adding it draws a perfect nothing on light grounds, which is
+  // exactly what the hero's grid was doing while the CSS dressing — which
+  // paints the colour rather than adding it — looked right on every other
+  // section.
+  color = mix(color, uGridMark.rgb, uGridMark.a * gridMask(px) * dressing);
 
   // The handover, as the same dot-matrix rule used everywhere else: a circle
   // per cell, growing in the *next section's* colour until the circles merge
@@ -111,8 +116,18 @@ void main() {
   // half its radius has covered a quarter of the ground. Starting early and
   // ending before the travel does is what makes it read as a steady handover
   // rather than as nothing, then suddenly everything.
-  float wipe = smoothstep(0.15, 0.9, uProgress);
-  color = mix(color, uGroundEnd, dotMatrixWipe(px, wipe, uDotPx));
+  float wipe = smoothstep(0.02, 0.55, uProgress);
+
+  // Biased down the section: the bottom finishes first, so the black rises out
+  // of the seam instead of arriving at it.
+  //
+  // This is what removes the dividing line. The section below is already this
+  // colour; a wipe that progresses evenly leaves a half-covered hero meeting a
+  // fully covered section, and that boundary *is* the line. Finishing at the
+  // bottom edge first means the two are the same colour wherever they touch,
+  // the whole way through.
+  float bias = mix(1.55, 0.5, vUv.y);
+  color = mix(color, uGroundEnd, dotMatrixWipe(px, clamp(wipe * bias, 0.0, 1.0), uDotPx));
 
   gl_FragColor = vec4(color, 1.0);
 

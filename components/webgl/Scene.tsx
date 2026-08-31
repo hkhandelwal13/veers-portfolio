@@ -5,6 +5,7 @@ import { Canvas } from '@react-three/fiber'
 import { AdaptiveDpr, Environment, Lightformer, Preload } from '@react-three/drei'
 import { CardMirrors } from './CardMirrors'
 import { CursorLens } from './CursorLens'
+import { EditorFace } from './EditorFace'
 import { DebugSignals } from './DebugSignals'
 import { FrameDriver } from './FrameDriver'
 import { HeroField } from './HeroField'
@@ -60,6 +61,7 @@ export default function Scene() {
             captures them — that is what gives the dispersion something to bend.
             The field is also the first hero reader each frame, so it advances
             the pointer wake the other two sample. */}
+        <EditorFace />
         <HeroField />
         <Stickers />
         <HeroHello />

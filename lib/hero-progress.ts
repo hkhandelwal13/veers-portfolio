@@ -25,13 +25,17 @@ const TRAVEL = 0.95
  * The objects lag the ground.
  *
  * The background starts turning immediately, but the word and the stickers hold
- * their shape for the first quarter of the travel and then break up. Dissolving
- * everything on the same curve means the word is already gone by the time there
- * is enough of a dot field to see it dissolve into.
+ * their shape for a moment and then break up. Dissolving everything on exactly
+ * the same curve means the word is gone before there is enough of a dot field
+ * to see it dissolve into.
+ *
+ * Both are finished well before the travel is, on purpose: the next section's
+ * top edge is on screen from the very first pixel of scroll, and anything still
+ * resolving by then is resolving over the top of it.
  */
 export function getHeroObjectDissolve(): number {
   const p = getHeroProgress()
-  const t = (p - 0.28) / 0.72
+  const t = (p - 0.08) / 0.37
   return t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t)
 }
 
