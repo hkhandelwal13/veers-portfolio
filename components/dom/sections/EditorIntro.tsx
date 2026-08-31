@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { Scramble } from '@/components/dom/Scramble'
 import { WebGLTarget } from '@/components/dom/WebGLTarget'
+import { Signature } from './Signature'
 import { SITE } from '@/lib/placeholder-content'
 import styles from './EditorIntro.module.css'
 
@@ -30,16 +31,16 @@ export function EditorIntro() {
           <WebGLTarget targetId="editor-face" className={styles.portraitFrame}>
             <Image
               className={styles.portraitImage}
-              src="/face-color.png"
+              src="/face-color2.png"
               alt="Portrait of the editor"
-              width={900}
-              height={1125}
+              width={976}
+              height={1098}
               sizes="(max-width: 1024px) 90vw, 40vw"
               priority={false}
             />
           </WebGLTarget>
-          <figcaption className={styles.signature} aria-hidden="true">
-            Veer
+          <figcaption className={styles.signature}>
+            <Signature label="Veer" />
           </figcaption>
         </figure>
 

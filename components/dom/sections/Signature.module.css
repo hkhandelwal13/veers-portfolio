@@ -1,0 +1,35 @@
+.signature {
+  display: block;
+  width: 100%;
+  height: auto;
+  color: var(--accent-2);
+  overflow: visible;
+  pointer-events: none;
+}
+
+.stroke {
+  /* pathLength is 1, so one dash covers the whole path and one full offset
+     hides it. No measuring, and no dependence on the path's real length. */
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 1700ms var(--ease-out);
+}
+
+.drawn .stroke {
+  stroke-dashoffset: 0;
+}
+
+/*
+ * Reduced motion gets the finished mark, declared rather than decided in JS.
+ *
+ * The component initialises its drawn state from prefersReducedMotion(), which
+ * is false on the server and true on the client — so hydration renders the
+ * undrawn markup and, with the observer skipped, nothing ever flips it. The
+ * signature simply never appeared. A media query cannot fall out of step with
+ * hydration because it is not state.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .stroke {
+    stroke-dashoffset: 0;
+  }
+}
