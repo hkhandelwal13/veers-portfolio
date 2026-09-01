@@ -106,14 +106,20 @@ export function getPortalZoom(t: number): number {
 }
 
 /**
- * Ray density, 0..1. Keeps climbing after the portal has finished opening, so
- * the field goes on thickening while the arrow is already off the edges —
- * which is what makes the middle read as travel rather than as a still.
+ * Ray density, 0..1 — how many rays exist and how far they reach.
+ *
+ * One continuous climb to a single point and one continuous fall away from it,
+ * rather than a rise into a plateau. The field has to keep visibly filling for
+ * as long as you keep scrolling in, and keep visibly emptying for as long as
+ * you scroll back out; a hold in the middle is a stretch of scroll where
+ * nothing answers, which reads as the effect having finished early.
  */
 export function getRayDensity(t: number): number {
-  const rise = smooth((t - FINALE.approach) / (FINALE.peak - FINALE.approach))
-  const fall = 1 - smooth((t - FINALE.close) / (1 - FINALE.close))
-  return clamp01(rise) * clamp01(fall)
+  const centre = 0.68
+  if (t <= centre) {
+    return clamp01(smooth((t - FINALE.approach) / (centre - FINALE.approach)))
+  }
+  return clamp01(1 - smooth((t - centre) / (1 - centre)))
 }
 
 /** The rings only exist at the peak, where the manifesto sits. */
