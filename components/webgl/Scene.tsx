@@ -3,12 +3,15 @@
 import { Suspense } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { AdaptiveDpr, Environment, Lightformer, Preload } from '@react-three/drei'
+import { getHeroProgress } from '@/lib/hero-progress'
+import { CONTACT_FIELD_ID, getContactProgress } from '@/lib/contact-progress'
 import { CardMirrors } from './CardMirrors'
 import { CursorLens } from './CursorLens'
 import { EditorFace } from './EditorFace'
 import { DebugSignals } from './DebugSignals'
 import { FrameDriver } from './FrameDriver'
-import { HeroField } from './HeroField'
+import { CONTACT_TARGET_ID, ContactWord } from './ContactWord'
+import { SectionField, STAGE_TARGET_ID } from './HeroField'
 import { HeroArrow } from './HeroArrow'
 import { HeroHello } from './HeroHello'
 import { RectSampler } from './RectSampler'
@@ -26,6 +29,9 @@ import { Stickers } from './Stickers'
  * scrolling. Idle cost is one composite of a nearly empty scene; AdaptiveDpr
  * trades resolution rather than frames when the GPU is struggling.
  */
+/** Nothing on the closing screen dissolves — it is where the scroll stops. */
+const ZERO = () => 0
+
 export default function Scene() {
   return (
     <Canvas
@@ -62,8 +68,19 @@ export default function Scene() {
             The field is also the first hero reader each frame, so it advances
             the pointer wake the other two sample. */}
         <EditorFace />
-        <HeroField />
+        <SectionField targetId={STAGE_TARGET_ID} progress={getHeroProgress} />
         <Stickers />
+
+        {/* The closing screen repeats the hero's arrangement: its own ground,
+            its own glass word, its own sticker field. */}
+        <SectionField targetId={CONTACT_FIELD_ID} progress={getContactProgress} />
+        <ContactWord />
+        <Stickers
+          fieldId={CONTACT_FIELD_ID}
+          slotId={CONTACT_TARGET_ID}
+          progress={ZERO}
+          dissolve={ZERO}
+        />
         <HeroHello />
         <HeroArrow />
         <StarFlare />

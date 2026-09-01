@@ -69,7 +69,20 @@ type Particle = {
  * a fixed budget, so the cost is known regardless of how many sticker images
  * the set ends up containing.
  */
-export function Stickers() {
+export function Stickers({
+  /** The section they fall through. */
+  fieldId = FIELD_TARGET_ID,
+  /** The word inside it — sets their size, so they stay in proportion to it. */
+  slotId = HERO_TARGET_ID,
+  /** How far the section has been scrolled away, for the exit. */
+  progress = getHeroProgress,
+  dissolve = getHeroObjectDissolve,
+}: {
+  fieldId?: string
+  slotId?: string
+  progress?: () => number
+  dissolve?: () => number
+} = {}) {
   const meshRef = useRef<THREE.InstancedMesh>(null)
   const [atlas, setAtlas] = useState<StickerAtlas | null>(null)
   // Both carry state across frames, so neither can be a memo result.
@@ -169,8 +182,8 @@ export function Stickers() {
     // The whole hero section, not the word's slot: they are a field the hero
     // sits in, and a field measured against a half-width rect only ever covers
     // half the screen.
-    const rect = getTargetRect(FIELD_TARGET_ID)
-    const slot = getTargetRect(HERO_TARGET_ID)
+    const rect = getTargetRect(fieldId)
+    const slot = getTargetRect(slotId)
     const { viewportHeight } = getScrollSnapshot()
     const height = viewportHeight || state.size.height
     if (!rect || !rect.valid || !slot || !slot.valid) {
@@ -195,12 +208,12 @@ export function Stickers() {
     // --- Hero exit -----------------------------------------------------------
     // Shrink and fade together, then dissolve into the same dot grid the
     // background and the glass use.
-    const progress = getHeroProgress()
+    const exit = progress()
     const material = mesh.material as THREE.ShaderMaterial
-    material.uniforms.uFade.value = 1 - progress * 0.85
-    material.uniforms.uDissolve.value = getHeroObjectDissolve()
+    material.uniforms.uFade.value = 1 - exit * 0.85
+    material.uniforms.uDissolve.value = dissolve()
     material.uniforms.uPixelRatio.value = state.viewport.dpr
-    const exitScale = 1 - 0.55 * progress
+    const exitScale = 1 - 0.55 * exit
 
     const step = delta / FALL_SECONDS
     const time = state.clock.elapsedTime
