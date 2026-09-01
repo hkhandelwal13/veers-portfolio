@@ -18,7 +18,7 @@ import { stickerFragmentShader, stickerVertexShader } from '@/shaders/stickers'
 import { FIELD_TARGET_ID } from './HeroField'
 import { HERO_TARGET_ID } from './HeroHello'
 import { LAYER_CONTENT } from './layers'
-import { rectToWorld } from './rect-space'
+import { isRectVisible, rectToWorld } from './rect-space'
 
 /** Fixed budget — the count never grows with content. */
 const INSTANCE_BUDGET = 15
@@ -186,7 +186,16 @@ export function Stickers({
     const slot = getTargetRect(slotId)
     const { viewportHeight } = getScrollSnapshot()
     const height = viewportHeight || state.size.height
-    if (!rect || !rect.valid || !slot || !slot.valid) {
+    // Bound to the section, not just to a valid rect: a field measured for a
+    // section still below the fold would otherwise be drawn over whatever
+    // happens to be on screen — the finale, in the closing screen's case.
+    if (
+      !rect ||
+      !rect.valid ||
+      !slot ||
+      !slot.valid ||
+      !isRectVisible(rect, height, 0)
+    ) {
       mesh.visible = false
       return
     }

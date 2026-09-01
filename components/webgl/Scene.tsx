@@ -12,6 +12,7 @@ import { DebugSignals } from './DebugSignals'
 import { FrameDriver } from './FrameDriver'
 import { CONTACT_TARGET_ID, ContactWord } from './ContactWord'
 import { SectionField, STAGE_TARGET_ID } from './HeroField'
+import { FinaleArrow } from './FinaleArrow'
 import { HeroArrow } from './HeroArrow'
 import { HeroHello } from './HeroHello'
 import { RectSampler } from './RectSampler'
@@ -83,6 +84,7 @@ export default function Scene() {
         />
         <HeroHello />
         <HeroArrow />
+        <FinaleArrow />
         <StarFlare />
         {/* Last: it refracts a render that already contains the word. */}
         <CursorLens />
