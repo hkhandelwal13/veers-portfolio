@@ -1,6 +1,7 @@
 import { Hud } from '@/components/dom/chrome/Hud'
 import { Contact } from '@/components/dom/sections/Contact'
 import { EditorIntro } from '@/components/dom/sections/EditorIntro'
+import { Finale } from '@/components/dom/sections/Finale'
 import { Hero } from '@/components/dom/sections/Hero'
 import { HeroStage } from '@/components/dom/sections/HeroStage'
 import { WorkGrid } from '@/components/dom/sections/WorkGrid'
@@ -15,6 +16,9 @@ export default function HomePage() {
         <Hero />
         <EditorIntro />
         <WorkGrid standalone={false} />
+        {/* Inside the stage too, so it sits on the same black the work grid
+            handed over to rather than introducing a ground of its own. */}
+        <Finale />
       </HeroStage>
       <Contact standalone={false} />
     </main>

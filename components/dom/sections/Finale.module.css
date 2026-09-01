@@ -1,0 +1,124 @@
+/*
+ * Five viewports of travel for one viewport of stage. The extra four are the
+ * timeline: without them the whole sequence would have to happen inside a
+ * single screen's worth of scroll, which is not enough room to read as going
+ * somewhere.
+ */
+.section {
+  position: relative;
+  height: 500svh;
+}
+
+.stageTarget {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  z-index: var(--z-content);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: var(--margin);
+  /* The canvas underneath owns the picture; this layer is only type. */
+  pointer-events: none;
+}
+
+.headline {
+  max-width: 16ch;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 1.2rem + 5.4vw, 5.5rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-wrap: balance;
+}
+
+/* Absolute, so the rays run between the lines rather than around a block. */
+.manifesto {
+  position: absolute;
+  inset: var(--s9) var(--margin);
+}
+
+.line {
+  position: absolute;
+  margin: 0;
+  max-width: 20ch;
+  font-family: var(--font-display);
+  font-size: clamp(1.125rem, 0.9rem + 0.9vw, 1.6rem);
+  line-height: 1.25;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.lineInner {
+  display: inline-block;
+  opacity: 0;
+  animation: rise 520ms var(--ease-out) forwards;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.topLeft {
+  top: 8%;
+  left: 0;
+}
+
+.topRight {
+  top: 18%;
+  right: 0;
+  text-align: right;
+}
+
+.bottomLeft {
+  bottom: 26%;
+  left: 4%;
+}
+
+.bottomRight {
+  bottom: 10%;
+  right: 4%;
+  text-align: right;
+}
+
+@media (max-width: 1024px) {
+  .manifesto {
+    inset: var(--s8) var(--margin);
+  }
+
+  .topLeft,
+  .bottomLeft {
+    left: 0;
+  }
+
+  .topRight,
+  .bottomRight {
+    right: 0;
+  }
+}
+
+/* The whole thing is scrubbed, so reduced motion cannot simply stop it — the
+   copy is what matters, and it arrives without the rise. */
+@media (prefers-reduced-motion: reduce) {
+  .lineInner {
+    opacity: 1;
+    animation: none;
+  }
+}
