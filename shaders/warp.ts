@@ -37,10 +37,20 @@ uniform vec3 uRingColor;
 /** The hole everything comes out of, as a share of the frame's height. */
 const float CORE_RADIUS = 0.055;
 
-/** Radial lines in the field. Every segment sits on one of them. */
-const float RAY_COUNT = 520.0;
-/** How much of its bin a segment may fill. The rest is the gap to its neighbour. */
-const float BIN_FILL = 0.34;
+/**
+ * Radial lines in the field. Every segment sits on one of them.
+ *
+ * Fewer than the field could hold, because the count is what sets the weight:
+ * a segment may only fill part of its own bin (see BIN_FILL), and a bin's arc
+ * is the circumference divided by this. Halving the count doubles how heavy
+ * every line is allowed to be. Line work that reads is worth more here than
+ * line work that is merely dense.
+ */
+const float RAY_COUNT = 360.0;
+/** How much of its bin a segment fills. The rest is the gap to its neighbour. */
+const float BIN_FILL = 0.5;
+/** Below about a pixel a line stops being a line and becomes noise. */
+const float MIN_HALF_WIDTH = 0.0007;
 
 float hash11(float p) {
   p = fract(p * 0.1031);
@@ -61,11 +71,9 @@ float hash11(float p) {
  * is a fraction of a degree wide, they lie on top of each other.
  *
  * Thickness is measured perpendicular to the ray in screen units, so a segment
- * has one weight along its whole length rather than fanning out into a wedge.
- * It is then capped at a share of its own bin, which is what guarantees a gap
- * between neighbours — and, because a bin's arc is proportional to the radius,
- * is also what makes the field hairline-fine at the core and heavy at the edge
- * without a second curve to tune.
+ * has one weight along its whole length rather than fanning out into a wedge,
+ * and comes from the bin rather than from a curve of its own — see the note at
+ * the line below.
  */
 vec3 warpLayer(float angle, float radius, float count, float seed) {
   float index = floor(angle * count);
@@ -97,7 +105,6 @@ vec3 warpLayer(float angle, float radius, float count, float seed) {
   // Length and weight follow it. The same segment covers more screen and reads
   // heavier the nearer it gets, which is most of what sells the depth.
   float len = (0.26 + g * 0.34) * (0.05 + travelled * 1.7);
-  float halfWidth = 0.0010 + 0.0092 * min(travelled, 1.0);
 
   // Perpendicular distance to the ray's centre line, wrapped at the seam.
   float centre = (index + 0.5) / count;
@@ -105,10 +112,11 @@ vec3 warpLayer(float angle, float radius, float count, float seed) {
   delta = min(delta, 1.0 - delta);
   float perp = delta * 6.2831853 * radius;
 
-  // Never wider than its own share of the bin, so neighbours always have a gap
-  // between them however heavy the ramp above asks for.
-  float binHalfWidth = 3.1415927 * radius / count;
-  float weight = min(halfWidth, binHalfWidth * BIN_FILL);
+  // A fixed share of the segment's own bin. Two things fall out of that and no
+  // second curve is needed for either: neighbours always have a gap between
+  // them, and — since a bin's arc is proportional to the radius — the field is
+  // hairline-fine at the core and heavy at the frame edge.
+  float weight = max(3.1415927 * radius / count * BIN_FILL, MIN_HALF_WIDTH);
   float line = smoothstep(weight, weight * 0.3, perp);
 
   float radial =
