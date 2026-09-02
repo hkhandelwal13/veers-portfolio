@@ -31,16 +31,8 @@ const CELL_PX = 14
 const REVEAL_SECONDS = 0.45
 /** Seconds for a card to develop from negative to full colour on entry. */
 const DEVELOP_SECONDS = 0.8
-/**
- * Curl at full scroll speed.
- *
- * The article's own figure is 0.06, and at that strength — over a profile that
- * is zero through the middle of the card and only reaches full at the very top
- * and bottom edges — the flex is real but essentially invisible at a normal
- * scroll. This is the same effect with enough amplitude to be seen, which is
- * the whole reason it exists.
- */
-const CURL_MAX = 0.18
+/** Curl at full scroll speed. Small on purpose — it should read as give, not warp. */
+const CURL_MAX = 0.06
 
 function createUniforms() {
   return {

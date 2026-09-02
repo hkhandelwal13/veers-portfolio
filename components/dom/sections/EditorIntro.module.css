@@ -46,32 +46,10 @@
   border: 1px solid color-mix(in srgb, var(--section-ink) 22%, transparent);
 }
 
-/*
- * Scroll-velocity curl, the DOM half.
- *
- * The work grid's cards get the real thing — a per-pixel UV compression in the
- * card shader, keyed off the same signal. The portrait is a plain <img> until a
- * depth map exists to make it a 2.5D mesh, so it flexes the only way an element
- * can: a horizontal squeeze that grows with speed and releases slowly after,
- * which is the same shape of motion for a fraction of the cost.
- *
- * --scroll-curl is written once per frame by the frame loop, quantised, and is
- * exactly 0 on an idle page.
- */
 .portraitImage {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scaleX(calc(1 - var(--scroll-curl, 0) * 0.13))
-    scaleY(calc(1 + var(--scroll-curl, 0) * 0.05));
-  transform-origin: center;
-  will-change: transform;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .portraitImage {
-    transform: none;
-  }
 }
 
 /* The handwritten mark over the corner of the frame, as in the reference —

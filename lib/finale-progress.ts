@@ -40,8 +40,14 @@ export const FINALE_ARROW_ID = 'finale-arrow'
  * far past you it has grown, not to the raw scroll.
  */
 export const FINALE = {
-  /** Arrived and pinned. Rest size, rest attitude. */
-  settle: 0.06,
+  /**
+   * Pinned.
+   *
+   * Zero, not a beat of its own: the arrow has already been growing on the way
+   * in (see getEntryScale), so there is nothing left to settle into — pinning
+   * is the moment the growth changes hands, not the moment it starts.
+   */
+  settle: 0,
   /** Grown to reading size, still flat-on. The headlines are up. */
   swell: 0.26,
   /** One revolution done; past every edge; the tunnel has taken over. */
@@ -77,7 +83,7 @@ const READING_SHARE = Math.log(READING_SIZE) / Math.log(PEAK_SIZE)
  * segments travel out of the centre on the way down and back into it on the
  * way up.
  */
-const TUNNEL_LENGTH = 20
+const TUNNEL_LENGTH = 12
 
 /** Rings emitted across the hold. One arrives per unit; six are alive at once. */
 const RING_RATE = 46
@@ -148,6 +154,28 @@ export function getGrowth(t: number): number {
 /** The arrow's scale multiplier over its seated size. */
 export function getArrowScale(t: number): number {
   return Math.pow(PEAK_SIZE, getGrowth(t))
+}
+
+/**
+ * How much bigger the arrow gets on the way in, before anything is pinned.
+ *
+ * The section's own travel is the timeline once it is pinned, but the run-up to
+ * that is a whole viewport of scroll in which the arrow used to do nothing but
+ * ride into frame at a fixed size. The work grid leaving and the arrow starting
+ * to come at you are one movement, not two, so the approach is part of the
+ * growth: the arrow is already swelling while the grid is still on screen, and
+ * arrives at its seated size exactly as the stage pins.
+ */
+const ENTRY_GAIN = 2.4
+
+export function getEntryScale(): number {
+  const rect = getTargetRect(FINALE_TARGET_ID)
+  const { viewportHeight } = getScrollSnapshot()
+  if (!rect || !rect.valid || viewportHeight <= 0) return 1
+
+  // 0 with the section's top edge at the fold, 1 once it has reached the top.
+  const entry = clamp01(1 - rect.y / viewportHeight)
+  return Math.pow(ENTRY_GAIN, smooth(entry) - 1)
 }
 
 /**

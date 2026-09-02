@@ -12,19 +12,6 @@
    Caveat (handwriting) is annotation ink from the wireframes and is not loaded.
    ========================================================================== */
 
-/*
- * Scroll speed, 0..1, written once per frame by the frame loop.
- *
- * Registered so it is a real number rather than a token: an unregistered custom
- * property inside calc() inside a transform is re-parsed on every write, and
- * this one is written on every frame of every scroll.
- */
-@property --scroll-curl {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 0;
-}
-
 :root {
   /* --- Surfaces (light) ---------------------------------------------------
      Sky-blue, not the warm greige the Phase 2 wireframes were drawn in. The
