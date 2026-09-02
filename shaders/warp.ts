@@ -37,6 +37,11 @@ uniform vec3 uRingColor;
 /** The hole everything comes out of, as a share of the frame's height. */
 const float CORE_RADIUS = 0.055;
 
+/** Radial lines in the field. Every segment sits on one of them. */
+const float RAY_COUNT = 520.0;
+/** How much of its bin a segment may fill. The rest is the gap to its neighbour. */
+const float BIN_FILL = 0.34;
+
 float hash11(float p) {
   p = fract(p * 0.1031);
   p *= p + 33.33;
@@ -45,17 +50,22 @@ float hash11(float p) {
 }
 
 /**
- * One layer of segments.
+ * One pass of segments over the shared angular partition.
  *
- * The angle around the centre is quantised into bins, and each bin's index
- * seeds its own depth offset, speed, length, thickness and colour — so every
- * ray is independent without anything being stored, and four layers at
- * different bin counts give the field its range of scales.
+ * ONE partition, called several times with different seeds. Every pass uses the
+ * same bin boundaries, so every segment sits on the same set of radial centre
+ * lines and no two can ever cross: what the extra passes add is more segments
+ * along a line, at their own depths, not more lines. Bins of different sizes —
+ * which is what several layers at different counts would be — put rays at
+ * angles that fall between other rays' angles, and near the centre, where a bin
+ * is a fraction of a degree wide, they lie on top of each other.
  *
- * Thickness is measured perpendicular to the ray in screen units rather than in
- * bin widths. An angular width would make every segment fan out with distance,
- * so the outer field would read as wedges; the reference is line work, and line
- * work has one weight.
+ * Thickness is measured perpendicular to the ray in screen units, so a segment
+ * has one weight along its whole length rather than fanning out into a wedge.
+ * It is then capped at a share of its own bin, which is what guarantees a gap
+ * between neighbours — and, because a bin's arc is proportional to the radius,
+ * is also what makes the field hairline-fine at the core and heavy at the edge
+ * without a second curve to tune.
  */
 vec3 warpLayer(float angle, float radius, float count, float seed) {
   float index = floor(angle * count);
@@ -87,14 +97,19 @@ vec3 warpLayer(float angle, float radius, float count, float seed) {
   // Length and weight follow it. The same segment covers more screen and reads
   // heavier the nearer it gets, which is most of what sells the depth.
   float len = (0.26 + g * 0.34) * (0.05 + travelled * 1.7);
-  float halfWidth = 0.0024 + 0.0062 * min(travelled, 1.0);
+  float halfWidth = 0.0010 + 0.0092 * min(travelled, 1.0);
 
   // Perpendicular distance to the ray's centre line, wrapped at the seam.
   float centre = (index + 0.5) / count;
   float delta = abs(angle - centre);
   delta = min(delta, 1.0 - delta);
   float perp = delta * 6.2831853 * radius;
-  float line = smoothstep(halfWidth, halfWidth * 0.3, perp);
+
+  // Never wider than its own share of the bin, so neighbours always have a gap
+  // between them however heavy the ramp above asks for.
+  float binHalfWidth = 3.1415927 * radius / count;
+  float weight = min(halfWidth, binHalfWidth * BIN_FILL);
+  float line = smoothstep(weight, weight * 0.3, perp);
 
   float radial =
     smoothstep(start, start + 0.004, radius) *
@@ -186,14 +201,14 @@ vec3 warpField(vec2 screenUv, float aspect) {
 
   vec3 rays = vec3(0.0);
   if (uRayDensity > 0.001) {
-    rays += warpLayer(angle, radius, 96.0, 3.1);
-    rays += warpLayer(angle, radius, 192.0, 61.7);
-    rays += warpLayer(angle, radius, 384.0, 127.3);
-    // The finest layer is the crowd right at the vanishing point, and it is
-    // also the single biggest cost — a small screen keeps the tunnel and drops
-    // the crowd.
+    // Three passes over the one partition: up to three segments on a line, at
+    // their own depths, and never a crossing.
+    rays += warpLayer(angle, radius, RAY_COUNT, 3.1);
+    rays += warpLayer(angle, radius, RAY_COUNT, 61.7);
+    // The third is the crowd, and the single biggest cost — a small screen
+    // keeps the tunnel and drops it.
     if (uFine > 0.5) {
-      rays += warpLayer(angle, radius, 768.0, 211.9);
+      rays += warpLayer(angle, radius, RAY_COUNT, 127.3);
     }
   }
 
