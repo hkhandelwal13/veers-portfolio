@@ -13,14 +13,8 @@
  * every other frame, and skipped entirely while the glass is offscreen.
  */
 
-export const fullscreenVertexShader = /* glsl */ `
-varying vec2 vUv;
-
-void main() {
-  vUv = uv;
-  gl_Position = vec4(position.xy, 0.0, 1.0);
-}
-`
+// Shared with the fluid passes; see shaders/fullscreen.
+export { fullscreenVertexShader } from './fullscreen'
 
 export const star6FragmentShader = /* glsl */ `
 precision highp float;
