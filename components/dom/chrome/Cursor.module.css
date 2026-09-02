@@ -29,27 +29,13 @@
   height: 34px;
   /* Centred on its own origin, so the transform can carry raw page pixels. */
   margin: -17px 0 0 -17px;
-  border: 1px solid color-mix(in srgb, var(--ink) 26%, transparent);
-  background: radial-gradient(
-    circle at 34% 28%,
-    color-mix(in srgb, var(--ink) 9%, transparent),
-    transparent 62%
-  );
-  /* What makes it read as water rather than as a ring: it bends the page. */
-  backdrop-filter: blur(1.4px) saturate(1.45) brightness(1.03);
-  -webkit-backdrop-filter: blur(1.4px) saturate(1.45) brightness(1.03);
+  border: 1px solid color-mix(in srgb, var(--ink) 34%, transparent);
   transition:
     opacity var(--dur-fast) var(--ease-out),
     width var(--dur-fast) var(--ease-out),
     height var(--dur-fast) var(--ease-out),
     margin var(--dur-fast) var(--ease-out),
     border-color var(--dur-fast) var(--ease-out);
-}
-
-/* Handed over to the WebGL lens. Kept in the tree rather than unmounted so the
-   frame loop's writes stay valid and the hover state keeps tracking. */
-.lens.deferred {
-  opacity: 0;
 }
 
 /* Over something you can act on: opens up and takes the lime.

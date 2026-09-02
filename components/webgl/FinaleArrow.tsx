@@ -69,7 +69,6 @@ export function FinaleArrow() {
       uRingColor: { value: new THREE.Color('#b8e614') },
       uRayDensity: { value: 0 },
       uRingStrength: { value: 0 },
-      uWarpTime: { value: 0 },
     }),
     [],
   )
@@ -139,9 +138,6 @@ export function FinaleArrow() {
     material.uniforms.uSolid.value = getSolidity(t)
     material.uniforms.uRayDensity.value = getRayDensity(t)
     material.uniforms.uRingStrength.value = getRingStrength(t)
-    // The one thing not scrubbed: the field drifts on its own, so sitting still
-    // mid-sequence still reads as travelling rather than as a paused image.
-    material.uniforms.uWarpTime.value = state.clock.elapsedTime
   })
 
   return (

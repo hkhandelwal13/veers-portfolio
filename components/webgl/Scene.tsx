@@ -6,7 +6,6 @@ import { AdaptiveDpr, Environment, Lightformer, Preload } from '@react-three/dre
 import { getHeroProgress } from '@/lib/hero-progress'
 import { CONTACT_FIELD_ID, getContactProgress } from '@/lib/contact-progress'
 import { CardMirrors } from './CardMirrors'
-import { CursorLens } from './CursorLens'
 import { EditorFace } from './EditorFace'
 import { DebugSignals } from './DebugSignals'
 import { FrameDriver } from './FrameDriver'
@@ -86,8 +85,6 @@ export default function Scene() {
         <HeroArrow />
         <FinaleArrow />
         <StarFlare />
-        {/* Last: it refracts a render that already contains the word. */}
-        <CursorLens />
 
         {/* Procedural environment — built from Lightformers rather than an HDRI
             preset, so nothing is fetched from a CDN at runtime. */}

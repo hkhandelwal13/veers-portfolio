@@ -3,22 +3,21 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import {
   canRenderCursor,
-  canRenderGlass,
   getCapabilities,
   getServerCapabilities,
   subscribeToCapabilities,
 } from '@/lib/capabilities'
 import { onFrame } from '@/lib/frame-loop'
 import { pointer, pointerRaw } from '@/lib/pointer-bus'
-import styles from './WateryCursor.module.css'
+import styles from './Cursor.module.css'
 
 /**
- * The cursor, as a bead of water.
+ * The pointer, as a ring and a dot.
  *
  * Two parts, because a lagging cursor you cannot aim with is a broken cursor:
- * a hard dot pinned to the real pointer position, and a lens that trails it and
+ * a hard dot pinned to the real pointer position, and a ring that trails it and
  * stretches along its direction of travel. The dot is what you click with; the
- * lens is the effect.
+ * ring is the character.
  *
  * Driven from the shared frame loop, not its own rAF (CLAUDE.md §11) — and from
  * lib/frame-loop's DOM list rather than R3F's useFrame, because it has to keep
@@ -38,7 +37,7 @@ const STRETCH_MAX = 0.42
 /** What counts as something you can act on, for the widened state. */
 const INTERACTIVE = 'a[href], button, [role="button"], input, textarea, select, summary'
 
-export function WateryCursor() {
+export function Cursor() {
   const lensRef = useRef<HTMLDivElement>(null)
   const dotRef = useRef<HTMLDivElement>(null)
 
@@ -48,10 +47,6 @@ export function WateryCursor() {
     getServerCapabilities,
   )
   const enabled = canRenderCursor(caps)
-  // Where WebGL is running, the liquid-glass lens *is* the cursor (see
-  // CursorLens) and this one keeps only the dot you aim with. Two lenses
-  // chasing the same pointer read as a rendering fault.
-  const lensInWebGL = canRenderGlass(caps)
 
   useEffect(() => {
     if (!enabled) return
@@ -120,10 +115,7 @@ export function WateryCursor() {
 
   return (
     <div className={styles.cursor} aria-hidden="true">
-      <div
-        ref={lensRef}
-        className={`${styles.lens} ${lensInWebGL ? styles.deferred : ''}`}
-      />
+      <div ref={lensRef} className={styles.lens} />
       <div ref={dotRef} className={styles.dot} />
     </div>
   )
