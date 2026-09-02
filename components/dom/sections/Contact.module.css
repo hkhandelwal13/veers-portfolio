@@ -1,17 +1,19 @@
 /* Contact — wireframe 1g. Carries the second reserved 3D slot. */
 
 /*
- * Extended one viewport above the section.
+ * Reaches a little above the section.
  *
- * The closing screen's ground has to be up behind the finale's collapse — that
- * is where the arrow lands, and a ground that begins at this section's own top
- * edge arrives instead as a horizontal seam sliding up the black. lib/contact-
- * progress subtracts the same viewport back off, so the dissolve still keys off
- * where the section itself is.
+ * Enough that the ground's dot matrix and the sticker field are already up
+ * behind the arrow as it comes back down through reading size — that is where
+ * it lands, and a ground beginning at this section's own top edge arrives
+ * instead as an edge sliding up the black. Not more than that: the finale's
+ * tunnel runs for most of the section above, and stickers drifting through it
+ * belong to a different place. lib/contact-progress subtracts the same
+ * distance back off, so the dissolve still keys off where the section is.
  */
 .fieldTarget {
   position: absolute;
-  inset: -100svh 0 0 0;
+  inset: -40svh 0 0 0;
   pointer-events: none;
 }
 

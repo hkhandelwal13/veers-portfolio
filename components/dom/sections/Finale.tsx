@@ -7,6 +7,7 @@ import {
   getFinaleProgress,
   getHeadlineStep,
   isManifestoUp,
+  isTunnelBehind,
 } from '@/lib/finale-progress'
 import { subscribeToScroll } from '@/lib/scroll-bus'
 import styles from './Finale.module.css'
@@ -42,20 +43,26 @@ const MANIFESTO = [
  *
  * getSnapshot returns a small integer, so React bails out of the render on
  * every frame that lands inside the same beat — which is nearly all of them.
+ * Two facts are packed into it, the beat and whether the tunnel is behind the
+ * copy, because useSyncExternalStore compares snapshots by identity and a
+ * fresh object every frame would defeat the whole arrangement.
  */
-function useFinaleBeat() {
-  return useSyncExternalStore(
+function useFinaleState() {
+  const packed = useSyncExternalStore(
     subscribeToScroll,
     () => {
       const t = getFinaleProgress()
-      return isManifestoUp(t) ? 3 : getHeadlineStep(t)
+      const beat = isManifestoUp(t) ? 3 : getHeadlineStep(t)
+      return beat * 2 + (isTunnelBehind(t) ? 1 : 0)
     },
-    () => -1,
+    () => -2,
   )
+
+  return { beat: Math.floor(packed / 2), onTunnel: packed % 2 === 1 }
 }
 
 export function Finale() {
-  const beat = useFinaleBeat()
+  const { beat, onTunnel } = useFinaleState()
 
   return (
     <section className={styles.section} aria-labelledby="finale-heading">
@@ -66,7 +73,7 @@ export function Finale() {
         What the work is for
       </h2>
 
-      <div className={styles.stage}>
+      <div className={styles.stage} data-ground={onTunnel ? 'tunnel' : 'page'}>
         {/* The rect the arrow is seated on. Inside the sticky stage, not on
             the section, so the arrow rises into frame as the work grid leaves
             and is carried back up over the closing screen on the way out. */}

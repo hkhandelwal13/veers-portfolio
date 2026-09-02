@@ -18,8 +18,12 @@ export const CONTACT_FIELD_ID = 'contact-field'
  * Mirrors the negative top inset on .fieldTarget in Contact.module.css — see
  * the note there. Subtracted back off below so the dissolve keys off the
  * section's own top edge rather than the extended rect's.
+ *
+ * It also sets when the closing screen's stickers start falling, since they are
+ * bound to the same rect: too much of it and they drift through the finale's
+ * tunnel, which is somewhere else entirely.
  */
-const FIELD_OVERLAP = 1
+const FIELD_OVERLAP = 0.4
 
 export function getContactProgress(): number {
   const rect = getTargetRect(CONTACT_FIELD_ID)
