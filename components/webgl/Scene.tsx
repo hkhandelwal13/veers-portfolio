@@ -80,14 +80,17 @@ export default function Scene() {
           // Flat: one section's worth of plane, arriving under the finale's
           // last screen. A gradient here is a horizontal edge on the join.
           wipeBias={FLAT_WIPE}
-          topFade={0.15}
         />
         <ContactWord />
+        {/* The hero's stickers break up into the dot grid as you leave it;
+            these come back out of the same grid as you arrive, on the closing
+            screen's own progress. Nothing shrinks away — this is where the
+            scroll stops — so only the dissolve runs. */}
         <Stickers
           fieldId={CONTACT_FIELD_ID}
           slotId={CONTACT_TARGET_ID}
           progress={ZERO}
-          dissolve={ZERO}
+          dissolve={getContactProgress}
         />
         <HeroHello />
         <HeroArrow />

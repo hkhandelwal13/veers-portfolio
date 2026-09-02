@@ -23,7 +23,7 @@ export const CONTACT_FIELD_ID = 'contact-field'
  * bound to the same rect: too much of it and they drift through the finale's
  * tunnel, which is somewhere else entirely.
  */
-const FIELD_OVERLAP = 1
+const FIELD_OVERLAP = 1.6
 
 export function getContactProgress(): number {
   const rect = getTargetRect(CONTACT_FIELD_ID)
