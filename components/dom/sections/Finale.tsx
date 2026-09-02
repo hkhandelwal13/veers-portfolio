@@ -67,6 +67,11 @@ export function Finale() {
       </h2>
 
       <div className={styles.stage}>
+        {/* The rect the arrow is seated on. Inside the sticky stage, not on
+            the section, so the arrow rises into frame as the work grid leaves
+            and is carried back up over the closing screen on the way out. */}
+        <WebGLTarget targetId="finale-arrow" className={styles.arrowSlot} aria-hidden="true" />
+
         {beat >= 0 && beat < 3 && (
           // Keyed by beat so the decode replays on each change: the component
           // starts its scramble on mount, and a new key is a new mount.
