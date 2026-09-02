@@ -41,20 +41,20 @@ export const FINALE_ARROW_ID = 'finale-arrow'
  */
 export const FINALE = {
   /** Arrived and pinned. Rest size, rest attitude. */
-  settle: 0.05,
+  settle: 0.06,
   /** Grown to reading size, still flat-on. The headlines are up. */
-  swell: 0.22,
+  swell: 0.26,
   /** One revolution done; past every edge; the tunnel has taken over. */
-  flip: 0.4,
+  flip: 0.44,
   /**
    * End of the hold.
    *
-   * Deliberately most of the section. The hold is the part that has to feel
-   * endless — rays travelling out of the centre, rings arriving one after
-   * another — and endlessness is a thing you can only spend scroll on. Getting
-   * in and back out again takes the other 58%.
+   * Still the largest single beat: the hold is the part that has to feel
+   * endless, and endlessness is a thing you can only spend scroll on. Two
+   * viewports of it rather than three — long enough to stop reading as an
+   * effect, short enough not to become a wait.
    */
-  peak: 0.82,
+  peak: 0.78,
 } as const
 
 /** Rest → reading size → past every edge. Multipliers on the seated height. */
@@ -77,10 +77,13 @@ const READING_SHARE = Math.log(READING_SIZE) / Math.log(PEAK_SIZE)
  * segments travel out of the centre on the way down and back into it on the
  * way up.
  */
-const TUNNEL_LENGTH = 26
+const TUNNEL_LENGTH = 20
 
 /** Rings emitted across the hold. One arrives per unit; six are alive at once. */
-const RING_RATE = 62
+const RING_RATE = 46
+
+/** Slots on the conveyor — mirrors RING_SLOTS in shaders/warp. */
+const RING_SLOTS = 6
 
 function clamp01(v: number) {
   return v <= 0 ? 0 : v >= 1 ? 1 : v
@@ -180,14 +183,26 @@ export function getPortalMix(t: number): number {
 }
 
 /**
- * Ray density, 0..1 — how many rays exist and how far they reach.
+ * Ray density, 0..1 — how many rays exist at all.
  *
- * Starts a little before the break-up so the rays are already showing when the
- * arrow begins to give way, which is what makes the field read as something
- * that was always behind it rather than as a layer switched on afterwards.
+ * Two terms multiplied. The gate is the arrow: no rays until it is big enough
+ * to be a window rather than an object. The ramp is the scroll, and it is the
+ * one that matters — it climbs the whole way to the peak and falls the whole
+ * way back, so the field keeps filling for as long as you keep going down and
+ * keeps emptying for as long as you go back up.
+ *
+ * Deliberately not saturated by the time the tunnel takes over. Reaching full
+ * density at the moment the arrow opens leaves the entire hold at one
+ * unchanging thickness, which is the point where an endless tunnel starts to
+ * read as a still image with motion painted on it.
  */
 export function getRayDensity(t: number): number {
-  return smooth(clamp01((getGrowth(t) - 0.3) / 0.45))
+  const gate = smooth(clamp01((getGrowth(t) - 0.28) / 0.22))
+  const ramp =
+    t <= FINALE.peak
+      ? span(t, FINALE.swell, FINALE.peak)
+      : 1 - span(t, FINALE.peak, 1)
+  return gate * ramp
 }
 
 /**
@@ -204,23 +219,42 @@ export function getWarpTravel(t: number): number {
 }
 
 /**
- * How many rings have been emitted, as a real number.
+ * How far the ring conveyor has advanced.
  *
  * The whole number is the count; the fraction is how far the newest has
  * travelled. Linear, because the rings are the hold's other answer to scroll —
  * an eased cadence would stall in the middle of the beat, which is exactly
- * where there is nothing else to look at. They fade out with the portal on the
- * way back rather than being rewound, so the collapse does not play the ball
- * backwards.
+ * where there is nothing else to look at.
+ *
+ * Past the peak it walks back by one conveyor's worth, so the ball unwinds
+ * rather than freezing while it empties.
  */
 export function getRingPhase(t: number): number {
-  return span(t, FINALE.flip, FINALE.peak) * RING_RATE
+  const emitted = span(t, FINALE.flip, FINALE.peak) * RING_RATE
+  if (t <= FINALE.peak) return emitted
+  return emitted - span(t, FINALE.peak, RINGS_GONE) * RING_SLOTS
+}
+
+/** Where the last ring has left. */
+const RINGS_GONE = 0.94
+
+/**
+ * How many of the conveyor's slots are drawn.
+ *
+ * Rising, this is the count itself, so the rings fill the ball in one at a
+ * time. Falling, it is its own signal: they leave one at a time too, in the
+ * order they arrived, which is the entry played backwards rather than the ball
+ * simply fading out.
+ */
+export function getRingLive(t: number): number {
+  if (t <= FINALE.peak) return getRingPhase(t)
+  return RING_SLOTS * (1 - span(t, FINALE.peak, RINGS_GONE))
 }
 
 /** Which of the three headlines is up, or -1 for none. */
 export function getHeadlineStep(t: number): number {
-  const start = 0.13
-  const end = 0.4
+  const start = 0.16
+  const end = 0.44
   if (t < start || t >= end) return -1
   return Math.min(2, Math.floor(((t - start) / (end - start)) * 3))
 }
@@ -240,5 +274,5 @@ export function isTunnelBehind(t: number): boolean {
 
 /** True across the hold, where the manifesto lines sit around the tunnel. */
 export function isManifestoUp(t: number): boolean {
-  return t >= 0.44 && t < 0.84
+  return t >= 0.48 && t < 0.8
 }

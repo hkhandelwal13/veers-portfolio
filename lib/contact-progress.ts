@@ -30,9 +30,12 @@ export function getContactProgress(): number {
   const { viewportHeight } = getScrollSnapshot()
   if (!rect || !rect.valid || viewportHeight <= 0) return 1
 
-  // 1 while its top edge is still below the fold, falling to 0 by the time the
-  // section has risen a third of the way up the screen.
+  // 1 while its top edge is a full screen below the fold, falling to 0 by the
+  // time the section has risen to it. A screen rather than two thirds of one:
+  // the finale releases with its section top exactly at the fold, so this is
+  // what starts the dot matrix on the frame the arrow is back at rest and the
+  // stickers are up, rather than a beat later.
   const sectionTop = rect.y + viewportHeight * FIELD_OVERLAP
-  const raw = sectionTop / (viewportHeight * 0.66)
+  const raw = sectionTop / viewportHeight
   return raw <= 0 ? 0 : raw >= 1 ? 1 : raw
 }

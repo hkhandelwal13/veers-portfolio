@@ -80,6 +80,7 @@ export default function Scene() {
           // Flat: one section's worth of plane, arriving under the finale's
           // last screen. A gradient here is a horizontal edge on the join.
           wipeBias={FLAT_WIPE}
+          topFade={0.35}
         />
         <ContactWord />
         <Stickers

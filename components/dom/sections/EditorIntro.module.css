@@ -62,8 +62,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scaleX(calc(1 - var(--scroll-curl, 0) * 0.055))
-    scaleY(calc(1 + var(--scroll-curl, 0) * 0.022));
+  transform: scaleX(calc(1 - var(--scroll-curl, 0) * 0.13))
+    scaleY(calc(1 + var(--scroll-curl, 0) * 0.05));
   transform-origin: center;
   will-change: transform;
 }

@@ -40,6 +40,7 @@ uniform float uDotPx;       // dot-matrix pitch for the handover
 uniform float uTime;
 uniform float uProgress;    // hero scroll progress, 0..1
 uniform vec2 uWipeBias;     // how much earlier the wipe reaches the top vs the bottom
+uniform float uTopFade;     // share of the plane's height held fully handed over
 uniform float uPixelRatio;  // device pixels per CSS pixel
 uniform float uAspect;
 
@@ -101,6 +102,13 @@ void main() {
   // plane above, because the two disagree about how far along they are at the
   // pixel they share.
   float bias = mix(uWipeBias.x, uWipeBias.y, vUv.y);
+
+  // Hold the top edge fully handed over. A plane that covers one section shows
+  // its own boundary against whatever is above it the moment it starts to
+  // un-dissolve — the dots stop at a horizontal line. Pushing the bias up over
+  // the top band keeps that band clamped at "handed over" until the edge is off
+  // the screen, so the ground arrives as a soft gradient instead of an edge.
+  bias += 6.0 * smoothstep(1.0 - uTopFade, 1.0, vUv.y);
   color = mix(color, uGroundEnd, dotMatrixWipe(px, clamp(wipe * bias, 0.0, 1.0), uDotPx));
 
   gl_FragColor = vec4(color, 1.0);
