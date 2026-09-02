@@ -53,7 +53,7 @@
      The faint blueprint grid and the diagonal light that sit behind everything.
      Alpha is baked into the token so one element can carry both, and so a
      theme only has to restate these two values. */
-  --grid-mark: rgba(12, 21, 38, 0.22);
+  --grid-mark: rgba(12, 21, 38, 0.42);
   /* What the hero hands over to. The editor intro paints in it, and the hero's
      WebGL ground travels toward it on scroll so the handover has already
      happened by the time that section arrives. */
@@ -202,7 +202,7 @@
 
   /* Cool and much weaker: on the deep ground the same alpha that reads as a
      hairline on paper reads as fog. */
-  --grid-mark: rgba(180, 205, 255, 0.16);
+  --grid-mark: rgba(180, 205, 255, 0.26);
   --section-ground: #000000;
   --section-ink: #f2f5fa;
   --section-muted: #8b93a5;

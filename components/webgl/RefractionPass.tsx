@@ -9,7 +9,7 @@ import { getHeroObjectDissolve } from '@/lib/hero-progress'
 import { isPageSurfaceDark } from '@/lib/surface'
 import { subscribeToTheme } from '@/lib/theme'
 import { glassPasses } from './glass-passes'
-import { ALL_LAYERS_MASK, LAYER_CONTENT, LAYER_GLASS, LAYER_LENS, LAYER_OVERLAY } from './layers'
+import { ALL_LAYERS_MASK, LAYER_CONTENT, LAYER_GLASS, LAYER_OVERLAY } from './layers'
 
 /** The flare's source and streaks both run at half resolution. */
 const STAR_SCALE = 0.5
@@ -146,7 +146,6 @@ export function RefractionPass() {
     if ((camera.layers.mask & ALL_LAYERS_MASK) !== ALL_LAYERS_MASK) {
       camera.layers.enable(LAYER_GLASS)
       camera.layers.enable(LAYER_OVERLAY)
-      camera.layers.enable(LAYER_LENS)
     }
 
     const caps = getCapabilities()

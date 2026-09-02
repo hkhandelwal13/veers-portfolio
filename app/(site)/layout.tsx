@@ -3,7 +3,7 @@ import { Footer } from '@/components/dom/chrome/Footer'
 import { Loader } from '@/components/dom/chrome/Loader'
 import { RouteTransition } from '@/components/dom/chrome/RouteTransition'
 import { StageDressing } from '@/components/dom/chrome/StageDressing'
-import { WateryCursor } from '@/components/dom/chrome/WateryCursor'
+import { Cursor } from '@/components/dom/chrome/Cursor'
 import { WebGLDebug } from '@/components/dom/WebGLDebug'
 
 /**
@@ -25,7 +25,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <Nav />
       <div id="main">{children}</div>
       <Footer />
-      <WateryCursor />
+      <Cursor />
     </>
   )
 }

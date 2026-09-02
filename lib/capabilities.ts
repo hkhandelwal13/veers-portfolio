@@ -176,10 +176,10 @@ export function canRenderStarFlare(caps: Capabilities = current): boolean {
 }
 
 /**
- * The watery cursor.
+ * The custom cursor.
  *
  * Replaces the native pointer, so it needs a real one to replace: a touchscreen
- * has nothing to hide and would get a blob stuck wherever the last tap landed.
+ * has nothing to hide and would get a ring stuck wherever the last tap landed.
  * Off under reduced motion too — the whole effect is lag and deformation, and
  * there is no reduced version of it worth having.
  */
