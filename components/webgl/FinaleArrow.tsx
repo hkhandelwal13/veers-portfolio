@@ -10,6 +10,7 @@ import {
   FINALE_ARROW_ID,
   getArrowScale,
   getArrowSpin,
+  getEntryScale,
   getFinaleProgress,
   getGrowth,
   getPortalMix,
@@ -199,7 +200,7 @@ export function FinaleArrow() {
     const seat = rectToWorld(rect, camera as THREE.PerspectiveCamera, state.size.width, height)
     const boxHeight = rect.height * seat.unitsPerPixel
     const fit = (boxHeight * IDLE_HEIGHT) / measured.size.y
-    group.scale.setScalar(fit * getArrowScale(t))
+    group.scale.setScalar(fit * getArrowScale(t) * getEntryScale())
 
     const caps = getCapabilities()
     const glass = canRenderGlass(caps)

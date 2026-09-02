@@ -86,8 +86,8 @@ vec3 warpLayer(float angle, float radius, float count, float seed) {
   float start = CORE_RADIUS + travelled;
   // Length and weight follow it. The same segment covers more screen and reads
   // heavier the nearer it gets, which is most of what sells the depth.
-  float len = (0.16 + g * 0.22) * (0.05 + travelled * 1.6);
-  float halfWidth = 0.0016 + 0.0042 * min(travelled, 1.0);
+  float len = (0.26 + g * 0.34) * (0.05 + travelled * 1.7);
+  float halfWidth = 0.0024 + 0.0062 * min(travelled, 1.0);
 
   // Perpendicular distance to the ray's centre line, wrapped at the seam.
   float centre = (index + 0.5) / count;
