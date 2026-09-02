@@ -12,6 +12,15 @@ import { getScrollSnapshot } from './scroll-bus'
 
 export const CONTACT_FIELD_ID = 'contact-field'
 
+/**
+ * How far the field's rect reaches above the section, in viewports.
+ *
+ * Mirrors the negative top inset on .fieldTarget in Contact.module.css — see
+ * the note there. Subtracted back off below so the dissolve keys off the
+ * section's own top edge rather than the extended rect's.
+ */
+const FIELD_OVERLAP = 1
+
 export function getContactProgress(): number {
   const rect = getTargetRect(CONTACT_FIELD_ID)
   const { viewportHeight } = getScrollSnapshot()
@@ -19,6 +28,7 @@ export function getContactProgress(): number {
 
   // 1 while its top edge is still below the fold, falling to 0 by the time the
   // section has risen a third of the way up the screen.
-  const raw = rect.y / (viewportHeight * 0.66)
+  const sectionTop = rect.y + viewportHeight * FIELD_OVERLAP
+  const raw = sectionTop / (viewportHeight * 0.66)
   return raw <= 0 ? 0 : raw >= 1 ? 1 : raw
 }

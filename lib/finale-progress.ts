@@ -7,6 +7,18 @@
  * the sequence is a pure function of it: nothing runs on a clock, so scrolling
  * back up plays it exactly backwards, which is the whole point of a scrub.
  *
+ * The story it tells, in order:
+ *
+ *   1. the arrow arrives from below with the section, small and flat-on
+ *   2. it grows, in the attitude it arrived in — no turning yet
+ *   3. at reading size the headlines come up over it
+ *   4. only then does it turn: one revolution while it swells past every edge,
+ *      breaking up into the warp as it goes
+ *   5. the warp holds; rings arrive one per step of scroll; the manifesto sits
+ *      inside them
+ *   6. all of it in reverse, one revolution, back to the size and the attitude
+ *      it started in — but over the closing screen, not the work grid
+ *
  * Derived rather than stored, like the hero's: the ScrollBus and the rect
  * sampler have both already written this frame, so any two callers agree by
  * construction.
@@ -15,19 +27,43 @@
 import { getTargetRect } from './rect-sampler'
 import { getScrollSnapshot } from './scroll-bus'
 
+/** The tall section — the rect the whole thing is scrubbed against. */
 export const FINALE_TARGET_ID = 'finale-stage'
+/** The sticky stage inside it — the rect the arrow is seated on. */
+export const FINALE_ARROW_ID = 'finale-arrow'
 
-/** The beats. Shared by the shader, the arrow and the copy. */
+/**
+ * The beats.
+ *
+ * Named for what the arrow is doing, because every other signal here is
+ * derived from its size: the rays, the fade and the rings all answer to how
+ * far past you it has grown, not to the raw scroll.
+ */
 export const FINALE = {
-  /** Idle: the arrow small, flat-on, at rest. */
-  approach: 0.1,
-  /** Zooming in; rays begin to show through it. */
-  open: 0.4,
-  /** Past the frame edges — the warp is the screen. */
-  peak: 0.6,
-  /** Collapsing back in. */
-  close: 0.76,
+  /** Arrived and pinned. Rest size, rest attitude. */
+  settle: 0.06,
+  /** Grown to reading size, still flat-on. The headlines are up. */
+  swell: 0.34,
+  /** One revolution done; past every edge; the warp has taken over. */
+  flip: 0.62,
+  /** End of the hold — full warp, rings, manifesto. */
+  peak: 0.72,
 } as const
+
+/** Rest → reading size → past every edge. Multipliers on the seated height. */
+const READING_SIZE = 3.6
+const PEAK_SIZE = 210
+
+/**
+ * Where reading size falls on the log scale between rest and the peak.
+ *
+ * The growth is geometric (see getArrowScale), so the swell beat has to hand
+ * over at the right *share of the exponent*, not at 3.6/210 of the range.
+ */
+const READING_SHARE = Math.log(READING_SIZE) / Math.log(PEAK_SIZE)
+
+/** How many rings the tunnel emits across the hold. */
+const RING_COUNT = 7
 
 function clamp01(v: number) {
   return v <= 0 ? 0 : v >= 1 ? 1 : v
@@ -36,6 +72,11 @@ function clamp01(v: number) {
 function smooth(v: number) {
   const t = clamp01(v)
   return t * t * (3 - 2 * t)
+}
+
+/** Position within [from, to], clamped. */
+function span(t: number, from: number, to: number) {
+  return clamp01((t - from) / (to - from))
 }
 
 export function getFinaleProgress(): number {
@@ -59,123 +100,120 @@ export function isFinaleVisible(): boolean {
 }
 
 /**
- * How far open the portal is, 0..1.
+ * How far the arrow has grown, as a share of the exponent — 0 at rest, 1 at
+ * the peak.
  *
- * Rises through the zoom, holds across the peak, falls through the collapse, so
- * the rays arrive with the arrow's growth and leave with its retreat instead of
- * switching on at a threshold.
+ * One signal, and the single source for everything the growth drives. Written
+ * as a share of the exponent rather than of the scale because the growth is
+ * geometric: under perspective an object approaching at a steady speed doubles
+ * in apparent size at a steady rate, so it is the exponent that moves evenly
+ * and the exponent that the other effects should key off.
+ *
+ * The return leg runs it straight back down through reading size to rest,
+ * which is what makes the exit the entrance in reverse without a second set of
+ * numbers to keep in step.
  */
-export function getPortalOpen(t: number): number {
-  if (t <= FINALE.approach) return 0
-  if (t < FINALE.open) {
-    return smooth((t - FINALE.approach) / (FINALE.open - FINALE.approach))
+export function getGrowth(t: number): number {
+  if (t <= FINALE.settle) return 0
+  if (t < FINALE.swell) {
+    return smooth(span(t, FINALE.settle, FINALE.swell)) * READING_SHARE
   }
-  if (t <= FINALE.close) return 1
-  return smooth(1 - (t - FINALE.close) / (1 - FINALE.close))
+  if (t < FINALE.flip) {
+    return READING_SHARE + smooth(span(t, FINALE.swell, FINALE.flip)) * (1 - READING_SHARE)
+  }
+  if (t <= FINALE.peak) return 1
+  return smooth(1 - span(t, FINALE.peak, 1))
+}
+
+/** The arrow's scale multiplier over its seated size. */
+export function getArrowScale(t: number): number {
+  return Math.pow(PEAK_SIZE, getGrowth(t))
 }
 
 /**
- * How much of the arrow is still an object, 0..1.
+ * The arrow's spin, in radians — one revolution in, one out, and nothing in
+ * between.
  *
- * Falls away early in the zoom and returns late in the collapse, because the
- * silhouette is off the frame edges for most of both — see the note in the
- * fragment shader. Tied to the zoom rather than to the portal so it is
- * symmetric on the way out by construction.
- */
-export function getSolidity(t: number): number {
-  return 1 - smooth(clamp01(getPortalOpen(t) / SOLID_SPAN))
-}
-
-/** How far into the portal's opening the plate has entirely given way. */
-const SOLID_SPAN = 0.45
-
-/** How much bigger the arrow gets at the peak than at rest. */
-const PEAK_ZOOM = 191
-
-/**
- * The arrow's scale multiplier: small, enormous, small again.
- *
- * Overshoots well past the point where it covers the viewport, so there is a
- * stretch of scroll where the geometry is off every edge and only its interior
- * is visible. That stretch is the "inside it" part of the sequence — without
- * the overshoot the silhouette never leaves the frame and it reads as a big
- * arrow rather than as somewhere you have gone.
- */
-export function getPortalZoom(t: number): number {
-  const open = getPortalOpen(t)
-  // Geometric, not quadratic. Under perspective, something coming at you at a
-  // steady speed doubles in apparent size at a steady rate — so a scale that
-  // multiplies evenly reads as an even approach, where `open * open` sits still
-  // for most of the zoom and then arrives all at once.
-  //
-  // The ceiling is far past covering the viewport: the arrow is a wedge, not a
-  // disc, so a scale that merely reaches the frame edges still leaves its
-  // corners showing — and a black corner at the peak is the shape reasserting
-  // itself exactly where you are meant to have forgotten it.
-  return Math.pow(PEAK_ZOOM, open)
-}
-
-/**
- * The arrow's spin, in radians — one full turn in, one full turn out.
- *
- * Both revolutions are whole, and both land on a multiple of 2π, so the arrow
- * is presenting the same flat face to the camera at rest, at the moment the
- * zoom hands over to the warp, and again once it has collapsed back. What turns
- * in between is the depth of the thing: it goes edge-on halfway through each
- * revolution, which is what makes it read as an object you are travelling past
- * rather than a shape being spun in the plane of the screen.
- *
- * Eased at both ends of each turn, so the rotation arrives with the growth and
- * leaves with the retreat instead of snapping into motion.
+ * Deliberately *not* welded to the growth. The arrow arrives and grows in the
+ * attitude it arrived in, so the turn is its own beat rather than something
+ * that has been happening quietly since the section pinned; and because both
+ * revolutions are whole, the flat face is squared up to the camera at rest, at
+ * reading size where the headlines come up, and again once it has collapsed
+ * back over the closing screen.
  */
 export function getArrowSpin(t: number): number {
   const tau = Math.PI * 2
+  if (t <= FINALE.swell) return 0
+  if (t < FINALE.flip) return smooth(span(t, FINALE.swell, FINALE.flip)) * tau
+  if (t <= FINALE.peak) return tau
+  return tau + smooth(span(t, FINALE.peak, 1)) * tau
+}
 
-  // Driven off the same span the plate dissolves over, so the turn is welded to
-  // the growth: the arrow is exactly one revolution further round at the moment
-  // it stops being an arrow, and exactly one more by the time it is back. Doing
-  // it on raw `t` instead spends half the first turn during the idle beat,
-  // where nothing is growing yet, and the two read as separate events.
-  const phase = smooth(clamp01(getPortalOpen(t) / SOLID_SPAN))
+/**
+ * The dot-matrix break-up, 0..1 — the arrow going from object to window.
+ *
+ * Keyed to the growth, so it happens at a size rather than at a moment: the
+ * arrow starts letting go once it is around twice the height of the frame,
+ * which is the point where its silhouette has left every edge and there is
+ * nothing to lose by it.
+ */
+export function getArrowDissolve(t: number): number {
+  return smooth(clamp01((getGrowth(t) - 0.45) / 0.42))
+}
 
-  // Past the peak the phase runs back down; the spin has to keep going forward,
-  // so the return leg counts up from where the first turn finished. Both legs
-  // give exactly one turn at the peak, so the seam is continuous.
-  return (t < FINALE.peak ? phase : 2 - phase) * tau
+/**
+ * How dark the room is, 0..1.
+ *
+ * The warp is a dark room you go into, not a graphic laid over the page. In
+ * the dark theme the ground is already black and this changes nothing; in the
+ * light theme it is what stops the sequence being white lines on white paper,
+ * and it is what the white copy is legible against in both.
+ *
+ * Keyed to the very start of the growth, so it is fully up before the first
+ * headline and lifts again only once the arrow is nearly back to rest — the
+ * whole thing is a slow full-screen fade with only the arrow on it, which is
+ * the one moment in the section where a change of ground has nothing to catch
+ * on.
+ */
+export function getRoomDarkness(t: number): number {
+  return smooth(clamp01(getGrowth(t) / 0.1))
 }
 
 /**
  * Ray density, 0..1 — how many rays exist and how far they reach.
  *
- * One continuous climb to a single point and one continuous fall away from it,
- * rather than a rise into a plateau. The field has to keep visibly filling for
- * as long as you keep scrolling in, and keep visibly emptying for as long as
- * you scroll back out; a hold in the middle is a stretch of scroll where
- * nothing answers, which reads as the effect having finished early.
+ * Starts a little before the break-up so the rays are already showing when the
+ * arrow begins to give way, which is what makes the field read as something
+ * that was always behind it rather than as a layer switched on afterwards.
  */
 export function getRayDensity(t: number): number {
-  const centre = 0.68
-  if (t <= centre) {
-    return clamp01(smooth((t - FINALE.approach) / (centre - FINALE.approach)))
-  }
-  return clamp01(1 - smooth((t - centre) / (1 - centre)))
+  return smooth(clamp01((getGrowth(t) - 0.34) / 0.5))
 }
 
-/** The rings only exist at the peak, where the manifesto sits. */
-export function getRingStrength(t: number): number {
-  const inp = smooth((t - FINALE.peak) / (0.68 - FINALE.peak))
-  const out = 1 - smooth((t - 0.72) / (FINALE.close - 0.72))
-  return clamp01(inp) * clamp01(out)
+/**
+ * How many rings the tunnel has emitted, as a real number.
+ *
+ * The whole number is the count; the fraction is how far the newest one has
+ * travelled. Linear rather than eased, because the rings are the hold's answer
+ * to scroll — an eased cadence would stall in the middle of the beat where
+ * there is nothing else moving.
+ */
+export function getRingPhase(t: number): number {
+  if (t < FINALE.flip) return 0
+  if (t <= FINALE.peak) return span(t, FINALE.flip, FINALE.peak) * RING_COUNT
+  // Swallowed back as the collapse begins, rather than left hanging over it.
+  return (1 - span(t, FINALE.peak, FINALE.peak + 0.1)) * RING_COUNT
 }
 
-/** Which of the three warp headlines is up, or -1 for none. */
+/** Which of the three headlines is up, or -1 for none. */
 export function getHeadlineStep(t: number): number {
-  if (t < FINALE.approach || t >= FINALE.peak) return -1
-  const span = (FINALE.peak - FINALE.approach) / 3
-  return Math.min(2, Math.floor((t - FINALE.approach) / span))
+  const start = 0.2
+  const end = 0.56
+  if (t < start || t >= end) return -1
+  return Math.min(2, Math.floor(((t - start) / (end - start)) * 3))
 }
 
-/** True across the peak, where the manifesto lines sit around the burst. */
+/** True across the hold, where the manifesto lines sit around the tunnel. */
 export function isManifestoUp(t: number): boolean {
-  return t >= FINALE.peak && t < 0.75
+  return t >= 0.63 && t < 0.8
 }

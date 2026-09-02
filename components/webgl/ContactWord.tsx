@@ -31,8 +31,11 @@ import { isRectVisible, rectToWorld } from './rect-space'
  * through it and closes the same way, and the repeat is what makes the middle
  * read as a passage between two of the same place.
  *
- * The one difference is that nothing here dissolves. The hero's word is
- * something you scroll past; this one is where you stop.
+ * Two differences. Nothing here dissolves — the hero's word is something you
+ * scroll past, this one is where you stop. And it stands up as you arrive:
+ * flat on its back before the section is up, square to the camera once it is,
+ * which is the closing screen's answer to the finale's arrow going the other
+ * way.
  */
 
 type ContactGLTF = GLTF & { nodes: { g_groupNumber_0_n3d: THREE.Mesh } }
@@ -48,6 +51,9 @@ const FILL = 1.22
 const FLOAT_AMPLITUDE = 0.02
 const TILT_X = 0.1
 const TILT_Y = 0.16
+
+/** Lying flat, face to the ceiling — where the word starts before it stands. */
+const LAID_FLAT = -Math.PI / 2
 
 export function ContactWord() {
   const outer = useRef<THREE.Group>(null)
@@ -134,10 +140,19 @@ export function ContactWord() {
       return
     }
 
+    // Standing up, scrubbed rather than played: 1 while the slot is still low
+    // on the screen, 0 once it has risen into place. A timed entrance would
+    // fire once and then be wrong for anyone who scrolled back.
+    const laid = THREE.MathUtils.clamp((rect.y - height * 0.2) / (height * 0.5), 0, 1)
+
     const float = Math.sin(state.clock.elapsedTime * 0.6) * boxHeight * FLOAT_AMPLITUDE
     group.position.set(seat.x, seat.y + float, 0)
     group.rotation.y = THREE.MathUtils.damp(group.rotation.y, pointer.cx * TILT_Y, 5, delta)
-    group.rotation.x = THREE.MathUtils.damp(group.rotation.x, pointer.cy * TILT_X, 5, delta)
+    // The tilt is damped toward its target; the entrance is not, because it is
+    // a function of scroll and damping it would let it lag a fast one.
+    group.rotation.x =
+      THREE.MathUtils.damp(group.rotation.x - LAID_FLAT * laid, pointer.cy * TILT_X, 5, delta) +
+      LAID_FLAT * laid
   })
 
   const caps = useSyncExternalStore(

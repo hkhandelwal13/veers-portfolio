@@ -12,6 +12,7 @@ import { FrameDriver } from './FrameDriver'
 import { CONTACT_TARGET_ID, ContactWord } from './ContactWord'
 import { SectionField, STAGE_TARGET_ID } from './HeroField'
 import { FinaleArrow } from './FinaleArrow'
+import { FinaleWarp } from './FinaleWarp'
 import { HeroArrow } from './HeroArrow'
 import { HeroHello } from './HeroHello'
 import { RectSampler } from './RectSampler'
@@ -81,6 +82,9 @@ export default function Scene() {
           progress={ZERO}
           dissolve={ZERO}
         />
+        {/* Behind the arrow and on the content layer, so the glass refracts
+            it before it dissolves and lets the field through directly. */}
+        <FinaleWarp />
         <HeroHello />
         <HeroArrow />
         <FinaleArrow />
