@@ -50,7 +50,29 @@ export function getScrollActivity(): number {
   return activity
 }
 
+/**
+ * Publishes the same signal to CSS, as --scroll-curl.
+ *
+ * The DOM-synced cards get the real thing — a per-pixel UV compression in the
+ * card shader. Everything the canvas does not mirror (the About portrait, which
+ * is a plain <img> until a depth map exists for it) can still answer scroll
+ * speed from CSS, and this is the one number both halves read.
+ *
+ * Quantised to two decimals and written only on change: a custom property that
+ * feeds a transform invalidates style on every write, and an idle page should
+ * not be paying for a value that is only ever going to be 0.0001 different.
+ */
+let published = -1
+
+export function publishScrollActivity() {
+  const value = Math.round(activity * 100) / 100
+  if (value === published) return
+  published = value
+  document.documentElement.style.setProperty('--scroll-curl', String(value))
+}
+
 /** Test seam. */
 export function resetScrollActivity() {
   activity = 0
+  published = -1
 }

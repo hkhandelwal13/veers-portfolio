@@ -12,7 +12,6 @@ import { FrameDriver } from './FrameDriver'
 import { CONTACT_TARGET_ID, ContactWord } from './ContactWord'
 import { SectionField, STAGE_TARGET_ID } from './HeroField'
 import { FinaleArrow } from './FinaleArrow'
-import { FinaleWarp } from './FinaleWarp'
 import { HeroArrow } from './HeroArrow'
 import { HeroHello } from './HeroHello'
 import { RectSampler } from './RectSampler'
@@ -32,6 +31,7 @@ import { Stickers } from './Stickers'
  */
 /** Nothing on the closing screen dissolves — it is where the scroll stops. */
 const ZERO = () => 0
+const FLAT_WIPE: [number, number] = [1, 1]
 
 export default function Scene() {
   return (
@@ -74,7 +74,13 @@ export default function Scene() {
 
         {/* The closing screen repeats the hero's arrangement: its own ground,
             its own glass word, its own sticker field. */}
-        <SectionField targetId={CONTACT_FIELD_ID} progress={getContactProgress} />
+        <SectionField
+          targetId={CONTACT_FIELD_ID}
+          progress={getContactProgress}
+          // Flat: one section's worth of plane, arriving under the finale's
+          // last screen. A gradient here is a horizontal edge on the join.
+          wipeBias={FLAT_WIPE}
+        />
         <ContactWord />
         <Stickers
           fieldId={CONTACT_FIELD_ID}
@@ -82,9 +88,6 @@ export default function Scene() {
           progress={ZERO}
           dissolve={ZERO}
         />
-        {/* Behind the arrow and on the content layer, so the glass refracts
-            it before it dissolves and lets the field through directly. */}
-        <FinaleWarp />
         <HeroHello />
         <HeroArrow />
         <FinaleArrow />

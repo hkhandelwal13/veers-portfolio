@@ -6,7 +6,8 @@
  *
  *   1. lenis.raf()          — smooth scroll advances and writes the DOM
  *   2. updateScrollBus      — records what Lenis just produced, for this frame
- *   3. updateScrollActivity — smooths that into the 0..1 speed signal
+ *   3. updateScrollActivity — smooths that into the 0..1 speed signal, and
+ *      publishes it to CSS as --scroll-curl for the DOM half of the flex
  *   4. commitPointerBus     — eases the pointer, republishes its snapshot
  *   5. onFrame listeners    — DOM-side per-frame work (the cursor)
  *
@@ -27,7 +28,7 @@
 
 import { getLenis } from './lenis'
 import { commitPointerBus } from './pointer-bus'
-import { updateScrollActivity } from './scroll-activity'
+import { publishScrollActivity, updateScrollActivity } from './scroll-activity'
 import { updateScrollBus } from './scroll-bus'
 
 /**
@@ -71,6 +72,7 @@ export function runFrame(timeMs: number) {
   // Derived here, once, so every consumer of the curl reads the same number
   // for the same frame.
   updateScrollActivity(scroll, deltaSeconds)
+  publishScrollActivity()
 
   commitPointerBus(deltaSeconds)
 

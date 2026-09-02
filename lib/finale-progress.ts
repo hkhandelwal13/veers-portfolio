@@ -41,13 +41,20 @@ export const FINALE_ARROW_ID = 'finale-arrow'
  */
 export const FINALE = {
   /** Arrived and pinned. Rest size, rest attitude. */
-  settle: 0.06,
+  settle: 0.05,
   /** Grown to reading size, still flat-on. The headlines are up. */
-  swell: 0.34,
-  /** One revolution done; past every edge; the warp has taken over. */
-  flip: 0.62,
-  /** End of the hold — full warp, rings, manifesto. */
-  peak: 0.72,
+  swell: 0.22,
+  /** One revolution done; past every edge; the tunnel has taken over. */
+  flip: 0.4,
+  /**
+   * End of the hold.
+   *
+   * Deliberately most of the section. The hold is the part that has to feel
+   * endless — rays travelling out of the centre, rings arriving one after
+   * another — and endlessness is a thing you can only spend scroll on. Getting
+   * in and back out again takes the other 58%.
+   */
+  peak: 0.82,
 } as const
 
 /** Rest → reading size → past every edge. Multipliers on the seated height. */
@@ -62,8 +69,18 @@ const PEAK_SIZE = 210
  */
 const READING_SHARE = Math.log(READING_SIZE) / Math.log(PEAK_SIZE)
 
-/** How many rings the tunnel emits across the hold. */
-const RING_COUNT = 7
+/**
+ * How far down the tunnel one pass through the finale carries you.
+ *
+ * A distance, not a threshold: the rays' depth is fract() of it, so this is
+ * really "how many times the whole field recycles", and it is what makes the
+ * segments travel out of the centre on the way down and back into it on the
+ * way up.
+ */
+const TUNNEL_LENGTH = 26
+
+/** Rings emitted across the hold. One arrives per unit; six are alive at once. */
+const RING_RATE = 62
 
 function clamp01(v: number) {
   return v <= 0 ? 0 : v >= 1 ? 1 : v
@@ -150,33 +167,16 @@ export function getArrowSpin(t: number): number {
 }
 
 /**
- * The dot-matrix break-up, 0..1 — the arrow going from object to window.
+ * How far the arrow has become the tunnel, 0..1.
  *
  * Keyed to the growth, so it happens at a size rather than at a moment: the
- * arrow starts letting go once it is around twice the height of the frame,
- * which is the point where its silhouette has left every edge and there is
- * nothing to lose by it.
+ * arrow starts giving way to the field once it is around twice the height of
+ * the frame, which is the point where its silhouette has left every edge and
+ * there is nothing to lose by it. Shrinking back down, the field withdraws into
+ * it at exactly the same size.
  */
-export function getArrowDissolve(t: number): number {
-  return smooth(clamp01((getGrowth(t) - 0.45) / 0.42))
-}
-
-/**
- * How dark the room is, 0..1.
- *
- * The warp is a dark room you go into, not a graphic laid over the page. In
- * the dark theme the ground is already black and this changes nothing; in the
- * light theme it is what stops the sequence being white lines on white paper,
- * and it is what the white copy is legible against in both.
- *
- * Keyed to the very start of the growth, so it is fully up before the first
- * headline and lifts again only once the arrow is nearly back to rest — the
- * whole thing is a slow full-screen fade with only the arrow on it, which is
- * the one moment in the section where a change of ground has nothing to catch
- * on.
- */
-export function getRoomDarkness(t: number): number {
-  return smooth(clamp01(getGrowth(t) / 0.1))
+export function getPortalMix(t: number): number {
+  return smooth(clamp01((getGrowth(t) - 0.32) / 0.42))
 }
 
 /**
@@ -187,33 +187,58 @@ export function getRoomDarkness(t: number): number {
  * that was always behind it rather than as a layer switched on afterwards.
  */
 export function getRayDensity(t: number): number {
-  return smooth(clamp01((getGrowth(t) - 0.34) / 0.5))
+  return smooth(clamp01((getGrowth(t) - 0.3) / 0.45))
 }
 
 /**
- * How many rings the tunnel has emitted, as a real number.
+ * How far down the tunnel the scroll has carried you.
  *
- * The whole number is the count; the fraction is how far the newest one has
- * travelled. Linear rather than eased, because the rings are the hold's answer
- * to scroll — an eased cadence would stall in the middle of the beat where
- * there is nothing else moving.
+ * Linear in the raw progress, not in the growth: the rays have to keep moving
+ * for as long as the finger does, including across the hold where the arrow's
+ * size is pinned and nothing else is changing. This is the only thing answering
+ * scroll through most of the section, and it is what the endlessness is made
+ * of.
+ */
+export function getWarpTravel(t: number): number {
+  return t * TUNNEL_LENGTH
+}
+
+/**
+ * How many rings have been emitted, as a real number.
+ *
+ * The whole number is the count; the fraction is how far the newest has
+ * travelled. Linear, because the rings are the hold's other answer to scroll —
+ * an eased cadence would stall in the middle of the beat, which is exactly
+ * where there is nothing else to look at. They fade out with the portal on the
+ * way back rather than being rewound, so the collapse does not play the ball
+ * backwards.
  */
 export function getRingPhase(t: number): number {
-  if (t < FINALE.flip) return 0
-  if (t <= FINALE.peak) return span(t, FINALE.flip, FINALE.peak) * RING_COUNT
-  // Swallowed back as the collapse begins, rather than left hanging over it.
-  return (1 - span(t, FINALE.peak, FINALE.peak + 0.1)) * RING_COUNT
+  return span(t, FINALE.flip, FINALE.peak) * RING_RATE
 }
 
 /** Which of the three headlines is up, or -1 for none. */
 export function getHeadlineStep(t: number): number {
-  const start = 0.2
-  const end = 0.56
+  const start = 0.13
+  const end = 0.4
   if (t < start || t >= end) return -1
   return Math.min(2, Math.floor(((t - start) / (end - start)) * 3))
 }
 
+/**
+ * True once the tunnel is what is behind the copy.
+ *
+ * The finale's type is white, which is right over the tunnel and wrong over
+ * paper — and in the light theme the first headline comes up while the arrow is
+ * still a small bright object on a white page. This is the switch: before it,
+ * the copy is ink; after it, the arrow has grown past every edge and its
+ * interior is the ground.
+ */
+export function isTunnelBehind(t: number): boolean {
+  return getPortalMix(t) > 0.35
+}
+
 /** True across the hold, where the manifesto lines sit around the tunnel. */
 export function isManifestoUp(t: number): boolean {
-  return t >= 0.63 && t < 0.8
+  return t >= 0.44 && t < 0.84
 }

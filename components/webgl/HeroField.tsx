@@ -88,9 +88,19 @@ export function SectionField({
   targetId,
   /** 0 = the section's own ground, 1 = fully handed over to --section-ground. */
   progress,
+  /**
+   * How much earlier the handover reaches the top of the plane than the bottom.
+   *
+   * The hero's ground spans several sections and wants the gradient — it is
+   * what makes the dot matrix arrive from one end rather than everywhere at
+   * once. A plane the size of one section wants it flat, or its top edge
+   * disagrees with whatever plane is above it and the join shows.
+   */
+  wipeBias = [2.4, 0.35],
 }: {
   targetId: string
   progress: () => number
+  wipeBias?: [number, number]
 }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const camera = useThree((state) => state.camera)
@@ -107,6 +117,7 @@ export function SectionField({
       uDotPx: { value: 7 },
       uTime: { value: 0 },
       uProgress: { value: 0 },
+      uWipeBias: { value: new THREE.Vector2(2.4, 0.35) },
       uPixelRatio: { value: 1 },
       uAspect: { value: 1 },
     }),
@@ -194,6 +205,7 @@ export function SectionField({
     material.uniforms.uPixelRatio.value = state.viewport.dpr
     material.uniforms.uTime.value = state.clock.elapsedTime
     material.uniforms.uProgress.value = value
+    material.uniforms.uWipeBias.value.set(wipeBias[0], wipeBias[1])
   })
 
   return (

@@ -1,12 +1,12 @@
 /*
- * Five viewports of travel for one viewport of stage. The extra four are the
- * timeline: without them the whole sequence would have to happen inside a
- * single screen's worth of scroll, which is not enough room to read as going
- * somewhere.
+ * Eight viewports of travel for one viewport of stage. The extra seven are the
+ * timeline, and most of them are the hold: the tunnel has to keep answering
+ * scroll for long enough to stop reading as an effect and start reading as a
+ * distance. Going in and coming back out take about one viewport each.
  */
 .section {
   position: relative;
-  height: 500svh;
+  height: 800svh;
 }
 
 .stageTarget {
@@ -46,8 +46,26 @@
   letter-spacing: -0.03em;
   font-weight: 600;
   text-transform: uppercase;
-  color: #ffffff;
   text-wrap: balance;
+}
+
+/*
+ * The copy follows what is behind it, not the theme.
+ *
+ * Before the arrow has grown past the frame edges the ground is the page — in
+ * the light theme, white paper — and the type has to be ink. Once the tunnel is
+ * the ground it is white in both themes, because the tunnel is black in both.
+ */
+.stage[data-ground='page'] .headline,
+.stage[data-ground='page'] .line {
+  color: var(--ink);
+  text-shadow: 0 0 24px var(--bg);
+}
+
+.stage[data-ground='tunnel'] .headline,
+.stage[data-ground='tunnel'] .line {
+  color: #ffffff;
+  text-shadow: 0 0 32px rgba(0, 0, 0, 0.65);
 }
 
 /* Absolute, so the rays run between the lines rather than around a block. */
@@ -64,7 +82,6 @@
   font-size: clamp(1.125rem, 0.9rem + 0.9vw, 1.6rem);
   line-height: 1.25;
   font-weight: 500;
-  color: #ffffff;
 }
 
 .lineInner {
