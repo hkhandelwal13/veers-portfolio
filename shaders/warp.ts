@@ -46,9 +46,9 @@ const float CORE_RADIUS = 0.055;
  * every line is allowed to be. Line work that reads is worth more here than
  * line work that is merely dense.
  */
-const float RAY_COUNT = 360.0;
+const float RAY_COUNT = 300.0;
 /** How much of its bin a segment fills. The rest is the gap to its neighbour. */
-const float BIN_FILL = 0.5;
+const float BIN_FILL = 0.56;
 /** Below about a pixel a line stops being a line and becomes noise. */
 const float MIN_HALF_WIDTH = 0.0007;
 
@@ -104,7 +104,7 @@ vec3 warpLayer(float angle, float radius, float count, float seed) {
   float start = CORE_RADIUS + travelled;
   // Length and weight follow it. The same segment covers more screen and reads
   // heavier the nearer it gets, which is most of what sells the depth.
-  float len = (0.26 + g * 0.34) * (0.05 + travelled * 1.7);
+  float len = (0.34 + g * 0.42) * (0.05 + travelled * 1.9);
 
   // Perpendicular distance to the ray's centre line, wrapped at the seam.
   float centre = (index + 0.5) / count;
@@ -209,14 +209,17 @@ vec3 warpField(vec2 screenUv, float aspect) {
 
   vec3 rays = vec3(0.0);
   if (uRayDensity > 0.001) {
-    // Three passes over the one partition: up to three segments on a line, at
-    // their own depths, and never a crossing.
+    // Several passes over the one partition: several segments on a line, each
+    // at its own depth, and never a crossing. This is the only way the field
+    // gets denser now that the lines are heavy — more of them would mean
+    // narrower bins, and a narrower bin is a thinner line.
     rays += warpLayer(angle, radius, RAY_COUNT, 3.1);
     rays += warpLayer(angle, radius, RAY_COUNT, 61.7);
-    // The third is the crowd, and the single biggest cost — a small screen
-    // keeps the tunnel and drops it.
+    // The last two are the crowd, and the bulk of the cost — a small screen
+    // keeps the tunnel and drops them.
     if (uFine > 0.5) {
       rays += warpLayer(angle, radius, RAY_COUNT, 127.3);
+      rays += warpLayer(angle, radius, RAY_COUNT, 211.9);
     }
   }
 

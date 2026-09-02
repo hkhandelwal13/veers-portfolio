@@ -6,6 +6,7 @@ import { WebGLTarget } from '@/components/dom/WebGLTarget'
 import {
   getFinaleProgress,
   getHeadlineStep,
+  isClosingUp,
   isManifestoUp,
   isTunnelBehind,
 } from '@/lib/finale-progress'
@@ -30,6 +31,14 @@ import styles from './Finale.module.css'
 
 const HEADLINES = ['Every frame earns its cut', 'Story before spectacle', 'Cut with intent']
 
+/**
+ * The line the whole sequence arrives at, over the deepest part of the tunnel.
+ *
+ * Set bigger than the approach headlines and given the frame to itself — it is
+ * not a fourth item in that list, it is what the list was building toward.
+ */
+const CLOSING = 'Story first, always'
+
 /** Placed around the burst rather than stacked, so the rays run between them. */
 const MANIFESTO = [
   { text: 'Cut for story, not for show.', className: 'topLeft' },
@@ -52,7 +61,7 @@ function useFinaleState() {
     subscribeToScroll,
     () => {
       const t = getFinaleProgress()
-      const beat = isManifestoUp(t) ? 3 : getHeadlineStep(t)
+      const beat = isClosingUp(t) ? 4 : isManifestoUp(t) ? 3 : getHeadlineStep(t)
       return beat * 2 + (isTunnelBehind(t) ? 1 : 0)
     },
     () => -2,
@@ -84,6 +93,12 @@ export function Finale() {
           // starts its scramble on mount, and a new key is a new mount.
           <p key={beat} className={styles.headline}>
             <Scramble text={HEADLINES[beat]} />
+          </p>
+        )}
+
+        {beat === 4 && (
+          <p key="closing" className={`${styles.headline} ${styles.closing}`}>
+            <Scramble text={CLOSING} />
           </p>
         )}
 
