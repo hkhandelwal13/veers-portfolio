@@ -19,7 +19,7 @@ export const FINALE_TARGET_ID = 'finale-stage'
 
 /** The beats. Shared by the shader, the arrow and the copy. */
 export const FINALE = {
-  /** Idle: the arrow small, turning slowly. */
+  /** Idle: the arrow small, flat-on, at rest. */
   approach: 0.1,
   /** Zooming in; rays begin to show through it. */
   open: 0.4,
@@ -83,9 +83,14 @@ export function getPortalOpen(t: number): number {
  * symmetric on the way out by construction.
  */
 export function getSolidity(t: number): number {
-  const open = getPortalOpen(t)
-  return 1 - smooth(clamp01(open / 0.22))
+  return 1 - smooth(clamp01(getPortalOpen(t) / SOLID_SPAN))
 }
+
+/** How far into the portal's opening the plate has entirely given way. */
+const SOLID_SPAN = 0.45
+
+/** How much bigger the arrow gets at the peak than at rest. */
+const PEAK_ZOOM = 191
 
 /**
  * The arrow's scale multiplier: small, enormous, small again.
@@ -98,11 +103,45 @@ export function getSolidity(t: number): number {
  */
 export function getPortalZoom(t: number): number {
   const open = getPortalOpen(t)
-  // Far past covering the viewport: the arrow is a wedge, not a disc, so a
-  // scale that merely reaches the frame edges still leaves its corners showing
-  // — and a black corner at the peak is the shape reasserting itself exactly
-  // where you are meant to have forgotten it.
-  return 1 + open * open * 190
+  // Geometric, not quadratic. Under perspective, something coming at you at a
+  // steady speed doubles in apparent size at a steady rate — so a scale that
+  // multiplies evenly reads as an even approach, where `open * open` sits still
+  // for most of the zoom and then arrives all at once.
+  //
+  // The ceiling is far past covering the viewport: the arrow is a wedge, not a
+  // disc, so a scale that merely reaches the frame edges still leaves its
+  // corners showing — and a black corner at the peak is the shape reasserting
+  // itself exactly where you are meant to have forgotten it.
+  return Math.pow(PEAK_ZOOM, open)
+}
+
+/**
+ * The arrow's spin, in radians — one full turn in, one full turn out.
+ *
+ * Both revolutions are whole, and both land on a multiple of 2π, so the arrow
+ * is presenting the same flat face to the camera at rest, at the moment the
+ * zoom hands over to the warp, and again once it has collapsed back. What turns
+ * in between is the depth of the thing: it goes edge-on halfway through each
+ * revolution, which is what makes it read as an object you are travelling past
+ * rather than a shape being spun in the plane of the screen.
+ *
+ * Eased at both ends of each turn, so the rotation arrives with the growth and
+ * leaves with the retreat instead of snapping into motion.
+ */
+export function getArrowSpin(t: number): number {
+  const tau = Math.PI * 2
+
+  // Driven off the same span the plate dissolves over, so the turn is welded to
+  // the growth: the arrow is exactly one revolution further round at the moment
+  // it stops being an arrow, and exactly one more by the time it is back. Doing
+  // it on raw `t` instead spends half the first turn during the idle beat,
+  // where nothing is growing yet, and the two read as separate events.
+  const phase = smooth(clamp01(getPortalOpen(t) / SOLID_SPAN))
+
+  // Past the peak the phase runs back down; the spin has to keep going forward,
+  // so the return leg counts up from where the first turn finished. Both legs
+  // give exactly one turn at the peak, so the seam is continuous.
+  return (t < FINALE.peak ? phase : 2 - phase) * tau
 }
 
 /**

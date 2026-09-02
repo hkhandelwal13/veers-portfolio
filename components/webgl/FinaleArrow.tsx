@@ -7,6 +7,7 @@ import { useGLTF } from '@react-three/drei'
 import type { GLTF } from 'three-stdlib'
 import { canRenderGlass, getCapabilities } from '@/lib/capabilities'
 import {
+  getArrowSpin,
   getFinaleProgress,
   getPortalOpen,
   getPortalZoom,
@@ -44,6 +45,27 @@ const BAKED_SCALE = 1.534
 
 /** Height at rest, as a share of the viewport — the small arrow you start on. */
 const IDLE_HEIGHT = 0.16
+
+/**
+ * The normal of the arrow's broad face, in the model's own space.
+ *
+ * Area-averaged from the GLB's normals: the two largest faces by a wide margin
+ * are the front and back of the plate, and they share this axis. It is nowhere
+ * near an axis of the model, because the arrow was authored on a diagonal — so
+ * the identity orientation shows a three-quarter view, not the face.
+ */
+const FLAT_FACE_NORMAL = new THREE.Vector3(0.66321, -0.54478, 0.51319).normalize()
+
+/**
+ * Squares that face up to the camera, which looks down -Z.
+ *
+ * The shortest rotation that does it, so the arrow keeps as much of its
+ * authored attitude as facing the camera allows; the roll after it is the one
+ * hand-set number, standing the arrow up rather than leaving it leaning.
+ */
+const FLAT_TO_CAMERA = new THREE.Quaternion()
+  .setFromUnitVectors(FLAT_FACE_NORMAL, new THREE.Vector3(0, 0, 1))
+  .premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -0.28))
 
 export function FinaleArrow() {
   const outer = useRef<THREE.Group>(null)
@@ -120,13 +142,15 @@ export function FinaleArrow() {
     group.scale.setScalar(fit * getPortalZoom(t))
     group.position.set(0, 0, 0)
 
-    // Exactly one revolution across the whole sequence, with the two other
-    // axes on sines that close. Every term is zero at both ends, so the arrow
-    // you are left with is in the same attitude as the one you started on —
-    // which is the point of a sequence that returns to where it began. An
-    // open-ended rotation lands it somewhere arbitrary instead.
-    const turn = t * Math.PI * 2
-    group.rotation.set(Math.sin(turn) * 0.45, turn, Math.sin(t * Math.PI) * 0.3)
+    // One whole revolution on the way in and another on the way out (see
+    // getArrowSpin). Turning about Y is what shows the arrow's depth — it goes
+    // edge-on at each half-turn and flat-on again at each whole one — and since
+    // both turns are whole, the flat face is squared up to the camera at rest
+    // and again once it has collapsed back. A tilt on X rides the same angle so
+    // the silhouette is never a dead cut-out, and it is zero wherever the spin
+    // is a multiple of π, which includes both ends.
+    const spin = getArrowSpin(t)
+    group.rotation.set(Math.sin(spin) * 0.18, spin, 0)
 
     const material = mesh.material as THREE.ShaderMaterial
     material.uniforms.uResolution.value.set(
@@ -142,18 +166,23 @@ export function FinaleArrow() {
 
   return (
     <group ref={outer} visible={false}>
-      <group position={[-measured.center.x, -measured.center.y, -measured.center.z]}>
-        <mesh ref={meshRef} geometry={geometry} position={BAKED_POSITION} scale={BAKED_SCALE}>
-          <shaderMaterial
-            vertexShader={portalArrowVertexShader}
-            fragmentShader={portalArrowFragmentShader}
-            uniforms={uniforms}
-            // Both faces: once it is bigger than the frustum the camera is
-            // inside the mesh, and a back-face cull would empty the screen at
-            // exactly the moment the sequence peaks.
-            side={THREE.DoubleSide}
-          />
-        </mesh>
+      {/* Fixed: turns the plate to face the camera, so the spin above starts
+          and ends flat-on. Separate from the spin because it is a property of
+          the model, not of the timeline. */}
+      <group quaternion={FLAT_TO_CAMERA}>
+        <group position={[-measured.center.x, -measured.center.y, -measured.center.z]}>
+          <mesh ref={meshRef} geometry={geometry} position={BAKED_POSITION} scale={BAKED_SCALE}>
+            <shaderMaterial
+              vertexShader={portalArrowVertexShader}
+              fragmentShader={portalArrowFragmentShader}
+              uniforms={uniforms}
+              // Both faces: once it is bigger than the frustum the camera is
+              // inside the mesh, and a back-face cull would empty the screen at
+              // exactly the moment the sequence peaks.
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+        </group>
       </group>
     </group>
   )
