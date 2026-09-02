@@ -37,6 +37,12 @@
   pointer-events: none;
 }
 
+.closing {
+  max-width: 13ch;
+  font-size: clamp(3rem, 1.2rem + 7.4vw, 7.5rem);
+  letter-spacing: -0.035em;
+}
+
 .headline {
   max-width: 16ch;
   margin: 0;

@@ -258,13 +258,21 @@ export function getWarpTravel(t: number): number {
  * rather than freezing while it empties.
  */
 export function getRingPhase(t: number): number {
-  const emitted = span(t, FINALE.flip, FINALE.peak) * RING_RATE
-  if (t <= FINALE.peak) return emitted
-  return emitted - span(t, FINALE.peak, RINGS_GONE) * RING_SLOTS
+  const emitted = span(t, FINALE.flip, RINGS_END) * RING_RATE
+  if (t <= RINGS_END) return emitted
+  return emitted - span(t, RINGS_END, RINGS_GONE) * RING_SLOTS
 }
 
-/** Where the last ring has left. */
-const RINGS_GONE = 0.94
+/**
+ * Where the ball stops taking new rings, and where the last has left.
+ *
+ * Both before the climax, deliberately. The rings belong to the passage — they
+ * arrive with the manifesto and leave with it — and the scene the whole
+ * sequence builds to is the tunnel alone: nothing in the frame but the field at
+ * its longest and fullest, and one line of type across it.
+ */
+const RINGS_END = 0.66
+const RINGS_GONE = 0.76
 
 /**
  * How many of the conveyor's slots are drawn.
@@ -275,8 +283,8 @@ const RINGS_GONE = 0.94
  * simply fading out.
  */
 export function getRingLive(t: number): number {
-  if (t <= FINALE.peak) return getRingPhase(t)
-  return RING_SLOTS * (1 - span(t, FINALE.peak, RINGS_GONE))
+  if (t <= RINGS_END) return getRingPhase(t)
+  return RING_SLOTS * (1 - span(t, RINGS_END, RINGS_GONE))
 }
 
 /** Which of the three headlines is up, or -1 for none. */
@@ -300,7 +308,19 @@ export function isTunnelBehind(t: number): boolean {
   return getPortalMix(t) > 0.35
 }
 
-/** True across the hold, where the manifesto lines sit around the tunnel. */
+/** True across the middle of the hold, where the manifesto sits around the tunnel. */
 export function isManifestoUp(t: number): boolean {
-  return t >= 0.48 && t < 0.8
+  return t >= 0.48 && t < 0.68
+}
+
+/**
+ * True at the climax — the one centred line the whole sequence arrives at.
+ *
+ * Sits over the deepest part of the tunnel by construction: the ray density
+ * peaks at FINALE.peak and this window is centred on it, so the line is up
+ * exactly while the field is at its longest and fullest, and leaves as it
+ * starts to empty.
+ */
+export function isClosingUp(t: number): boolean {
+  return t >= 0.68 && t < 0.87
 }
