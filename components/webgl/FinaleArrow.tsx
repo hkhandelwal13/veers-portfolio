@@ -14,6 +14,7 @@ import {
   getGrowth,
   getPortalMix,
   getRayDensity,
+  getRingLive,
   getRingPhase,
   getWarpTravel,
 } from '@/lib/finale-progress'
@@ -141,6 +142,7 @@ export function FinaleArrow() {
       uRayDensity: { value: 0 },
       uTravel: { value: 0 },
       uRingPhase: { value: 0 },
+      uRingLive: { value: 0 },
       uAspect: { value: 1 },
       uFine: { value: 1 },
       // The ray ramp, cool to hot — cyan through blue into violet.
@@ -225,6 +227,7 @@ export function FinaleArrow() {
       uniforms.uRayDensity.value = getRayDensity(t)
       uniforms.uTravel.value = getWarpTravel(t)
       uniforms.uRingPhase.value = getRingPhase(t)
+      uniforms.uRingLive.value = getRingLive(t)
       uniforms.uAspect.value = state.size.width / Math.max(height, 1)
 
       const ring = caps.reducedMotion

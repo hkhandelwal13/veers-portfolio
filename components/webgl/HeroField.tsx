@@ -97,10 +97,19 @@ export function SectionField({
    * disagrees with whatever plane is above it and the join shows.
    */
   wipeBias = [2.4, 0.35],
+  /**
+   * Share of the plane's height held fully handed over at the top.
+   *
+   * Only meaningful on a plane the size of one section, where the top edge is
+   * on screen while the ground is arriving. The hero's spans several sections
+   * and its top is the top of the page.
+   */
+  topFade = 0,
 }: {
   targetId: string
   progress: () => number
   wipeBias?: [number, number]
+  topFade?: number
 }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const camera = useThree((state) => state.camera)
@@ -118,6 +127,7 @@ export function SectionField({
       uTime: { value: 0 },
       uProgress: { value: 0 },
       uWipeBias: { value: new THREE.Vector2(2.4, 0.35) },
+      uTopFade: { value: 0 },
       uPixelRatio: { value: 1 },
       uAspect: { value: 1 },
     }),
@@ -206,6 +216,7 @@ export function SectionField({
     material.uniforms.uTime.value = state.clock.elapsedTime
     material.uniforms.uProgress.value = value
     material.uniforms.uWipeBias.value.set(wipeBias[0], wipeBias[1])
+    material.uniforms.uTopFade.value = topFade
   })
 
   return (

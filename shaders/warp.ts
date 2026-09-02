@@ -25,6 +25,7 @@ export const warpChunk = /* glsl */ `
 uniform float uRayDensity;  // 0..1 from scroll — how many rays exist at all
 uniform float uTravel;      // distance down the tunnel, from scroll
 uniform float uRingPhase;   // rings emitted so far; the fraction is the newest
+uniform float uRingLive;    // how many of the slots are still drawn
 uniform float uPortal;      // 0 = the arrow is glass, 1 = it is the tunnel
 uniform float uAspect;
 uniform float uFine;        // 1 to draw the two finest layers, 0 to skip them
@@ -32,6 +33,9 @@ uniform vec3 uRayCool;      // cyan
 uniform vec3 uRayMid;       // blue
 uniform vec3 uRayHot;       // violet / magenta
 uniform vec3 uRingColor;
+
+/** The hole everything comes out of, as a share of the frame's height. */
+const float CORE_RADIUS = 0.055;
 
 float hash11(float p) {
   p = fract(p * 0.1031);
@@ -75,11 +79,15 @@ vec3 warpLayer(float angle, float radius, float count, float seed) {
   // corners bare — the reference is dense to the edges. The exponent is the
   // compromise: still accelerating outward, so the rush is there, but with
   // enough of the field in the outer half to fill it.
-  float start = 1.16 * pow(zPhase, 1.6);
+  float travelled = 1.16 * pow(zPhase, 1.6);
+  // Offset by the core. Rays are born at the edge of a hole rather than at a
+  // point: the reference's centre is empty for a good fraction of the frame,
+  // and that emptiness is what the whole field appears to be coming out of.
+  float start = CORE_RADIUS + travelled;
   // Length and weight follow it. The same segment covers more screen and reads
   // heavier the nearer it gets, which is most of what sells the depth.
-  float len = (0.16 + g * 0.22) * (0.05 + start * 1.6);
-  float halfWidth = 0.0009 + 0.0026 * min(start, 1.0);
+  float len = (0.16 + g * 0.22) * (0.05 + travelled * 1.6);
+  float halfWidth = 0.0016 + 0.0042 * min(travelled, 1.0);
 
   // Perpendicular distance to the ray's centre line, wrapped at the seam.
   float centre = (index + 0.5) / count;
@@ -131,11 +139,16 @@ const float RING_LIFE = 6.0;
  * of the run have zero width, so the recycle is invisible.
  */
 float warpRings(vec2 p) {
-  if (uRingPhase <= 0.0) return 0.0;
+  if (uRingLive <= 0.0) return 0.0;
 
   float total = 0.0;
 
   for (int i = 0; i < RING_SLOTS; i++) {
+    // Slots fill in one at a time on the way in and empty one at a time on the
+    // way out — uRingLive is the count, and it runs up and back down.
+    float alive = smoothstep(float(i), float(i) + 0.7, uRingLive);
+    if (alive <= 0.002) continue;
+
     float age = uRingPhase - float(i);
     if (age <= 0.0) continue;
 
@@ -157,7 +170,7 @@ float warpRings(vec2 p) {
     vec2 grad = vec2(q.x / a, q.y / b);
     float dist = (ql - 1.0) * ql / max(length(grad), 1e-5);
 
-    total += smoothstep(0.0022, 0.0, abs(dist));
+    total += smoothstep(0.0022, 0.0, abs(dist)) * alive;
   }
 
   return total;

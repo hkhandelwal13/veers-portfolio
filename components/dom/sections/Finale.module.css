@@ -1,12 +1,13 @@
 /*
- * Eight viewports of travel for one viewport of stage. The extra seven are the
- * timeline, and most of them are the hold: the tunnel has to keep answering
- * scroll for long enough to stop reading as an effect and start reading as a
- * distance. Going in and coming back out take about one viewport each.
+ * Six and a half viewports of travel for one viewport of stage. The rest is the
+ * timeline, and the largest part of it is the hold: the tunnel has to keep
+ * answering scroll for long enough to stop reading as an effect and start
+ * reading as a distance. Two viewports of that, not three — past a point the
+ * endlessness stops being a feeling and becomes a wait.
  */
 .section {
   position: relative;
-  height: 800svh;
+  height: 650svh;
 }
 
 .stageTarget {
