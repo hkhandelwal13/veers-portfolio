@@ -57,7 +57,12 @@ import { fullscreenVertexShader } from '@/shaders/fullscreen'
 
 type Props = Partial<FluidConfig> & {
   enabled?: boolean
-  /** Renders the raw flow field instead of the scene. Development only. */
+  /**
+   * Renders the raw flow field instead of the scene, and publishes the pass's
+   * live signals to window.__fluid. Development only — a temporal effect is
+   * not something you can read reliably off a screenshot, and inferring it
+   * from pixels is how a frame-rate dependency hides for two rounds.
+   */
   debugFlow?: boolean
 }
 
@@ -139,6 +144,12 @@ export function FluidDistortion({ enabled = true, debugFlow = false, ...override
     settled: boolean
   } | null>(null)
 
+  /**
+   * How present the pointer is, 0..1 — eased, and held in a ref because it
+   * changes every frame and must not re-render anything.
+   */
+  const presence = useRef(0)
+
   useEffect(() => {
     configurePointerVelocity(config.velocitySmoothing, config.idleDecay)
   }, [config.velocitySmoothing, config.idleDecay])
@@ -189,9 +200,12 @@ export function FluidDistortion({ enabled = true, debugFlow = false, ...override
         uVelocity: { value: new THREE.Vector2() },
         uAspect: { value: 1 },
         uDissipation: { value: config.dissipation },
+        uReleaseDissipation: { value: config.releaseDissipation },
         uRadius: { value: config.radius },
         uSplatStrength: { value: config.splatStrength },
         uAdvectionStrength: { value: config.advectionStrength },
+        uSwirl: { value: config.swirlStrength },
+        uPresence: { value: 0 },
         uDelta: { value: 1 / 60 },
       },
       depthTest: false,
@@ -256,9 +270,11 @@ export function FluidDistortion({ enabled = true, debugFlow = false, ...override
     dpr,
     config.simulationSize,
     config.dissipation,
+    config.releaseDissipation,
     config.radius,
     config.splatStrength,
     config.advectionStrength,
+    config.swirlStrength,
     config.chromaticAberration,
   ])
 
@@ -272,7 +288,14 @@ export function FluidDistortion({ enabled = true, debugFlow = false, ...override
 
     const strength = enabled && !caps.reducedMotion ? getFluidStrength() : 0
 
+    // Eased both ways, so hovering in builds the swirl over about half a second
+    // and leaving lets it go over the same — the "back to normal" half.
+    const target = strength > OFF && pointerVelocity.inside ? 1 : 0
+    presence.current +=
+      (target - presence.current) * (1 - Math.exp(-config.presenceSmoothing * safeDelta))
+
     if (strength <= OFF) {
+      presence.current = 0
       // Nothing to composite. Reset the field once so re-entering a section
       // starts from rest rather than from whatever was mid-swirl when it left.
       if (!parts.settled) {
@@ -302,6 +325,7 @@ export function FluidDistortion({ enabled = true, debugFlow = false, ...override
       pointerVelocity.smoothedVelocity.y,
     )
     uniforms.uAspect.value = state.size.width / Math.max(state.size.height, 1)
+    uniforms.uPresence.value = presence.current
     uniforms.uDelta.value = safeDelta
 
     renderer.setRenderTarget(write)
@@ -318,6 +342,15 @@ export function FluidDistortion({ enabled = true, debugFlow = false, ...override
 
     renderer.setRenderTarget(null)
     renderer.render(parts.composite, parts.camera)
+
+    if (debugFlow) {
+      ;(window as unknown as { __fluid?: unknown }).__fluid = {
+        strength,
+        presence: presence.current,
+        inside: pointerVelocity.inside,
+        delta: safeDelta,
+      }
+    }
   }, 1)
 
   return null

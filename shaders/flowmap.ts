@@ -32,9 +32,12 @@ uniform vec2 uPointer;        // UV, origin bottom-left
 uniform vec2 uVelocity;       // UV per second
 uniform float uAspect;
 uniform float uDissipation;
+uniform float uReleaseDissipation;  // used once the pointer has gone
 uniform float uRadius;
 uniform float uSplatStrength;
 uniform float uAdvectionStrength;
+uniform float uSwirl;         // vortex injected while the pointer is present
+uniform float uPresence;      // 0..1, eased — is the pointer over this section
 uniform float uDelta;         // seconds, already clamped
 
 varying vec2 vUv;
@@ -64,7 +67,18 @@ void main() {
   vec2 source = vUv - here * uDelta * uAdvectionStrength;
   vec2 previous = decodeFlow(texture2D(uPreviousFlow, clamp(source, 0.0, 1.0)).rg);
 
-  previous *= uDissipation;
+  // Two decay rates, blended by presence. While the pointer is there the field
+  // has to hold long enough to fold into something; once it has gone the whole
+  // thing has to be gone too, and at the holding rate a swirl deep enough to
+  // pull a word apart is still visibly rippling seconds later.
+  //
+  // Raised to the frame's share of 1/60s, so both are per second rather than
+  // per frame. A bare multiply makes the field's lifetime a function of the
+  // frame rate: the same 0.93 clears in a fifth of a second at 60fps and takes
+  // most of two at 8, which is the difference between a distortion that
+  // releases and one that hangs there.
+  float retention = mix(uReleaseDissipation, uDissipation, uPresence);
+  previous *= pow(retention, uDelta * 60.0);
 
   // Aspect-corrected, so the splat is a circle on the screen rather than an
   // ellipse that changes shape when the window does.
@@ -77,6 +91,27 @@ void main() {
   // undivided makes the field twice as strong on a 120Hz screen as on a 60Hz
   // one, for the same movement of the same hand.
   vec2 next = previous + uVelocity * influence * uSplatStrength * uDelta;
+
+  // Presence, not just movement.
+  //
+  // A field fed only by velocity is blank the moment the hand stops, so
+  // holding the cursor somewhere does nothing — and the reference plainly
+  // stays distorted while it sits there. This injects a vortex under the
+  // pointer for as long as it is present, which dissipation then balances into
+  // a standing swirl. Rotation rather than a push because rotation is what
+  // folds: a smooth radial displacement magnifies, and magnifying a letterform
+  // leaves it a legible letterform.
+  //
+  // A little inward with it. Pure rotation shears the picture around a point;
+  // the small inflow is what drags material into the middle and gives the
+  // stretched ribbons the reference has.
+  float dist = max(length(difference), 1e-4);
+  vec2 inward = -difference / dist;
+  vec2 tangent = vec2(-inward.y, inward.x);
+  vec2 stir = normalize(mix(tangent, inward, 0.28));
+  stir.x /= max(uAspect, 1e-4);
+
+  next += stir * influence * uSwirl * uPresence * uDelta;
 
   // Hold the border at rest so advection has nothing to drag inward.
   vec2 edge = min(vUv, 1.0 - vUv);

@@ -20,10 +20,22 @@ export type FluidConfig = {
    * strong on a fast display.
    */
   splatStrength: number
-  /** Per-frame velocity retention. Below 1 or the field never settles. */
+  /** Per-frame velocity retention while the pointer is present. */
   dissipation: number
+  /** Per-frame retention once it has gone. Lower, so the frame comes back. */
+  releaseDissipation: number
   /** How far the field drags itself along its own velocity each frame. */
   advectionStrength: number
+  /**
+   * Vortex injected under the pointer for as long as it is present.
+   *
+   * This is what makes the effect answer to hover rather than only to
+   * movement: velocity alone leaves the field blank the instant the hand
+   * stops, and holding the cursor over the word then does nothing.
+   */
+  swirlStrength: number
+  /** Damping rate, per second, on hovering in and out of a fluid section. */
+  presenceSmoothing: number
   /**
    * Flow → UV offset on the captured scene.
    *
@@ -43,9 +55,9 @@ export type FluidConfig = {
 export const FLUID_DEFAULTS: FluidConfig = {
   simulationSize: 256,
   // Far wider than the suggested 0.006, which puts the whole influence inside
-  // about 150px — a smear that small under a cursor that is already moving is
-  // genuinely hard to notice. This reaches roughly 350px across.
-  radius: 0.03,
+  // about 150px. This reaches roughly 420px across, which is the scale the
+  // reference distorts at.
+  radius: 0.055,
   // Well below the suggested 2.5, because the splat is integrated over the
   // frame rather than added whole: 2.5 undivided is about 150x this at 60Hz.
   // Set so an ordinary hand — not a synthetic one, which moves several times
@@ -54,13 +66,21 @@ export const FLUID_DEFAULTS: FluidConfig = {
   // Half-life around three quarters of a second. At 0.975 the trail was gone
   // in under half of one, which reads as a flicker rather than as fluid.
   dissipation: 0.985,
+  // About a sixth of a second, so the picture is clean within one of leaving.
+  releaseDissipation: 0.93,
   advectionStrength: 1.0,
-  // Reads as roughly the offset a normal sweep produces: the splat above is
-  // tuned so an ordinary movement settles the field near 2, so this is about
-  // a tenth of the frame. Past that a fast swipe tears the letterforms rather
-  // than pushing them.
+  // Balances against dissipation into a standing swirl of roughly 3 flow
+  // units, which at the distortion below is about a sixth of the frame.
+  swirlStrength: 3.0,
+  // A little under half a second in, the same out.
+  presenceSmoothing: 5,
+  // Deep enough that the letterforms genuinely come apart in the core rather
+  // than leaning: at a standing swirl of ~3 this is roughly a sixth of the
+  // frame, which is what the reference does under the cursor.
   distortionStrength: 0.055,
-  chromaticAberration: 0.0035,
+  // Strong on purpose — the reference's iridescence is the point, and it is
+  // multiplied by the flow, so it is exactly zero everywhere at rest.
+  chromaticAberration: 0.012,
   velocitySmoothing: 14,
   idleDecay: 0.9,
 }
@@ -68,8 +88,8 @@ export const FLUID_DEFAULTS: FluidConfig = {
 /** Small screens: a quarter of the simulation, and a gentler result. */
 export const FLUID_COMPACT: Partial<FluidConfig> = {
   simulationSize: 128,
-  distortionStrength: 0.038,
-  chromaticAberration: 0.002,
+  distortionStrength: 0.04,
+  chromaticAberration: 0.007,
 }
 
 /** The ceiling, for reference — going above this buys nothing visible. */

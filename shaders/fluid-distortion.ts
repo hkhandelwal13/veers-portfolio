@@ -30,6 +30,7 @@ uniform float uChromaticAberration;
 varying vec2 vUv;
 
 const float FLOW_RANGE = 8.0;
+const int DISPERSION_TAPS = 5;
 
 void main() {
   vec2 flow = (texture2D(uFlowTexture, vUv).rg * 2.0 - 1.0) * FLOW_RANGE;
@@ -39,17 +40,37 @@ void main() {
   // wrapping to the far side of the frame.
   vec2 distorted = clamp(vUv + offset, 0.0, 1.0);
 
-  float aberration = uChromaticAberration;
-  vec2 spread = flow * aberration;
+  vec2 spread = flow * uChromaticAberration;
 
-  vec4 base = texture2D(uSceneTexture, distorted);
-  float red = texture2D(uSceneTexture, clamp(distorted + spread, 0.0, 1.0)).r;
-  float blue = texture2D(uSceneTexture, clamp(distorted - spread, 0.0, 1.0)).b;
+  // Spectral, not three-channel.
+  //
+  // Sampling R, G and B at three offsets gives coloured edges; the reference
+  // has a continuous rainbow through the smear, which is what you get by
+  // walking the offset and weighting each step toward one end of the spectrum.
+  // Every tap coincides where the flow is zero, so this is still an exact copy
+  // of the frame at rest.
+  vec3 colour = vec3(0.0);
+  vec3 weights = vec3(0.0);
 
-  // Alpha comes from the undisplaced-channel sample. The canvas is transparent
-  // and the page's own background shows through it, so the alpha has to travel
-  // with the colour or the distorted edges cut holes in the page.
-  gl_FragColor = vec4(red, base.g, blue, base.a);
+  for (int i = 0; i < DISPERSION_TAPS; i++) {
+    float t = float(i) / float(DISPERSION_TAPS - 1);
+    vec2 tapUv = clamp(distorted + spread * (t * 2.0 - 1.0), 0.0, 1.0);
+    vec3 weight = vec3(
+      smoothstep(0.45, 1.0, t),
+      1.0 - abs(t - 0.5) * 1.7,
+      smoothstep(0.55, 0.0, t)
+    );
+    weight = max(weight, 0.0);
+    colour += texture2D(uSceneTexture, tapUv).rgb * weight;
+    weights += weight;
+  }
+
+  colour /= max(weights, vec3(1e-4));
+
+  // Alpha from the undisplaced-channel sample: the canvas is transparent and
+  // the page's own background shows through it, so the alpha has to travel with
+  // the colour or the distorted edges cut holes in the page.
+  gl_FragColor = vec4(colour, texture2D(uSceneTexture, distorted).a);
 
   #include <colorspace_fragment>
 }
