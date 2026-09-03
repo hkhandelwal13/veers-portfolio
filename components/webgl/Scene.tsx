@@ -38,10 +38,7 @@ export default function Scene() {
   return (
     <Canvas
       frameloop="always"
-      // Capped below 2: every frame in the fluid sections is now captured to a
-      // full-resolution target and composited back, and that pass is paid per
-      // device pixel.
-      dpr={[1, 1.75]}
+      dpr={[1, 2]}
       camera={{ position: [0, 0, 6], fov: 35, near: 0.1, far: 100 }}
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
       // The stage is pointer-events:none so the DOM above stays clickable.
