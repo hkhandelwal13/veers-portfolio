@@ -42,18 +42,25 @@ export type FluidConfig = {
 
 export const FLUID_DEFAULTS: FluidConfig = {
   simulationSize: 256,
-  radius: 0.006,
+  // Far wider than the suggested 0.006, which puts the whole influence inside
+  // about 150px — a smear that small under a cursor that is already moving is
+  // genuinely hard to notice. This reaches roughly 350px across.
+  radius: 0.03,
   // Well below the suggested 2.5, because the splat is integrated over the
   // frame rather than added whole: 2.5 undivided is about 150x this at 60Hz.
-  // Chosen so a brisk swipe settles the field near 1.
-  splatStrength: 0.5,
-  dissipation: 0.975,
-  advectionStrength: 0.8,
-  // Tuned down from 0.12. What is being distorted is mostly type and a glass
-  // word with hard specular edges; past about a tenth of the frame a fast
-  // swipe tears the letterforms rather than pushing them.
-  distortionStrength: 0.09,
-  chromaticAberration: 0.002,
+  // Set so an ordinary hand — not a synthetic one, which moves several times
+  // faster than a person does — builds a field worth looking at.
+  splatStrength: 1.0,
+  // Half-life around three quarters of a second. At 0.975 the trail was gone
+  // in under half of one, which reads as a flicker rather than as fluid.
+  dissipation: 0.985,
+  advectionStrength: 1.0,
+  // Reads as roughly the offset a normal sweep produces: the splat above is
+  // tuned so an ordinary movement settles the field near 2, so this is about
+  // a tenth of the frame. Past that a fast swipe tears the letterforms rather
+  // than pushing them.
+  distortionStrength: 0.055,
+  chromaticAberration: 0.0035,
   velocitySmoothing: 14,
   idleDecay: 0.9,
 }
@@ -61,8 +68,8 @@ export const FLUID_DEFAULTS: FluidConfig = {
 /** Small screens: a quarter of the simulation, and a gentler result. */
 export const FLUID_COMPACT: Partial<FluidConfig> = {
   simulationSize: 128,
-  distortionStrength: 0.055,
-  chromaticAberration: 0.001,
+  distortionStrength: 0.038,
+  chromaticAberration: 0.002,
 }
 
 /** The ceiling, for reference — going above this buys nothing visible. */

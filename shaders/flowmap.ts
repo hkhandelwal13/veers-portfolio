@@ -39,8 +39,14 @@ uniform float uDelta;         // seconds, already clamped
 
 varying vec2 vUv;
 
-/** Velocity the encoding can hold. Beyond it the field clips rather than wraps. */
-const float FLOW_RANGE = 4.0;
+/**
+ * Velocity the encoding can hold. Beyond it the field clips rather than wraps.
+ *
+ * Sized for a hard flick rather than for a normal movement: a ceiling that a
+ * fast hand reaches is a ceiling you can see, because the smear stops growing
+ * halfway through the gesture.
+ */
+const float FLOW_RANGE = 8.0;
 
 vec2 decodeFlow(vec2 packed) {
   return (packed * 2.0 - 1.0) * FLOW_RANGE;
