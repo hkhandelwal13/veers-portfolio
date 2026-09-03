@@ -36,7 +36,8 @@ uniform float uReleaseDissipation;  // used once the pointer has gone
 uniform float uRadius;
 uniform float uSplatStrength;
 uniform float uAdvectionStrength;
-uniform float uSwirl;         // vortex injected while the pointer is present
+uniform float uSwirl;         // drag injected while the pointer is present
+uniform vec2 uPullDirection;  // unit vector, held from the last real movement
 uniform float uPresence;      // 0..1, eased — is the pointer over this section
 uniform float uDelta;         // seconds, already clamped
 
@@ -95,23 +96,19 @@ void main() {
   // Presence, not just movement.
   //
   // A field fed only by velocity is blank the moment the hand stops, so
-  // holding the cursor somewhere does nothing — and the reference plainly
-  // stays distorted while it sits there. This injects a vortex under the
-  // pointer for as long as it is present, which dissipation then balances into
-  // a standing swirl. Rotation rather than a push because rotation is what
-  // folds: a smooth radial displacement magnifies, and magnifying a letterform
-  // leaves it a legible letterform.
+  // holding the cursor somewhere does nothing. This keeps dragging under the
+  // pointer for as long as it is there, in the direction it was last actually
+  // moving, which dissipation then balances into a standing drag.
   //
-  // A little inward with it. Pure rotation shears the picture around a point;
-  // the small inflow is what drags material into the middle and gives the
-  // stretched ribbons the reference has.
-  float dist = max(length(difference), 1e-4);
-  vec2 inward = -difference / dist;
-  vec2 tangent = vec2(-inward.y, inward.x);
-  vec2 stir = normalize(mix(tangent, inward, 0.28));
-  stir.x /= max(uAspect, 1e-4);
-
-  next += stir * influence * uSwirl * uPresence * uDelta;
+  // A drag, specifically — not a vortex and not a sink. Rotation is what makes
+  // a distortion read as waves: the field turns about a point and the picture
+  // ripples in rings around it. A sink is worse: it is divergent, so advection
+  // concentrates it into its own centre and cancels it, and what survives
+  // magnifies rather than stretches — a magnified letterform is still a
+  // legible letterform. A coherent push in one direction is what advection
+  // pulls out into strands, and strands are what the letters and the stickers
+  // come apart into.
+  next += uPullDirection * influence * uSwirl * uPresence * uDelta;
 
   // Hold the border at rest so advection has nothing to drag inward.
   vec2 edge = min(vUv, 1.0 - vUv);

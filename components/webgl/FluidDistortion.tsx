@@ -150,6 +150,16 @@ export function FluidDistortion({ enabled = true, debugFlow = false, ...override
    */
   const presence = useRef(0)
 
+  /**
+   * The direction the drag pushes in — the last direction the pointer was
+   * really moving, held while it is still.
+   *
+   * Held rather than read live because the whole point is that hovering keeps
+   * distorting: the smoothed velocity is zero the moment the hand stops, and a
+   * drag with no direction is no drag.
+   */
+  const pull = useRef({ x: 1, y: 0 })
+
   useEffect(() => {
     configurePointerVelocity(config.velocitySmoothing, config.idleDecay)
   }, [config.velocitySmoothing, config.idleDecay])
@@ -174,6 +184,12 @@ export function FluidDistortion({ enabled = true, debugFlow = false, ...override
     const sceneTarget = new THREE.WebGLRenderTarget(width, height, {
       depthBuffer: true,
       stencilBuffer: false,
+      // The canvas itself is created with antialias: true, and a plain render
+      // target is not — so capturing the frame quietly dropped MSAA from the
+      // whole page. On this scene that shows up as the glass word's specular
+      // going hard and sparkly, which reads as the lighting having been
+      // changed when nothing about the lighting has.
+      samples: 4,
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
       wrapS: THREE.ClampToEdgeWrapping,
@@ -205,6 +221,7 @@ export function FluidDistortion({ enabled = true, debugFlow = false, ...override
         uSplatStrength: { value: config.splatStrength },
         uAdvectionStrength: { value: config.advectionStrength },
         uSwirl: { value: config.swirlStrength },
+        uPullDirection: { value: new THREE.Vector2(1, 0) },
         uPresence: { value: 0 },
         uDelta: { value: 1 / 60 },
       },
@@ -325,6 +342,13 @@ export function FluidDistortion({ enabled = true, debugFlow = false, ...override
       pointerVelocity.smoothedVelocity.y,
     )
     uniforms.uAspect.value = state.size.width / Math.max(state.size.height, 1)
+    const velocity = pointerVelocity.smoothedVelocity
+    const speed = Math.hypot(velocity.x, velocity.y)
+    if (speed > config.aimThreshold) {
+      pull.current.x = velocity.x / speed
+      pull.current.y = velocity.y / speed
+    }
+    uniforms.uPullDirection.value.set(pull.current.x, pull.current.y)
     uniforms.uPresence.value = presence.current
     uniforms.uDelta.value = safeDelta
 
