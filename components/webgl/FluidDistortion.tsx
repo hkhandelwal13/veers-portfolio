@@ -213,16 +213,13 @@ export function FluidDistortion({ enabled = true, debugFlow = false, ...override
       uniforms: {
         uPreviousFlow: { value: null as THREE.Texture | null },
         uPointer: { value: new THREE.Vector2(0.5, 0.5) },
-        uVelocity: { value: new THREE.Vector2() },
+        uStamp: { value: new THREE.Vector2() },
         uAspect: { value: 1 },
+        uRadius: { value: config.radius },
         uDissipation: { value: config.dissipation },
         uReleaseDissipation: { value: config.releaseDissipation },
-        uRadius: { value: config.radius },
-        uSplatStrength: { value: config.splatStrength },
-        uAdvectionStrength: { value: config.advectionStrength },
-        uSwirl: { value: config.swirlStrength },
-        uPullDirection: { value: new THREE.Vector2(1, 0) },
         uPresence: { value: 0 },
+        uAdvectionStrength: { value: config.advectionStrength },
         uDelta: { value: 1 / 60 },
       },
       depthTest: false,
@@ -289,9 +286,7 @@ export function FluidDistortion({ enabled = true, debugFlow = false, ...override
     config.dissipation,
     config.releaseDissipation,
     config.radius,
-    config.splatStrength,
     config.advectionStrength,
-    config.swirlStrength,
     config.chromaticAberration,
   ])
 
@@ -337,18 +332,25 @@ export function FluidDistortion({ enabled = true, debugFlow = false, ...override
 
     uniforms.uPreviousFlow.value = read.texture
     uniforms.uPointer.value.set(pointerVelocity.current.x, pointerVelocity.current.y)
-    uniforms.uVelocity.value.set(
-      pointerVelocity.smoothedVelocity.x,
-      pointerVelocity.smoothedVelocity.y,
-    )
-    uniforms.uAspect.value = state.size.width / Math.max(state.size.height, 1)
+
+    // The stamp is a displacement, not a rate: the shader writes it into the
+    // field rather than adding to it, so its length IS how far the picture
+    // under the cursor moves. Aimed along the last direction the pointer was
+    // really travelling and held there while it rests, because the smoothed
+    // velocity is zero the moment the hand stops and a drag with no direction
+    // is no drag.
     const velocity = pointerVelocity.smoothedVelocity
     const speed = Math.hypot(velocity.x, velocity.y)
     if (speed > config.aimThreshold) {
       pull.current.x = velocity.x / speed
       pull.current.y = velocity.y / speed
     }
-    uniforms.uPullDirection.value.set(pull.current.x, pull.current.y)
+    const reach =
+      presence.current * config.holdStrength +
+      Math.min(speed * config.speedGain, config.speedCap)
+    uniforms.uStamp.value.set(pull.current.x * reach, pull.current.y * reach)
+
+    uniforms.uAspect.value = state.size.width / Math.max(state.size.height, 1)
     uniforms.uPresence.value = presence.current
     uniforms.uDelta.value = safeDelta
 
