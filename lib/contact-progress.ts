@@ -23,7 +23,7 @@ export const CONTACT_FIELD_ID = 'contact-field'
  * bound to the same rect: too much of it and they drift through the finale's
  * tunnel, which is somewhere else entirely.
  */
-export const CONTACT_FIELD_OVERLAP = 1.6
+const FIELD_OVERLAP = 1.6
 
 export function getContactProgress(): number {
   const rect = getTargetRect(CONTACT_FIELD_ID)
@@ -38,7 +38,7 @@ export function getContactProgress(): number {
   // is the small arrow standing in a field that is already up, not one that
   // begins arriving underneath it. The arrow is still bigger than the frame at
   // that point, so nothing shows through until it is not.
-  const sectionTop = rect.y + viewportHeight * CONTACT_FIELD_OVERLAP
+  const sectionTop = rect.y + viewportHeight * FIELD_OVERLAP
   const raw = sectionTop / (viewportHeight * 1.65)
   return raw <= 0 ? 0 : raw >= 1 ? 1 : raw
 }

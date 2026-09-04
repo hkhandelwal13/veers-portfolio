@@ -12,7 +12,6 @@ import { FrameDriver } from './FrameDriver'
 import { CONTACT_TARGET_ID, ContactWord } from './ContactWord'
 import { SectionField, STAGE_TARGET_ID } from './HeroField'
 import { FinaleArrow } from './FinaleArrow'
-import { FluidDistortion } from './FluidDistortion'
 import { HeroArrow } from './HeroArrow'
 import { HeroHello } from './HeroHello'
 import { RectSampler } from './RectSampler'
@@ -55,10 +54,6 @@ export default function Scene() {
       {/* Renders the offscreen targets the glass and the flare read. Sits at
           useFrame priority -2, after the rect sampler and before the meshes. */}
       <RefractionPass />
-      {/* Takes over the final render — see the note in FluidDistortion. Outside
-          Suspense on purpose: it is what presents the frame, so a suspended
-          model must not be able to unmount it and leave a blank canvas. */}
-      <FluidDistortion />
 
       <ambientLight intensity={0.6} />
       <directionalLight position={[3, 4, 5]} intensity={2.2} />
