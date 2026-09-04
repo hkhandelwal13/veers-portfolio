@@ -9,41 +9,42 @@
 export type FluidConfig = {
   /** Side of the square simulation target. Never the viewport's resolution. */
   simulationSize: number
-  /** Gaussian falloff of the pointer splat, in squared UV. */
+  /**
+   * Radius of the stamp, in UV.
+   *
+   * A real radius now rather than a Gaussian denominator — inside it the field
+   * is the stamp, outside it is the advected history, and the smoothstep
+   * between the two is the only place anything bends.
+   */
   radius: number
   /**
-   * How hard a splat writes into the flow.
+   * The stamp's length while the pointer merely rests on the section.
    *
-   * Scaled by the frame's own duration inside the shader, so the field reaches
-   * the same strength on a 144Hz screen as on a 60Hz one. The reference
-   * formula adds the splat undivided, which makes the whole effect twice as
-   * strong on a fast display.
+   * The stamp replaces the field rather than adding to it, so this is not a
+   * rate — it is the displacement itself, in flow units, and it is what makes
+   * hovering keep distorting when the hand has stopped.
    */
-  splatStrength: number
-  /** Per-frame velocity retention while the pointer is present. */
+  holdStrength: number
+  /** How much the pointer's own speed adds to that, and the cap on it. */
+  speedGain: number
+  speedCap: number
+  /** Velocity retention per 1/60s while the pointer is present. */
   dissipation: number
-  /** Per-frame retention once it has gone. Lower, so the frame comes back. */
+  /** Retention once it has gone. Lower, so the frame comes back. */
   releaseDissipation: number
   /** How far the field drags itself along its own velocity each frame. */
   advectionStrength: number
-  /**
-   * Drag injected under the pointer for as long as it is present.
-   *
-   * This is what makes the effect answer to hover rather than only to
-   * movement: velocity alone leaves the field blank the instant the hand
-   * stops, and holding the cursor over the word then does nothing.
-   */
-  swirlStrength: number
-  /** Speed, in UV per second, above which the drag re-aims itself. */
+
+  /** Speed, in UV per second, above which the stamp re-aims itself. */
   aimThreshold: number
   /** Damping rate, per second, on hovering in and out of a fluid section. */
   presenceSmoothing: number
   /**
    * Flow → UV offset on the captured scene.
    *
-   * The splat is tuned so a brisk swipe settles the field near 1, which makes
-   * this readable directly: it is roughly the largest offset, as a share of the
-   * frame, that a fast movement produces.
+   * Multiplied by the stamp, which is a displacement rather than a rate, so
+   * holdStrength * this is directly the share of the frame that the picture
+   * under the cursor is moved by.
    */
   distortionStrength: number
   /** RGB separation along the flow direction. Subtle by contract. */
@@ -56,32 +57,28 @@ export type FluidConfig = {
 
 export const FLUID_DEFAULTS: FluidConfig = {
   simulationSize: 256,
-  // Wider than the suggested 0.006, which puts the whole influence inside
-  // about 150px and is too small to read — but not so wide that the pointer
-  // drags half the viewport around with it. Roughly 300px across.
-  radius: 0.028,
-  // Well below the suggested 2.5, because the splat is integrated over the
-  // frame rather than added whole: 2.5 undivided is about 150x this at 60Hz.
-  // Set so an ordinary hand — not a synthetic one, which moves several times
-  // faster than a person does — builds a field worth looking at.
-  splatStrength: 1.0,
+  // Roughly 300px across on a 900-tall viewport: big enough to take several
+  // letters at once, not so big that the pointer drags half the frame.
+  radius: 0.17,
+  // Around a sixth of the frame of displacement at the distortion below,
+  // which is what "the letters come apart" costs.
+  holdStrength: 2.6,
+  speedGain: 0.55,
+  speedCap: 2.2,
   // Half-life around three quarters of a second. At 0.975 the trail was gone
   // in under half of one, which reads as a flicker rather than as fluid.
   dissipation: 0.985,
   // About a sixth of a second, so the picture is clean within one of leaving.
   releaseDissipation: 0.93,
   advectionStrength: 1.0,
-  // Balances against dissipation into a standing drag of roughly 3 flow units,
-  // which at the distortion below is about a sixth of the frame.
-  swirlStrength: 3.0,
   // Low enough that an ordinary drift re-aims it, high enough that the jitter
   // of a hand holding still does not spin the direction around.
   aimThreshold: 0.25,
   // A little under half a second in, the same out.
   presenceSmoothing: 5,
-  // Deep enough that the letterforms genuinely come apart in the core rather
-  // than leaning: at a standing swirl of ~3 this is roughly a sixth of the
-  // frame, which is what the reference does under the cursor.
+  // With holdStrength above, about a seventh of the frame at rest and a fifth
+  // under a fast hand — deep enough that the letterforms come apart rather
+  // than lean.
   distortionStrength: 0.055,
   // Present but not the subject. Larger than this and the rainbow banding
   // becomes the effect, which reads as ripples rather than as a stretch. It is
