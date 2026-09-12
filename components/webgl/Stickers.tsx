@@ -60,21 +60,8 @@ const SPREAD_Y = 1.25
  * to miss a link.
  */
 const RESERVE_FLOOR = 0.18
-/** Over how much charge a reserve sticker fades up once its rank is passed. */
-const RESERVE_FADE = 0.14
-/**
- * How hard the charge grips, over and above 1.
- *
- * Charge rarely sits at 1 — it is draining from the moment you stop clicking —
- * so a grip read straight off it means the cluster is never actually gathered,
- * only leaning. This brings it home at around two thirds charge and holds it
- * there while you keep clicking.
- */
-const GRIP_GAIN = 1.5
-
-function clamp01(value: number) {
-  return value <= 0 ? 0 : value >= 1 ? 1 : value
-}
+/** How fast a reserve sticker swells in, and shrinks back out. Per second. */
+const GROW_RATE = 7
 
 type Particle = {
   sticker: number
@@ -99,12 +86,16 @@ type Particle = {
    * arrive a few at a time rather than all at once.
    */
   rank: number
-  /** How completely this one abandons its fall for the cluster, 0..1. */
-  pull: number
-  /** Where it sits in the cluster — they gather round the point, not on it. */
-  ringPhase: number
-  ringRadius: number
-  ringRate: number
+  /**
+   * How far grown this one is, 0..1 — its own value, eased toward whether the
+   * charge has reached its rank, rather than read straight off that charge.
+   *
+   * State rather than a function of the charge because the charge is a step
+   * per click: read directly it would snap a sticker into existence at full
+   * size. Chased over a fraction of a second instead, it swells into place,
+   * and shrinks back out the same way when the charge drains.
+   */
+  grow: number
 }
 
 /**
@@ -222,16 +213,8 @@ export function Stickers({
         // click brings the next few rather than a scatter from the whole set —
         // which is what makes it read as "more" instead of "different ones".
         rank: reserve ? RESERVE_FLOOR + ((i - count) / Math.max(burstCount, 1)) * (1 - RESERVE_FLOOR) : 0,
-        // The field leans in; the reserve arrives already committed.
-        pull: reserve ? 1 : 0.45 + random() * 0.35,
-        ringPhase: random() * Math.PI * 2,
-        // As a share of the viewport's height, not of the sticker or the word:
-        // the cluster has to be the same size on a phone as on a desktop, and
-        // the two things it could key off instead are both the wrong scale —
-        // a sticker is far too small and the hero's word is wider than the
-        // screen. Squared, so most sit near the middle and a few sit out.
-        ringRadius: 0.03 + random() * random() * 0.17,
-        ringRate: (random() - 0.5) * 0.8,
+        // The field itself is always at full size; only the reserve grows in.
+        grow: reserve ? 0 : 1,
       }
     })
   }, [atlas, count, burstCount, total])
@@ -332,15 +315,14 @@ export function Stickers({
     const step = (delta / FALL_SECONDS) * (screenWorld / Math.max(bandHeight, 1e-4)) * held
     const time = state.clock.elapsedTime
 
-    // --- Click gathering ------------------------------------------------------
-    // Where the cluster is, in world units at the glass plane. The viewport
-    // rather than the field's own rect: the click is a point on the screen, and
-    // this field is the whole page tall.
-    const burst = burstCount > 0 ? getStickerBurst() : null
-    const charge = burst ? burst.charge : 0
-    const gatherX = burst ? (burst.x - 0.5) * state.viewport.width : 0
-    const gatherY = burst ? -(burst.y - 0.5) * state.viewport.height : 0
-    const clusterSpan = state.viewport.height
+    // --- Clicking the background ----------------------------------------------
+    // How many of the reserve are wanted this frame. Nothing about where they
+    // go: they arrive in the field, falling like the rest, and the only thing
+    // the click changes is how many of them there are.
+    const charge = burstCount > 0 ? getStickerBurst() : 0
+    // Frame-rate independent approach, so the swell takes the same wall time
+    // at 8fps as at 120.
+    const growStep = 1 - Math.exp(-GROW_RATE * Math.min(delta, 1 / 15))
 
     for (let i = 0; i < particles.length; i++) {
       const particle = particles[i]
@@ -358,44 +340,34 @@ export function Stickers({
       const depthScale = (camera.position.z - particle.z) / Math.max(camera.position.z, 0.001)
 
       const sway = Math.sin(time * particle.swayRate + particle.swayPhase) * particle.swayAmount
-      let x = seat.x + (particle.lane - 0.5 + sway) * bandWidth * depthScale
-      let y = seat.y + (bandHeight * 0.5 - particle.progress * bandHeight) * depthScale
+      const x = seat.x + (particle.lane - 0.5 + sway) * bandWidth * depthScale
+      const y = seat.y + (bandHeight * 0.5 - particle.progress * bandHeight) * depthScale
 
-      // A reserve sticker is nothing at all until the charge reaches its rank,
-      // then fades up over a little more. The field's own particles have rank
-      // 0, so this is 1 for them and costs a compare.
-      const reveal =
-        particle.rank === 0
-          ? 1
-          : clamp01((charge - particle.rank) / RESERVE_FADE)
-
-      if (particle.rank > 0 && reveal <= 0) {
-        // Nothing to draw. Collapse it rather than leaving last frame's matrix
-        // standing — an instanced mesh has no way to skip an instance.
-        dummy.scale.set(0, 0, 0)
-        dummy.position.set(x, y, particle.z)
-        dummy.rotation.set(0, 0, particle.rotation)
-        dummy.updateMatrix()
-        mesh.setMatrixAt(i, dummy.matrix)
-        continue
-      }
-
-      if (charge > 0) {
-        // Round the point, not on it: without the ring every sticker converges
-        // on one pixel and the cluster is a single stack.
-        const orbit = particle.ringPhase + time * particle.ringRate
-        const radius = particle.ringRadius * clusterSpan * depthScale
-        // Over-driven so the reserve is fully gathered before the charge is
-        // full: a sticker that only gets three-quarters of the way to the
-        // point has not gathered, it has drifted.
-        const grip = clamp01(charge * GRIP_GAIN * particle.pull)
-        x += (gatherX * depthScale + Math.cos(orbit) * radius - x) * grip
-        y += (gatherY * depthScale + Math.sin(orbit) * radius - y) * grip
+      // A reserve sticker is wanted once the charge passes its rank. The
+      // field's own particles have rank 0 and are therefore always wanted, so
+      // this costs them a compare and their grow stays at 1.
+      if (particle.rank > 0) {
+        const wanted = charge > particle.rank ? 1 : 0
+        particle.grow += (wanted - particle.grow) * growStep
+        if (particle.grow < 0.002) {
+          // Nothing to draw. Collapse it rather than leaving last frame's
+          // matrix standing — an instanced mesh has no way to skip an instance.
+          particle.grow = 0
+          dummy.scale.set(0, 0, 0)
+          dummy.position.set(x, y, particle.z)
+          dummy.rotation.set(0, 0, particle.rotation)
+          dummy.updateMatrix()
+          mesh.setMatrixAt(i, dummy.matrix)
+          continue
+        }
       }
 
       dummy.position.set(x, y, particle.z)
       dummy.rotation.set(0, 0, particle.rotation)
-      const size = particle.scale * sizeBase * depthScale * exitScale * reveal
+      // Eased rather than linear: growth that starts and ends abruptly reads
+      // as a pop at both ends however long it takes.
+      const swell = particle.grow * particle.grow * (3 - 2 * particle.grow)
+      const size = particle.scale * sizeBase * depthScale * exitScale * swell
       const aspect = atlas.stickers[particle.sticker].aspect
       dummy.scale.set(size * aspect, size, 1)
       dummy.updateMatrix()

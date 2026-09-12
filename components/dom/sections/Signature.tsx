@@ -17,11 +17,19 @@ import styles from './Signature.module.css'
  * signature is sequential, and drawing both at once reads as two unrelated
  * lines appearing rather than as one hand writing.
  *
- * Plays once, when the portrait arrives. Reduced motion gets the finished mark
- * straight away, via a media query rather than via state: the component cannot
- * initialise from prefersReducedMotion() because that is false on the server
- * and true on the client, so hydration would render the undrawn markup and,
- * with the observer skipped, nothing would ever flip it.
+ * Written again every time you arrive, from either direction — it is the
+ * section's entrance, not a one-off. Two observers rather than one, because
+ * the moment to start writing and the moment to clear the page are not the
+ * same moment: it starts once the mark is properly on screen, and resets only
+ * once it is entirely gone. One observer doing both would have to reset at the
+ * same line it draws at, which means watching the signature blink out while it
+ * is still visible at the bottom of the screen.
+ *
+ * Reduced motion gets the finished mark straight away, via a media query
+ * rather than via state: the component cannot initialise from
+ * prefersReducedMotion() because that is false on the server and true on the
+ * client, so hydration would render the undrawn markup and, with the observer
+ * skipped, nothing would ever flip it.
  */
 
 /**
@@ -96,18 +104,37 @@ export function Signature({ label = 'Veer' }: { label?: string }) {
       delay += duration + LIFT_SECONDS
     }
 
-    const observer = new IntersectionObserver(
+    const draw = new IntersectionObserver(
       (entries) => {
         if (!entries.some((entry) => entry.isIntersecting)) return
-        observer.disconnect()
         svg.classList.add(styles.drawing)
       },
       // A little in from the edge: the mark sits at the very top of the
       // portrait, so firing on first contact means it is written off screen.
       { threshold: 0, rootMargin: '0px 0px -15% 0px' },
     )
-    observer.observe(svg)
-    return () => observer.disconnect()
+
+    const reset = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) return
+        // Dropping the class takes the animation with it, which returns the
+        // strokes to the dashoffset declared on .stroke — so the next arrival
+        // starts from a blank page rather than replaying from finished. No
+        // reflow trick needed: the class is off for as long as the section is
+        // off screen, which is many frames.
+        svg.classList.remove(styles.drawing)
+      },
+      // No margin here: clear it only once it is genuinely gone, in whichever
+      // direction it left.
+      { threshold: 0 },
+    )
+
+    draw.observe(svg)
+    reset.observe(svg)
+    return () => {
+      draw.disconnect()
+      reset.disconnect()
+    }
   }, [])
 
   return (
