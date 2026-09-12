@@ -1,19 +1,20 @@
 /*
- * Four and two fifths viewports of travel for one viewport of stage.
+ * Three and four fifths viewports of travel for one viewport of stage.
  *
  * The trim comes off the two zoom legs, not off the hold. Growing in and
  * collapsing out are the seams to the work grid above and the contact screen
  * below, and every viewport spent on them reads as a gap between sections
  * rather than as part of either — and as a slow zoom, because the same growth
  * is being spread over more scroll. Shortening them closes both joins and
- * speeds the zoom with one number. The hold — the part that has to read as a
- * distance rather than an effect — keeps its ~1.75 viewports, which is why
- * every beat in lib/finale-progress moved with this number rather than
- * staying put.
+ * speeds the zoom with one number. There is no padding between these sections
+ * to trim instead — measured, the seam is 108px — so this is the whole of it.
+ * The hold — the part that has to read as a distance rather than an effect —
+ * keeps ~1.6 viewports, which is why every beat in lib/finale-progress moved
+ * with this number rather than staying put.
  */
 .section {
   position: relative;
-  height: 440svh;
+  height: 380svh;
 }
 
 .stageTarget {
