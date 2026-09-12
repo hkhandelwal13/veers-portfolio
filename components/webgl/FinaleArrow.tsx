@@ -9,6 +9,8 @@ import { canRenderGlass, getCapabilities } from '@/lib/capabilities'
 import {
   applyFlatArrowDefinition,
   ARROW_REST_ATTITUDE,
+  computeArrowCentroid,
+  computeArrowSpinAxis,
 } from './arrow-attitude'
 import {
   FINALE_ARROW_ID,
@@ -54,10 +56,11 @@ import { isRectVisible, rectToWorld } from './rect-space'
  *
  * Seated on the sticky stage's own rect rather than parked at the world
  * origin. That is what puts it *in* its section: while the stage is still
- * un-pinned the rect is below the fold, so the arrow rises into frame as the
- * work grid leaves, and on the way out the same rect carries it up over the
- * closing screen. Parked at the origin it would instead hang in the middle of
- * the work grid for the whole approach.
+ * un-pinned the rect is below the fold, so the arrow rises into frame through
+ * the last row of work cards — the section is overlapped with the grid for
+ * most of that approach, see Finale.module.css — and on the way out the same
+ * rect carries it up over the closing screen. Parked at the origin it would
+ * instead hang in the middle of the work grid for the whole approach.
  *
  * On the glass layer, so the refraction pass renders the page without it and
  * the arrow has something to bend while it is still an object.
@@ -89,6 +92,10 @@ const TILT_Y = 0.16
 export function FinaleArrow() {
   const outer = useRef<THREE.Group>(null)
   const meshRef = useRef<THREE.Mesh>(null)
+  /** Scratch quaternions — rebuilt every frame, so never memo results. */
+  const spinQuat = useRef(new THREE.Quaternion())
+  const tiltQuat = useRef(new THREE.Quaternion())
+  const tiltEuler = useRef(new THREE.Euler())
   const ringLight = useRef<ReturnType<typeof createRingLight> | null>(null)
   const camera = useThree((state) => state.camera)
 
@@ -115,10 +122,19 @@ export function FinaleArrow() {
 
   const initialUniforms = useMemo(() => {
     const uniforms = createGlassUniforms()
-    uniforms.uTintDark.value.set('#1a9fff')
-    uniforms.uTintLight.value.set('#7fd0ff')
-    uniforms.uTintSecondary.value.set('#3a6bff')
-    uniforms.uTintAmount.value = 0.92
+    uniforms.uTintDark.value.set('#2196f3')
+    uniforms.uTintLight.value.set('#a5e8ff')
+    uniforms.uTintSecondary.value.set('#2196f3')
+    uniforms.uTintAmount.value = 0.95
+    // The rim and specular default to a warm cream, which is right for the
+    // hero's word over a blue field and wrong here. Highlight is added on top
+    // of the body, and adding warm white to azure lifts red faster than green:
+    // the arrow came out periwinkle down its lit edge and violet where the
+    // Fresnel is widest, instead of the one flat blue the reference holds. A
+    // cool highlight keeps every bit of the 3D definition and none of the hue
+    // drift. Set here rather than in createGlassUniforms so the hero's `hello`
+    // keeps the warm highlight it was tuned with.
+    uniforms.uRimColor.value.set('#AEE2FF')
     // It rests face-on here too, at the start and the end of the sequence.
     applyFlatArrowDefinition(uniforms)
     return {
@@ -139,6 +155,32 @@ export function FinaleArrow() {
     }
   }, [])
 
+  /**
+   * The axis the arrow turns about, and the point that axis runs through.
+   *
+   * Both derived from the mesh — see arrow-attitude. The finale used to spin
+   * this group about world Y, which for a flat plate is a page-turn: it goes
+   * edge-on halfway round and the two halves swap sides, which reads as the
+   * arrow swinging about its lower corner rather than rolling. Same axis the
+   * hero's arrow already uses, so the two turns are the same move.
+   */
+  const spinAxis = useMemo(() => computeArrowSpinAxis(geometry), [geometry])
+
+  /**
+   * The centroid, carried through the GLB's baked transform.
+   *
+   * This group's child applies BAKED_POSITION and BAKED_SCALE, so the offset
+   * that brings the spin point to this group's origin has to be measured on
+   * the far side of them.
+   */
+  const pivot = useMemo(
+    () =>
+      computeArrowCentroid(geometry)
+        .multiplyScalar(BAKED_SCALE)
+        .add(new THREE.Vector3(...BAKED_POSITION)),
+    [geometry],
+  )
+
   /** Bounds from the geometry and its baked transform, never Box3 on the
    *  mounted object — that measures in world space and folds in the scale this
    *  component has already applied. */
@@ -155,7 +197,6 @@ export function FinaleArrow() {
     const raw = geometry.boundingBox!
     return {
       size: box.getSize(new THREE.Vector3()),
-      center: box.getCenter(new THREE.Vector3()),
       localY: new THREE.Vector2(raw.min.y, raw.max.y),
     }
   }, [geometry])
@@ -230,7 +271,13 @@ export function FinaleArrow() {
     const float = Math.sin(state.clock.elapsedTime * 0.6) * boxHeight * IDLE_HEIGHT * FLOAT_AMPLITUDE
     group.position.set(seat.x, seat.y + float * calm, 0)
 
-    group.rotation.set(pointer.cy * TILT_X * calm, getArrowSpin(t) + pointer.cx * TILT_Y * calm, 0)
+    // Quaternions rather than Euler angles, because the spin axis is a
+    // direction in the arrow's own plane rather than one of the world's: the
+    // pointer tilt is a world-space lean, and the spin rides inside it.
+    tiltEuler.current.set(pointer.cy * TILT_X * calm, pointer.cx * TILT_Y * calm, 0)
+    tiltQuat.current.setFromEuler(tiltEuler.current)
+    spinQuat.current.setFromAxisAngle(spinAxis, getArrowSpin(t))
+    group.quaternion.copy(tiltQuat.current).multiply(spinQuat.current)
   })
 
   return (
@@ -239,7 +286,7 @@ export function FinaleArrow() {
           the spin above starts and ends flat-on. A property of the model, not
           of the timeline, which is why it is not in the frame loop. */}
       <group quaternion={ARROW_REST_ATTITUDE}>
-        <group position={[-measured.center.x, -measured.center.y, -measured.center.z]}>
+        <group position={[-pivot.x, -pivot.y, -pivot.z]}>
           <mesh ref={meshRef} geometry={geometry} position={BAKED_POSITION} scale={BAKED_SCALE}>
             <shaderMaterial
               vertexShader={portalArrowVertexShader}
