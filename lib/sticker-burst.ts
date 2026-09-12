@@ -1,36 +1,44 @@
 /**
- * Clicking the background gathers stickers where you clicked.
+ * Clicking the background adds stickers to the field.
  *
- * Only on the hero and the closing screen. Those are the two places the field
- * is falling and the page has no other job — everywhere between them the
- * stickers are frozen into the dot matrix and the pointer already has the
- * pixel trail (lib/mid-sections), so a second pointer effect there would be
- * two things competing for the same gesture.
+ * Only the hero and the closing screen answer the click. Those are the two
+ * places the field is falling and the page has no other job — everywhere
+ * between them the stickers are frozen into the dot matrix and the pointer
+ * already has the pixel trail (lib/mid-sections), so a second pointer effect
+ * there would be two things competing for the same gesture.
  *
- * The shape of it: every click adds charge; charge decays back to zero on its
- * own. Charge does one thing — it calls up a reserve of stickers that are
- * otherwise invisible, a few more with each click, each swelling into the
- * field from nothing to full size. Where you clicked is not part of it. An
- * earlier version pulled the whole field to the point you clicked and piled it
- * up there, which is a burst rather than an arrival, and it left the rest of
- * the screen bare. Stop clicking and the charge drains, the reserve shrinks
- * back out, and the field is exactly where it would have been if you had never
- * clicked: the fall itself never stops, so nothing has to be restored.
+ * What a click does is add, and only add. Each one wakes a few more of a
+ * reserve that starts out invisible; they swell up from nothing to full size
+ * where they are and then they are simply part of the field — same fall, same
+ * drift, same sway, indistinguishable from the ones that were always there.
  *
- * A module-level reading rather than React state, for the same reason as the
- * pointer bus: this is read once per frame by WebGL, and a re-render per click
+ * Which is why this is a count and not a level. Two earlier versions were a
+ * charge that drained: the first pulled the whole field into a pile at the
+ * pointer, which is a burst rather than an arrival, and the second left the
+ * new stickers shrinking away again a second after they appeared — they never
+ * got to be part of anything. A number that only goes up has neither problem
+ * and needs no frame loop to maintain.
+ *
+ * A module-level count rather than React state, for the same reason as the
+ * pointer bus: it is read once per frame by WebGL, and a re-render per click
  * would be a re-render of the whole canvas tree.
  */
 
 import { getMidSectionPresence } from './mid-sections'
 
-/** Per click. Four or five clicks reach full strength. */
-const CLICK_GAIN = 0.26
-/** Share of the charge left after one second of not clicking. */
-const RETENTION = 0.3
+/**
+ * Stickers woken per click.
+ *
+ * Enough that one click is visibly something, small enough that filling the
+ * reserve takes a while — the effect is meant to reward carrying on, not to
+ * be over in two taps.
+ */
+const PER_CLICK = 5
 
-/** 0..1 — the sum of recent clicks, always draining. */
-let charge = 0
+/** How many of the reserve are awake. Only ever rises. */
+let spawned = 0
+/** The size of the reserve, set by the field that owns it. */
+let capacity = 0
 
 /** Interactive things the page already uses this gesture for. */
 const INTERACTIVE = 'a, button, input, textarea, select, label, summary, [role="button"]'
@@ -40,12 +48,10 @@ function onPointerDown(event: PointerEvent) {
   if (event.button !== 0) return
   const element = event.target as Element | null
   if (element?.closest?.(INTERACTIVE)) return
-  // Outside the hero and the closing screen this does nothing, so do not even
-  // record it: charge picked up in the middle of the page would arrive with
-  // you when you reached the bottom.
+  // The middle of the page does not answer this gesture — see above.
   if (getMidSectionPresence() > 0.5) return
 
-  charge = Math.min(1, charge + CLICK_GAIN)
+  spawned = Math.min(capacity, spawned + PER_CLICK)
 }
 
 let listeners = 0
@@ -54,11 +60,12 @@ let listeners = 0
  * Starts listening, and stops when the last caller releases it.
  *
  * Ref-counted because the field may be drawn by more than one component and
- * each will ask for this; two listeners would mean two lots of charge per
- * click.
+ * each will ask for this; two listeners would mean two lots of stickers per
+ * click. `reserve` is how many the caller has to give.
  */
-export function installStickerBurst(): () => void {
+export function installStickerBurst(reserve: number): () => void {
   if (typeof window === 'undefined') return () => {}
+  capacity = Math.max(capacity, reserve)
   if (listeners === 0) window.addEventListener('pointerdown', onPointerDown, { passive: true })
   listeners += 1
   let released = false
@@ -70,37 +77,19 @@ export function installStickerBurst(): () => void {
   }
 }
 
-/** Drains the charge. Driven from the one frame loop. */
-export function updateStickerBurst(deltaSeconds: number) {
-  if (charge <= 0) return
-  // Per second, not per frame: the same constant has to drain in the same wall
-  // time at 8fps as at 120.
-  charge *= Math.pow(RETENTION, Math.min(deltaSeconds, 1 / 15))
-  if (charge < 0.001) charge = 0
-}
-
-/**
- * The reading for this frame.
- *
- * Gated by where you are on the page as well as by the charge, so a burst
- * cannot survive a scroll into the middle of the site: the same signal that
- * freezes the stickers there closes this down.
- */
 /**
  * Dev-only readout.
  *
- * Temporal effects cannot be verified from screenshots on a headless renderer
- * — it runs at a few frames a second, which makes a correctly-draining signal
- * look like a stuck one. Reading the number directly is the only honest test.
- * Stripped from production builds by the constant condition.
+ * Screenshots of this on a headless renderer are hard to read — it runs at a
+ * few frames a second and the stickers are mid-swell in most of them. Reading
+ * the number directly is the honest test. Stripped from production builds by
+ * the constant condition.
  */
 if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') {
-  ;(window as unknown as { __stickerBurst?: () => number }).__stickerBurst = () => charge
+  ;(window as unknown as { __stickerBurst?: () => number }).__stickerBurst = () => spawned
 }
 
-export function getStickerBurst(): number {
-  // Derived, never written back: the gate is a function of where you are, so
-  // folding it into the stored charge would spend the charge just for having
-  // scrolled past — and would spend it again on every call within the frame.
-  return charge * (1 - getMidSectionPresence())
+/** How many of the reserve are awake, for the field to draw. */
+export function getStickerSpawn(): number {
+  return spawned
 }
