@@ -7,6 +7,10 @@ import { useGLTF } from '@react-three/drei'
 import type { GLTF } from 'three-stdlib'
 import { canRenderGlass, getCapabilities } from '@/lib/capabilities'
 import {
+  applyFlatArrowDefinition,
+  ARROW_REST_ATTITUDE,
+} from './arrow-attitude'
+import {
   FINALE_ARROW_ID,
   getArrowScale,
   getArrowSpin,
@@ -69,32 +73,13 @@ const BAKED_SCALE = 1.534
 const IDLE_HEIGHT = 0.14
 
 /**
- * The normal of the arrow's broad face, in the model's own space.
+ * Refraction offset where the pass is available.
  *
- * Area-averaged from the GLB's normals: the two largest faces by a wide margin
- * are the front and back of the plate, and they share this axis. It is nowhere
- * near an axis of the model, because the arrow was authored on a diagonal — so
- * the identity orientation shows a three-quarter view, not the face.
+ * Mirrors what applyFlatArrowDefinition sets, because the frame loop below
+ * rewrites this uniform every frame to switch the flat-grey fallback in and
+ * out — so a different value here would quietly undo the flat-face treatment.
  */
-const FLAT_FACE_NORMAL = new THREE.Vector3(0.66321, -0.54478, 0.51319).normalize()
-
-/** Which way the arrow points at rest: up and to the left, at an angle. */
-const REST_ROLL = 1.28
-
-/**
- * Squares the plate up to the camera, which looks down -Z, then rolls it into
- * its resting heading.
- *
- * The shortest rotation that faces it, so the arrow keeps as much of its
- * authored attitude as facing the camera allows; the roll is the one hand-set
- * number.
- */
-const REST_ATTITUDE = new THREE.Quaternion()
-  .setFromUnitVectors(FLAT_FACE_NORMAL, new THREE.Vector3(0, 0, 1))
-  .premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), REST_ROLL))
-
-/** The hero's refraction offset, kept so the two materials match where both run. */
-const REFRACT_STRENGTH = 0.16
+const REFRACT_STRENGTH = 0.24
 
 /** Idle float and pointer parallax, as the hero's word has them. */
 const FLOAT_AMPLITUDE = 0.02
@@ -134,8 +119,8 @@ export function FinaleArrow() {
     uniforms.uTintLight.value.set('#7fd0ff')
     uniforms.uTintSecondary.value.set('#3a6bff')
     uniforms.uTintAmount.value = 0.92
-    uniforms.uRimStrength.value = 0.85
-    uniforms.uSpecStrength.value = 1.3
+    // It rests face-on here too, at the start and the end of the sequence.
+    applyFlatArrowDefinition(uniforms)
     return {
       ...uniforms,
       // The tunnel's half, spliced into the same material.
@@ -253,7 +238,7 @@ export function FinaleArrow() {
       {/* Fixed: faces the plate at the camera and points it where it rests, so
           the spin above starts and ends flat-on. A property of the model, not
           of the timeline, which is why it is not in the frame loop. */}
-      <group quaternion={REST_ATTITUDE}>
+      <group quaternion={ARROW_REST_ATTITUDE}>
         <group position={[-measured.center.x, -measured.center.y, -measured.center.z]}>
           <mesh ref={meshRef} geometry={geometry} position={BAKED_POSITION} scale={BAKED_SCALE}>
             <shaderMaterial

@@ -4,6 +4,11 @@ import { Suspense } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { AdaptiveDpr, Environment, Lightformer, Preload } from '@react-three/drei'
 import { getHeroProgress } from '@/lib/hero-progress'
+import {
+  getStickerDissolve,
+  getStickerFreeze,
+  isStageFieldActive,
+} from '@/lib/sticker-journey'
 import { CONTACT_FIELD_ID, getContactProgress } from '@/lib/contact-progress'
 import { CardMirrors } from './CardMirrors'
 import { EditorFace } from './EditorFace'
@@ -70,7 +75,22 @@ export default function Scene() {
             the pointer wake the other two sample. */}
         <EditorFace />
         <SectionField targetId={STAGE_TARGET_ID} progress={getHeroProgress} />
-        <Stickers />
+        {/* One field for the whole stage — hero, about, work, the arrow's
+            approach. They fall clear in the hero, freeze into the dot matrix as
+            the about section takes over, and stay there until the closing
+            screen thaws them (lib/sticker-journey). Bound to the stage rather
+            than the hero because a field bound to the hero leaves with it, and
+            the about and work sections are where they are meant to be sitting
+            frozen. Nothing shrinks or fades: they are still the picture the
+            refraction has to bend, they are just dots now. */}
+        <Stickers
+          fieldId={STAGE_TARGET_ID}
+          count={120}
+          progress={ZERO}
+          dissolve={getStickerDissolve}
+          freeze={getStickerFreeze}
+          active={isStageFieldActive}
+        />
 
         {/* The closing screen repeats the hero's arrangement: its own ground,
             its own glass word, its own sticker field. */}

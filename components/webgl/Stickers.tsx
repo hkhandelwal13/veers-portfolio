@@ -20,7 +20,15 @@ import { HERO_TARGET_ID } from './HeroHello'
 import { LAYER_CONTENT } from './layers'
 import { isRectVisible, rectToWorld } from './rect-space'
 
-/** Fixed budget — the count never grows with content. */
+/**
+ * Fixed budget — the count never grows with content.
+ *
+ * A default rather than a constant now: the field that runs from the hero down
+ * to the arrow is ten screens tall and needs proportionally more particles to
+ * hold the same density, while the closing screen's is one section and does
+ * not. Off-screen instances cost a matrix write and no fragments, so the
+ * larger number buys coverage cheaply.
+ */
 const INSTANCE_BUDGET = 15
 /**
  * How far behind the glass they sit, in world units.
@@ -31,7 +39,13 @@ const INSTANCE_BUDGET = 15
  * compensated for per particle below.
  */
 const Z_OFFSET = -4.5
-/** Seconds for one fall, top to bottom of the band. */
+/**
+ * Seconds for one fall, top to bottom of ONE SCREEN.
+ *
+ * Per screen rather than per band, so a field spanning ten sections falls at
+ * the same speed on screen as one spanning a single section. Tied to the band
+ * instead, a taller field is a slower one, and the stickers would crawl.
+ */
 const FALL_SECONDS = 17
 
 /** Height of the field they fall through, as a multiple of the hero section. */
@@ -72,16 +86,25 @@ type Particle = {
 export function Stickers({
   /** The section they fall through. */
   fieldId = FIELD_TARGET_ID,
+  /** Particles in the field. Scale it with the field's height. */
+  count = INSTANCE_BUDGET,
   /** The word inside it — sets their size, so they stay in proportion to it. */
   slotId = HERO_TARGET_ID,
   /** How far the section has been scrolled away, for the exit. */
   progress = getHeroProgress,
   dissolve = getHeroObjectDissolve,
+  /** 1 holds the fall where it is; 0 lets it run. */
+  freeze,
+  /** Extra gate on top of the rect test — for fields that hand over. */
+  active,
 }: {
   fieldId?: string
+  count?: number
   slotId?: string
   progress?: () => number
   dissolve?: () => number
+  freeze?: () => number
+  active?: () => boolean
 } = {}) {
   const meshRef = useRef<THREE.InstancedMesh>(null)
   const [atlas, setAtlas] = useState<StickerAtlas | null>(null)
@@ -128,7 +151,7 @@ export function Stickers({
       seed = (seed * 1664525 + 1013904223) % 4294967296
       return seed / 4294967296
     }
-    particlesRef.current = Array.from({ length: INSTANCE_BUDGET }, (_, i) => ({
+    particlesRef.current = Array.from({ length: count }, (_, i) => ({
       sticker: i % atlas.stickers.length,
       // Independent on every axis. Sharing a fall rate, or a fixed column,
       // is what made them read as one group moving together rather than as a
@@ -145,7 +168,7 @@ export function Stickers({
       rotation: random() * Math.PI * 2,
       spin: (random() - 0.5) * 0.5,
     }))
-  }, [atlas])
+  }, [atlas, count])
 
   // Per-instance atlas slices, uploaded once.
   useEffect(() => {
@@ -153,8 +176,8 @@ export function Stickers({
     const particles = particlesRef.current
     if (!mesh || !atlas || particles.length === 0) return
 
-    const uvRects = new Float32Array(INSTANCE_BUDGET * 4)
-    const opacities = new Float32Array(INSTANCE_BUDGET)
+    const uvRects = new Float32Array(count * 4)
+    const opacities = new Float32Array(count)
 
     particles.forEach((particle, i) => {
       const entry = atlas.stickers[particle.sticker]
@@ -166,7 +189,7 @@ export function Stickers({
     mesh.geometry.setAttribute('aUvRect', new THREE.InstancedBufferAttribute(uvRects, 4))
     mesh.geometry.setAttribute('aOpacity', new THREE.InstancedBufferAttribute(opacities, 1))
     mesh.layers.set(LAYER_CONTENT)
-  }, [atlas])
+  }, [atlas, count])
 
   useFrame((state, delta) => {
     const mesh = meshRef.current
@@ -194,7 +217,8 @@ export function Stickers({
       !rect.valid ||
       !slot ||
       !slot.valid ||
-      !isRectVisible(rect, height, 0)
+      !isRectVisible(rect, height, 0) ||
+      (active && !active())
     ) {
       mesh.visible = false
       return
@@ -224,7 +248,13 @@ export function Stickers({
     material.uniforms.uPixelRatio.value = state.viewport.dpr
     const exitScale = 1 - 0.55 * exit
 
-    const step = delta / FALL_SECONDS
+    // Held, not stopped: the fall is scaled rather than switched off, so the
+    // stickers ease to a standstill as the dot matrix closes over them and ease
+    // back up again when it lifts, instead of snapping between moving and not.
+    const held = freeze ? 1 - freeze() : 1
+    // Normalised to the screen, not the band — see FALL_SECONDS.
+    const screenWorld = height * seat.unitsPerPixel
+    const step = (delta / FALL_SECONDS) * (screenWorld / Math.max(bandHeight, 1e-4)) * held
     const time = state.clock.elapsedTime
     for (let i = 0; i < particles.length; i++) {
       const particle = particles[i]
@@ -260,7 +290,7 @@ export function Stickers({
   return (
     <instancedMesh
       ref={meshRef}
-      args={[undefined, undefined, INSTANCE_BUDGET]}
+      args={[undefined, undefined, count]}
       frustumCulled={false}
       visible={false}
     >

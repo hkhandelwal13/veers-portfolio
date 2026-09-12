@@ -88,7 +88,11 @@ void main() {
   // half its radius has covered a quarter of the ground. Starting early and
   // ending before the travel does is what makes it read as a steady handover
   // rather than as nothing, then suddenly everything.
-  float wipe = smoothstep(0.22, 1.0, uProgress);
+  // Held back from 0.22. The dot matrix is the handover to the next section,
+  // and starting it in the first fifth of the hero's travel puts it on screen
+  // while the hero is still plainly the hero — it reads as the background
+  // breaking up under something that has not begun to leave.
+  float wipe = smoothstep(0.46, 1.0, uProgress);
 
   // Biased down the stage: the far end finishes first, so the black rises from
   // below and deepens as you travel into it. Because the plane spans both
