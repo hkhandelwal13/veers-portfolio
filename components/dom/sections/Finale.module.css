@@ -1,17 +1,16 @@
 /*
- * Six and a half viewports of travel for one viewport of stage. The rest is the
- * timeline, and the largest part of it is the hold: the tunnel has to keep
- * answering scroll for long enough to stop reading as an effect and start
- * reading as a distance. Two viewports of that, not three.
+ * Five and a fifth viewports of travel for one viewport of stage.
  *
- * Deliberately unchanged while the approach was shortened. Every other beat in
- * lib/finale-progress is an absolute fraction of this, so trimming the section
- * shortens the hold, the rings and the manifesto along with the join — and the
- * join is the only part that needed it.
+ * The trim came off both joins, not off the hold. Getting in used to take a
+ * screen and a half of a small arrow growing and getting out took another
+ * screen and a quarter, and both of those are the seam to the section either
+ * side. The hold — the part that has to read as a distance rather than an
+ * effect — keeps its two viewports, which is why every beat in
+ * lib/finale-progress moved with this number rather than staying put.
  */
 .section {
   position: relative;
-  height: 650svh;
+  height: 520svh;
 }
 
 .stageTarget {
@@ -39,6 +38,57 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+}
+
+/*
+ * Reveals left to right.
+ *
+ * A mask rather than an opacity fade on a row of spans: the mask has a soft
+ * edge that travels across the words, so the line arrives as one movement
+ * instead of a series of letters switching on. The gradient is 300% wide and
+ * slid from -100% so the leading edge starts off the left of the text and ends
+ * off the right of it.
+ */
+.sweep {
+  display: inline;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 0%,
+    #000 33.333%,
+    transparent 41%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    #000 0%,
+    #000 33.333%,
+    transparent 41%,
+    transparent 100%
+  );
+  -webkit-mask-size: 300% 100%;
+  mask-size: 300% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  animation: sweep-in 900ms var(--ease-out) forwards;
+}
+
+@keyframes sweep-in {
+  from {
+    -webkit-mask-position: -100% 0;
+    mask-position: -100% 0;
+  }
+  to {
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sweep {
+    -webkit-mask-image: none;
+    mask-image: none;
+    animation: none;
+  }
 }
 
 .closing {

@@ -56,9 +56,9 @@ export const FINALE = {
    * small arrow getting bigger — which reads as a gap between the two
    * sections even though they are flush against each other.
    */
-  swell: 0.2,
+  swell: 0.17,
   /** One revolution done; past every edge; the tunnel has taken over. */
-  flip: 0.44,
+  flip: 0.39,
   /**
    * End of the hold.
    *
@@ -67,7 +67,7 @@ export const FINALE = {
    * viewports of it rather than three — long enough to stop reading as an
    * effect, short enough not to become a wait.
    */
-  peak: 0.78,
+  peak: 0.81,
 } as const
 
 /** Rest → reading size → past every edge. Multipliers on the seated height. */
@@ -197,12 +197,21 @@ export function getEntryScale(): number {
  * back over the closing screen.
  */
 export function getArrowSpin(t: number): number {
-  const tau = Math.PI * 2
+  const turn = Math.PI * 2 * TURNS_PER_LEG
   if (t <= FINALE.swell) return 0
-  if (t < FINALE.flip) return smooth(span(t, FINALE.swell, FINALE.flip)) * tau
-  if (t <= FINALE.peak) return tau
-  return tau + smooth(span(t, FINALE.peak, 1)) * tau
+  if (t < FINALE.flip) return smooth(span(t, FINALE.swell, FINALE.flip)) * turn
+  if (t <= FINALE.peak) return turn
+  return turn + smooth(span(t, FINALE.peak, 1)) * turn
 }
+
+/**
+ * Whole turns the arrow makes on the way in, and again on the way out.
+ *
+ * Whole is the constraint, not the count — every leg has to land on a multiple
+ * of 2π or the flat face is not square to the camera at rest. Two and a half
+ * would put it edge-on at both ends.
+ */
+const TURNS_PER_LEG = 3
 
 /**
  * How far the arrow has become the tunnel, 0..1.
@@ -296,8 +305,8 @@ export function getRingLive(t: number): number {
 
 /** Which of the three headlines is up, or -1 for none. */
 export function getHeadlineStep(t: number): number {
-  const start = 0.16
-  const end = 0.44
+  const start = 0.14
+  const end = 0.39
   if (t < start || t >= end) return -1
   return Math.min(2, Math.floor(((t - start) / (end - start)) * 3))
 }
@@ -317,7 +326,7 @@ export function isTunnelBehind(t: number): boolean {
 
 /** True across the middle of the hold, where the manifesto sits around the tunnel. */
 export function isManifestoUp(t: number): boolean {
-  return t >= 0.48 && t < 0.68
+  return t >= 0.44 && t < 0.69
 }
 
 /**
@@ -329,5 +338,8 @@ export function isManifestoUp(t: number): boolean {
  * starts to empty.
  */
 export function isClosingUp(t: number): boolean {
-  return t >= 0.68 && t < 0.87
+  // Runs well past the peak: the line the sequence arrives at should still be
+  // there while the tunnel withdraws, rather than leaving at the moment the
+  // collapse starts and handing the exit to an empty frame.
+  return t >= 0.69 && t < 0.97
 }

@@ -48,3 +48,61 @@ export function applyFlatArrowDefinition(uniforms: Record<string, { value: unkno
   uniforms.uSpecPower.value = 22
   uniforms.uSpecStrength.value = 1.5
 }
+
+/**
+ * The axis that cuts the arrow into two halves, once it is facing the camera.
+ *
+ * Derived from the mesh rather than typed in: it is the principal axis of the
+ * geometry — the direction the vertices spread furthest along, which for a
+ * shape with one axis of symmetry is that axis — rotated into the resting
+ * attitude and flattened into the screen plane.
+ *
+ * Spinning about this rather than about world Y is the difference between the
+ * arrow turning like a page and turning like a propeller: world Y cuts it
+ * across the middle regardless of which way it happens to be pointing, so the
+ * two halves swap sides. About its own axis the silhouette stays put and the
+ * faces roll over.
+ *
+ * Power iteration on the covariance is enough here — one dominant axis, and a
+ * mesh of a few tens of thousands of vertices converges in a handful of steps.
+ */
+export function computeArrowSpinAxis(geometry: THREE.BufferGeometry): THREE.Vector3 {
+  const position = geometry.attributes.position
+  const count = position.count
+
+  const mean = new THREE.Vector3()
+  const point = new THREE.Vector3()
+  for (let i = 0; i < count; i++) mean.add(point.fromBufferAttribute(position, i))
+  mean.divideScalar(Math.max(count, 1))
+
+  // Covariance, accumulated as its six unique terms.
+  let xx = 0, xy = 0, xz = 0, yy = 0, yz = 0, zz = 0
+  for (let i = 0; i < count; i++) {
+    point.fromBufferAttribute(position, i).sub(mean)
+    xx += point.x * point.x
+    xy += point.x * point.y
+    xz += point.x * point.z
+    yy += point.y * point.y
+    yz += point.y * point.z
+    zz += point.z * point.z
+  }
+
+  const axis = new THREE.Vector3(1, 1, 1).normalize()
+  const next = new THREE.Vector3()
+  for (let step = 0; step < 32; step++) {
+    next.set(
+      xx * axis.x + xy * axis.y + xz * axis.z,
+      xy * axis.x + yy * axis.y + yz * axis.z,
+      xz * axis.x + yz * axis.y + zz * axis.z,
+    )
+    if (next.lengthSq() < 1e-12) break
+    axis.copy(next.normalize())
+  }
+
+  // Into the resting attitude, then flattened: the arrow is face-on there, so
+  // its axis of symmetry lies in the screen plane and the small Z component
+  // left over is the plate's own thickness.
+  axis.applyQuaternion(ARROW_REST_ATTITUDE)
+  axis.z = 0
+  return axis.lengthSq() < 1e-8 ? new THREE.Vector3(1, 0, 0) : axis.normalize()
+}
