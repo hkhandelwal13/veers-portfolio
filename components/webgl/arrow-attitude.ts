@@ -50,6 +50,24 @@ export function applyFlatArrowDefinition(uniforms: Record<string, { value: unkno
 }
 
 /**
+ * The point the arrow's axis of symmetry passes through, in model space.
+ *
+ * The mean of the vertices, not the centre of the bounding box. For a shape
+ * like this one — a broad head and a long tail — those are different points,
+ * and the box centre sits off the axis. Spinning about an axis that misses the
+ * shape is what makes a turn read as orbiting a corner rather than rolling in
+ * place, however right the axis direction is. So the same point that the axis
+ * is derived through is the point it has to be applied through.
+ */
+export function computeArrowCentroid(geometry: THREE.BufferGeometry): THREE.Vector3 {
+  const position = geometry.attributes.position
+  const mean = new THREE.Vector3()
+  const point = new THREE.Vector3()
+  for (let i = 0; i < position.count; i++) mean.add(point.fromBufferAttribute(position, i))
+  return mean.divideScalar(Math.max(position.count, 1))
+}
+
+/**
  * The axis that cuts the arrow into two halves, once it is facing the camera.
  *
  * Derived from the mesh rather than typed in: it is the principal axis of the
@@ -70,10 +88,8 @@ export function computeArrowSpinAxis(geometry: THREE.BufferGeometry): THREE.Vect
   const position = geometry.attributes.position
   const count = position.count
 
-  const mean = new THREE.Vector3()
+  const mean = computeArrowCentroid(geometry)
   const point = new THREE.Vector3()
-  for (let i = 0; i < count; i++) mean.add(point.fromBufferAttribute(position, i))
-  mean.divideScalar(Math.max(count, 1))
 
   // Covariance, accumulated as its six unique terms.
   let xx = 0, xy = 0, xz = 0, yy = 0, yz = 0, zz = 0

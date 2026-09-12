@@ -15,6 +15,25 @@
 .section {
   position: relative;
   height: 380svh;
+  /*
+   * Overlapped with the work grid rather than stacked after it.
+   *
+   * The approach — the section travelling from the fold up to the top, where
+   * it pins — is one viewport long and cannot be shortened: it is the section
+   * arriving. Stacked, that viewport is dead space, because the work grid has
+   * already left the top of the screen and the arrow is still down at the
+   * bottom with the stage it is seated on. That empty screen between the two
+   * is the gap, and no amount of trimming the timeline removes it.
+   *
+   * Pulling the section up by most of the approach makes the two happen at
+   * once instead: the arrow rises and swells through the last row of work
+   * cards on its way to the middle of the screen, the way the reference does
+   * it. It also takes another 60vh off the page.
+   *
+   * Safe to overlap because the stage is pointer-events: none and paints no
+   * ground of its own — both sections sit on the same shared WebGL field.
+   */
+  margin-top: -60svh;
 }
 
 .stageTarget {
