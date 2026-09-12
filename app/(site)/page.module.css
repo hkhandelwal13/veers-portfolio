@@ -1,0 +1,18 @@
+/*
+ * The rect the sticker field is measured against.
+ *
+ * Spans the whole page rather than a section, because the stickers have one
+ * journey down it: falling in the hero, frozen through about, work and the
+ * arrow's approach, falling again on the closing screen. A field bound to a
+ * section ends with that section, and the hand-over between two of them is a
+ * seam wherever it happens to land.
+ */
+.page {
+  position: relative;
+}
+
+.stickerField {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}

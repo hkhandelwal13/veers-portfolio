@@ -7,18 +7,19 @@ import { getHeroProgress } from '@/lib/hero-progress'
 import {
   getStickerDissolve,
   getStickerFreeze,
-  isStageFieldActive,
+  PAGE_FIELD_ID,
 } from '@/lib/sticker-journey'
 import { CONTACT_FIELD_ID, getContactProgress } from '@/lib/contact-progress'
 import { CardMirrors } from './CardMirrors'
 import { EditorFace } from './EditorFace'
 import { DebugSignals } from './DebugSignals'
 import { FrameDriver } from './FrameDriver'
-import { CONTACT_TARGET_ID, ContactWord } from './ContactWord'
+import { ContactWord } from './ContactWord'
 import { SectionField, STAGE_TARGET_ID } from './HeroField'
 import { FinaleArrow } from './FinaleArrow'
 import { HeroArrow } from './HeroArrow'
 import { HeroHello } from './HeroHello'
+import { PointerTrail } from './PointerTrail'
 import { RectSampler } from './RectSampler'
 import { RefractionPass } from './RefractionPass'
 import { StarFlare } from './StarFlare'
@@ -37,6 +38,13 @@ import { Stickers } from './Stickers'
 /** Nothing on the closing screen dissolves — it is where the scroll stops. */
 const ZERO = () => 0
 const FLAT_WIPE: [number, number] = [1, 1]
+
+/**
+ * The stage's handover, as a share of a full wipe at each end of the plane.
+ *
+ * Below 1 at both ends on purpose — see the note at the SectionField below.
+ */
+const STAGE_WIPE: [number, number] = [0.78, 0.6]
 
 export default function Scene() {
   return (
@@ -74,22 +82,32 @@ export default function Scene() {
             The field is also the first hero reader each frame, so it advances
             the pointer wake the other two sample. */}
         <EditorFace />
-        <SectionField targetId={STAGE_TARGET_ID} progress={getHeroProgress} />
-        {/* One field for the whole stage — hero, about, work, the arrow's
-            approach. They fall clear in the hero, freeze into the dot matrix as
-            the about section takes over, and stay there until the closing
-            screen thaws them (lib/sticker-journey). Bound to the stage rather
-            than the hero because a field bound to the hero leaves with it, and
-            the about and work sections are where they are meant to be sitting
-            frozen. Nothing shrinks or fades: they are still the picture the
-            refraction has to bend, they are just dots now. */}
+        {/* The bias is nearly flat and never reaches 1, which is what stops the
+            ground going black.
+            
+            It used to run 2.4 at the bottom of the plane to 0.35 at the top,
+            and since the plane spans four sections that gradient is what made
+            about read as dots over blue while work and the arrow's approach —
+            further down it — read as flat black. They are one surface and
+            should look like one: this settles the whole thing at about the
+            coverage about already had. */}
+        <SectionField
+          targetId={STAGE_TARGET_ID}
+          progress={getHeroProgress}
+          wipeBias={STAGE_WIPE}
+        />
+        {/* One field for the whole page. They fall clear in the hero, freeze
+            into the dot matrix as the about section takes over, stay there
+            through work and the arrow's approach, and fall again on the
+            closing screen (lib/sticker-journey). One instance rather than one
+            per section: a field bound to a section ends with it, and the
+            hand-over between two of them is a seam wherever it lands. */}
         <Stickers
-          fieldId={STAGE_TARGET_ID}
-          count={120}
+          fieldId={PAGE_FIELD_ID}
+          count={140}
           progress={ZERO}
           dissolve={getStickerDissolve}
           freeze={getStickerFreeze}
-          active={isStageFieldActive}
         />
 
         {/* The closing screen repeats the hero's arrangement: its own ground,
@@ -102,20 +120,13 @@ export default function Scene() {
           wipeBias={FLAT_WIPE}
         />
         <ContactWord />
-        {/* The hero's stickers break up into the dot grid as you leave it;
-            these come back out of the same grid as you arrive, on the closing
-            screen's own progress. Nothing shrinks away — this is where the
-            scroll stops — so only the dissolve runs. */}
-        <Stickers
-          fieldId={CONTACT_FIELD_ID}
-          slotId={CONTACT_TARGET_ID}
-          progress={ZERO}
-          dissolve={getContactProgress}
-        />
+
         <HeroHello />
         <HeroArrow />
         <FinaleArrow />
         <StarFlare />
+        {/* Only in the middle of the page — see lib/mid-sections. */}
+        <PointerTrail />
 
         {/* Procedural environment — built from Lightformers rather than an HDRI
             preset, so nothing is fetched from a CDN at runtime. */}

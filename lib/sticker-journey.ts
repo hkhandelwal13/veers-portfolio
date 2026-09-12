@@ -23,33 +23,18 @@
  * pure dots at that moment the swap has nothing to show.
  */
 
-import { getContactProgress } from './contact-progress'
-import { getHeroProgress } from './hero-progress'
+import { getMidSectionPresence } from './mid-sections'
 
-/** Where in the hero's exit the freeze completes. */
-const FREEZE_AT = 0.34
-
-function clamp01(v: number) {
-  return v <= 0 ? 0 : v >= 1 ? 1 : v
-}
-
-function smooth(v: number) {
-  const t = clamp01(v)
-  return t * t * (3 - 2 * t)
-}
+/** The whole-page rect the field is measured against. */
+export const PAGE_FIELD_ID = 'page-field'
 
 /**
- * 1 while the stickers are held, 0 while they fall.
- *
- * Rises with the hero's exit and falls again with the closing screen's arrival,
- * whichever is further along. getContactProgress runs 1 → 0 as that section
- * comes up, so the minimum of the two is "frozen unless the closing screen has
- * started to thaw them".
+ * 1 while the stickers are held, 0 while they fall — which is exactly "are we
+ * in the middle of the page", so it is that signal (lib/mid-sections) rather
+ * than a second copy of the same arithmetic.
  */
 export function getStickerFreeze(): number {
-  const frozen = smooth(clamp01(getHeroProgress() / FREEZE_AT))
-  const thawed = clamp01(getContactProgress())
-  return Math.min(frozen, thawed)
+  return getMidSectionPresence()
 }
 
 /** How far the stickers have broken up into the dot grid, 0..1. */
@@ -57,12 +42,3 @@ export function getStickerDissolve(): number {
   return getStickerFreeze()
 }
 
-/**
- * Whether the stage's sticker field should draw at all.
- *
- * False once the closing screen's own field has started arriving, so the two
- * are never on screen together.
- */
-export function isStageFieldActive(): boolean {
-  return getContactProgress() >= 1
-}

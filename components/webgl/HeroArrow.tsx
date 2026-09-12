@@ -9,6 +9,7 @@ import { canRenderGlass, getCapabilities } from '@/lib/capabilities'
 import {
   applyFlatArrowDefinition,
   ARROW_REST_ATTITUDE,
+  computeArrowSpinAxis,
 } from './arrow-attitude'
 import { getHeroObjectDissolve, getHeroProgress } from '@/lib/hero-progress'
 import { pointer } from '@/lib/pointer-bus'
@@ -59,6 +60,10 @@ export function HeroArrow() {
   const meshRef = useRef<THREE.Mesh>(null)
   /** The damped pointer lean, kept apart from the scroll-driven spin. */
   const leanRef = useRef({ x: 0, y: 0 })
+  /** Scratch quaternions — rebuilt every frame, so never memo results. */
+  const spinQuat = useRef(new THREE.Quaternion())
+  const leanQuat = useRef(new THREE.Quaternion())
+  const leanEuler = useRef(new THREE.Euler())
   const camera = useThree((state) => state.camera)
 
   const { nodes } = useGLTF('/models/arrow.glb') as unknown as ArrowGLTF
@@ -92,6 +97,9 @@ export function HeroArrow() {
       localY: new THREE.Vector2(raw.min.y, raw.max.y),
     }
   }, [geometry])
+
+  /** The arrow's own axis of symmetry — see computeArrowSpinAxis. */
+  const spinAxis = useMemo(() => computeArrowSpinAxis(geometry), [geometry])
 
   useEffect(() => {
     meshRef.current?.layers.set(LAYER_GLASS)
@@ -134,7 +142,15 @@ export function HeroArrow() {
     const spin = progress * EXIT_TURNS * Math.PI * 2
     leanRef.current.x = THREE.MathUtils.damp(leanRef.current.x, pointer.cy * 0.3, 5, delta)
     leanRef.current.y = THREE.MathUtils.damp(leanRef.current.y, pointer.cx * 0.5, 5, delta)
-    group.rotation.set(leanRef.current.x, spin + leanRef.current.y, 0)
+
+    // Spin about the arrow's own axis, lean on top of it. Composed as
+    // quaternions rather than set as Euler angles because the spin axis is a
+    // diagonal in the screen plane, which no ordering of x/y/z rotations
+    // expresses without the two gestures interfering.
+    spinQuat.current.setFromAxisAngle(spinAxis, spin)
+    leanEuler.current.set(leanRef.current.x, leanRef.current.y, 0)
+    leanQuat.current.setFromEuler(leanEuler.current)
+    group.quaternion.copy(leanQuat.current).multiply(spinQuat.current)
 
     const material = mesh.material as THREE.ShaderMaterial
     material.uniforms.uSceneTexture.value = glassPasses.refraction?.texture ?? null
