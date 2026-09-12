@@ -98,12 +98,7 @@ export function Finale() {
 
         {beat === 4 && (
           <p key="closing" className={`${styles.headline} ${styles.closing}`}>
-            {/* Not scrambled. The three approach headlines decode because they
-                replace one another and the decode is what marks the change;
-                this one is the line the whole sequence arrives at, and it
-                should simply appear. A mask swept left to right does that
-                without touching the glyphs. */}
-            <span className={styles.sweep}>{CLOSING}</span>
+            <Scramble text={CLOSING} />
           </p>
         )}
 

@@ -51,23 +51,24 @@ export const FINALE = {
   /**
    * Grown to reading size, still flat-on. The headlines are up.
    *
-   * Pulled in from 0.26. The approach is the join to the work grid, and at
-   * a quarter of the timeline it was a screen and a half of nothing but a
-   * small arrow getting bigger — which reads as a gap between the two
-   * sections even though they are flush against each other.
+   * The approach is the join to the work grid. A screen and a half of nothing
+   * but a small arrow getting bigger reads as a gap between the two sections
+   * even though they are flush against each other — and reads as a slow zoom,
+   * because the same growth is spread over more scroll. Now under half a
+   * viewport: the same arrival, arrived at faster.
    */
-  swell: 0.17,
+  swell: 0.13,
   /** One revolution done; past every edge; the tunnel has taken over. */
-  flip: 0.39,
+  flip: 0.31,
   /**
    * End of the hold.
    *
-   * Still the largest single beat: the hold is the part that has to feel
-   * endless, and endlessness is a thing you can only spend scroll on. Two
-   * viewports of it rather than three — long enough to stop reading as an
-   * effect, short enough not to become a wait.
+   * Still the largest single beat by far: the hold is the part that has to
+   * feel endless, and endlessness is a thing you can only spend scroll on.
+   * It keeps its ~1.75 viewports while the legs either side lose theirs —
+   * the shortening is all join and zoom, none of it the distance.
    */
-  peak: 0.81,
+  peak: 0.83,
 } as const
 
 /** Rest → reading size → past every edge. Multipliers on the seated height. */
@@ -208,10 +209,13 @@ export function getArrowSpin(t: number): number {
  * Whole turns the arrow makes on the way in, and again on the way out.
  *
  * Whole is the constraint, not the count — every leg has to land on a multiple
- * of 2π or the flat face is not square to the camera at rest. Two and a half
- * would put it edge-on at both ends.
+ * of 2π or the flat face is not square to the camera at rest.
+ *
+ * One. The speed that wanted increasing was the zoom, not this: the zoom is
+ * what reads as travelling toward something, and spinning faster over the same
+ * distance only makes the arrow busier on the way.
  */
-const TURNS_PER_LEG = 3
+const TURNS_PER_LEG = 1
 
 /**
  * How far the arrow has become the tunnel, 0..1.
@@ -287,8 +291,8 @@ export function getRingPhase(t: number): number {
  * sequence builds to is the tunnel alone: nothing in the frame but the field at
  * its longest and fullest, and one line of type across it.
  */
-const RINGS_END = 0.66
-const RINGS_GONE = 0.76
+const RINGS_END = 0.64
+const RINGS_GONE = 0.77
 
 /**
  * How many of the conveyor's slots are drawn.
@@ -305,8 +309,8 @@ export function getRingLive(t: number): number {
 
 /** Which of the three headlines is up, or -1 for none. */
 export function getHeadlineStep(t: number): number {
-  const start = 0.14
-  const end = 0.39
+  const start = 0.11
+  const end = 0.31
   if (t < start || t >= end) return -1
   return Math.min(2, Math.floor(((t - start) / (end - start)) * 3))
 }
@@ -326,7 +330,7 @@ export function isTunnelBehind(t: number): boolean {
 
 /** True across the middle of the hold, where the manifesto sits around the tunnel. */
 export function isManifestoUp(t: number): boolean {
-  return t >= 0.44 && t < 0.69
+  return t >= 0.37 && t < 0.68
 }
 
 /**
@@ -338,8 +342,5 @@ export function isManifestoUp(t: number): boolean {
  * starts to empty.
  */
 export function isClosingUp(t: number): boolean {
-  // Runs well past the peak: the line the sequence arrives at should still be
-  // there while the tunnel withdraws, rather than leaving at the moment the
-  // collapse starts and handing the exit to an empty frame.
-  return t >= 0.69 && t < 0.97
+  return t >= 0.68 && t < 0.9
 }
