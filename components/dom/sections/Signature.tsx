@@ -1,107 +1,131 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { prefersReducedMotion } from '@/lib/lenis'
+import { useEffect, useRef } from 'react'
 import styles from './Signature.module.css'
 
 /**
  * The signature over the portrait, written on as you arrive.
  *
- * An SVG path stroked on with dasharray rather than a script webfont: the site
+ * Stroked on with dasharray rather than set in a script webfont: the site
  * deliberately loads no handwriting face (CLAUDE.md — Caveat was annotation ink
  * in the wireframes and stayed out of the build), and a font could only be
- * *revealed*, left to right, which reads as a wipe. A single continuous stroke
- * is drawn, which is what a hand does.
+ * *revealed*, left to right, which reads as a wipe. Strokes are drawn, which is
+ * what a hand does.
  *
- * `pathLength="1"` normalises the path's own length to 1, so the dash values
- * are plain numbers and nothing has to be measured with getTotalLength() after
- * layout.
+ * Two paths, because the mark is two pen strokes: the word, then the underline
+ * beneath it. They draw in that order, and the second waits for the first — a
+ * signature is sequential, and drawing both at once reads as two unrelated
+ * lines appearing rather than as one hand writing.
  *
- * Plays once, when the section arrives. Reduced motion gets the finished mark
- * straight away, via a media query rather than via state.
+ * Plays once, when the portrait arrives. Reduced motion gets the finished mark
+ * straight away, via a media query rather than via state: the component cannot
+ * initialise from prefersReducedMotion() because that is false on the server
+ * and true on the client, so hydration would render the undrawn markup and,
+ * with the observer skipped, nothing would ever flip it.
  */
 
 /**
- * One continuous stroke spelling "Veer".
+ * The mark itself — supplied as artwork, not authored here.
  *
- * Hand-authored rather than traced from a font. Four things decide whether it
- * reads as the right word rather than as a squiggle, and each was learned by
- * getting it wrong:
- *
- *  - the capital takes no entry flourish, or that stroke reads as a first stem
- *    and turns V into N;
- *  - an 'e' loops *above* its own crossbar and crosses it on the way down. Loop
- *    around the outside instead and you have drawn a closed bowl, which is an
- *    'a';
- *  - the r gets one sharp peak, because a second turns "eer" into "em";
- *  - the exit flourish stays under the x-height, for the same reason.
- *
- * Baseline is y=96, the x-height top is y=52.
+ * `pathLength="1"` normalises each path's own length to 1, so the dash values
+ * in CSS are plain numbers and the hidden state is declared rather than
+ * measured. That matters for more than tidiness: dash values written by an
+ * effect land a frame after paint, which is one frame of the finished
+ * signature sitting there before it hides itself to draw.
  */
-const PATH =
-  // V — two arms meeting at a point, no lead-in, small hook at the top right.
-  'M 20 20 C 34 46 56 76 76 96 C 100 70 122 40 142 14 ' +
-  // the terminal curl — a small closed loop at the top of the right arm. This
-  // is what tells a cursive V from an N, which is otherwise the same three
-  // strokes; without it the connector below reads as a second stem.
-  'C 150 4 163 9 160 22 C 157 33 146 33 147 23 ' +
-  // connector — a long shallow diagonal. Anything steeper reads as a third
-  // stem sitting between the V's two arms, which is an N.
-  'C 149 44 172 68 196 86 ' +
-  // e — crossbar up, loop back over it, down through it, round and out
-  'C 205 78 213 68 219 60 C 223 54 217 48 210 52 ' +
-  'C 203 56 199 68 203 78 C 208 87 221 87 231 82 ' +
-  // e — the same letter, 48 to the right
-  'C 253 78 261 68 267 60 C 271 54 265 48 258 52 ' +
-  'C 251 56 247 68 251 78 C 256 87 269 87 279 82 ' +
-  // r — one rise to a point, a short shoulder, then down to the baseline
-  'C 289 72 297 58 301 50 C 304 45 309 50 309 59 ' +
-  'C 310 67 318 58 328 60 C 335 62 333 76 330 92 ' +
-  // exit flourish, kept below the x-height
-  'C 343 84 367 78 393 88'
+const WORD =
+  'M 24 76 ' +
+  'C 44 48, 68 42, 73 60 ' +
+  'C 78 79, 61 138, 77 160 ' +
+  'C 90 174, 121 111, 143 62 ' +
+  'C 156 34, 166 23, 168 32 ' +
+  'C 171 46, 143 94, 139 116 ' +
+  'C 137 129, 147 133, 159 126 ' +
+  'C 174 118, 194 105, 194 95 ' +
+  'C 194 85, 180 87, 171 98 ' +
+  'C 160 112, 160 132, 175 135 ' +
+  'C 189 139, 207 122, 219 111 ' +
+  'C 231 101, 244 94, 244 86 ' +
+  'C 243 77, 230 81, 222 92 ' +
+  'C 211 107, 212 126, 226 128 ' +
+  'C 242 131, 261 111, 274 95 ' +
+  'C 284 83, 290 71, 288 69 ' +
+  'C 283 65, 274 95, 273 117 ' +
+  'C 279 100, 296 75, 308 75 ' +
+  'C 321 75, 309 94, 319 100 ' +
+  'C 334 109, 370 78, 404 46'
+
+const UNDERLINE =
+  'M 127 163 C 202 144, 292 141, 370 136 C 396 134, 420 135, 431 141'
+
+/**
+ * Pen speed, in user units per second.
+ *
+ * Each stroke's duration comes from its own measured length divided by this,
+ * rather than every stroke taking the same time. With pathLength normalising
+ * the geometry, equal durations would draw the short underline at a fifth of
+ * the speed of the word — the same pen visibly slowing down for the last
+ * stroke, which is the one thing that gives away that this is not a hand.
+ */
+const PEN_RATE = 700
+/** Beat between strokes: the pause while the pen is lifted and repositioned. */
+const LIFT_SECONDS = 0.08
+/** Before the first stroke — the mark should land after you have arrived. */
+const FIRST_DELAY = 0.3
 
 export function Signature({ label = 'Veer' }: { label?: string }) {
   const ref = useRef<SVGSVGElement>(null)
-  // Reduced motion is handled in CSS, not here — see the module. This state is
-  // only ever about whether the draw has been triggered by arriving on screen.
-  const [drawn, setDrawn] = useState(false)
 
   useEffect(() => {
-    const element = ref.current
-    if (!element || prefersReducedMotion()) return
+    const svg = ref.current
+    if (!svg) return
+
+    const paths = Array.from(svg.querySelectorAll<SVGPathElement>('path'))
+
+    // Timing is measured; the dash geometry is not (see WORD above). A stroke
+    // whose length cannot be read — no layout box yet, an engine that reports
+    // the normalised length — falls back to the CSS default duration rather
+    // than to nothing.
+    let delay = FIRST_DELAY
+    for (const path of paths) {
+      const length = path.getTotalLength()
+      if (!Number.isFinite(length) || length <= 1) continue
+      const duration = Math.max(0.18, length / PEN_RATE)
+      path.style.setProperty('--path-duration', `${duration}s`)
+      path.style.setProperty('--path-delay', `${delay}s`)
+      delay += duration + LIFT_SECONDS
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (!entries.some((entry) => entry.isIntersecting)) return
         observer.disconnect()
-        setDrawn(true)
+        svg.classList.add(styles.drawing)
       },
       // A little in from the edge: the mark sits at the very top of the
       // portrait, so firing on first contact means it is written off screen.
       { threshold: 0, rootMargin: '0px 0px -15% 0px' },
     )
-    observer.observe(element)
+    observer.observe(svg)
     return () => observer.disconnect()
   }, [])
 
   return (
     <svg
       ref={ref}
-      className={`${styles.signature} ${drawn ? styles.drawn : ''}`}
-      viewBox="0 0 412 116"
+      className={styles.signature}
+      viewBox="0 0 460 210"
       fill="none"
       role="img"
       aria-label={label}
     >
-      <path
-        className={styles.stroke}
-        d={PATH}
-        pathLength="1"
-        stroke="currentColor"
-        strokeWidth="7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {/* Written on a slant, as it was drawn. On the group rather than on the
+          paths so the two strokes cannot drift out of register with each
+          other, and so the rotation is not part of what gets animated. */}
+      <g transform="rotate(-9 230 105)">
+        <path className={styles.stroke} d={WORD} pathLength="1" />
+        <path className={styles.stroke} d={UNDERLINE} pathLength="1" />
+      </g>
     </svg>
   )
 }

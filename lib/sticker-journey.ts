@@ -23,6 +23,7 @@
  * pure dots at that moment the swap has nothing to show.
  */
 
+import { getFinaleProgress, getPortalMix } from './finale-progress'
 import { getMidSectionPresence } from './mid-sections'
 
 /** The whole-page rect the field is measured against. */
@@ -42,3 +43,22 @@ export function getStickerDissolve(): number {
   return getStickerFreeze()
 }
 
+
+/**
+ * How much the arrow's tunnel hides them, 0..1.
+ *
+ * The field runs the whole page, so without this the frozen stickers are still
+ * sitting there inside the finale — dotted rectangles drifting behind the rays,
+ * which belong to neither thing. They are not wanted *in* that scene; they are
+ * wanted on either side of it.
+ *
+ * Keyed to the portal rather than to the section, so it is the tunnel opening
+ * that takes them and the tunnel closing that gives them back. That keeps the
+ * two ends of the journey intact — frozen and visible through the arrow's
+ * approach, frozen and visible again as it collapses over the closing screen —
+ * and being a pure function of the same growth every other finale signal reads,
+ * it unwinds exactly on the way back up.
+ */
+export function getStickerVeil(): number {
+  return getPortalMix(getFinaleProgress())
+}

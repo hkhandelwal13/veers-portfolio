@@ -8,7 +8,8 @@
  *   2. updateScrollBus      — records what Lenis just produced, for this frame
  *   3. updateScrollActivity — smooths that into the 0..1 speed signal
  *   4. commitPointerBus     — eases the pointer, republishes its snapshot
- *   5. onFrame listeners    — DOM-side per-frame work (the cursor)
+ *   5. updateStickerBurst   — drains the click charge behind the sticker field
+ *   6. onFrame listeners    — DOM-side per-frame work (the cursor)
  *
  * WebGL then renders later in the same frame, reading the snapshot from step 2.
  * That ordering is the whole point: it is what removes the one-frame slip you
@@ -27,6 +28,7 @@
 
 import { getLenis } from './lenis'
 import { commitPointerBus } from './pointer-bus'
+import { updateStickerBurst } from './sticker-burst'
 import { updateScrollActivity } from './scroll-activity'
 import { updateScrollBus } from './scroll-bus'
 
@@ -73,6 +75,11 @@ export function runFrame(timeMs: number) {
   updateScrollActivity(scroll, deltaSeconds)
 
   commitPointerBus(deltaSeconds)
+
+  // Drains whatever clicking the background built up (lib/sticker-burst).
+  // Here rather than in a useFrame so it keeps draining on the frames where
+  // the sticker field is not being drawn at all.
+  updateStickerBurst(deltaSeconds)
 
   // Last, so DOM listeners see the scroll and pointer readings this frame
   // produced rather than the previous one's.
