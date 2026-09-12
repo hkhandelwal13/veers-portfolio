@@ -7,6 +7,7 @@ import { getHeroProgress } from '@/lib/hero-progress'
 import {
   getStickerDissolve,
   getStickerFreeze,
+  getStickerVeil,
   PAGE_FIELD_ID,
 } from '@/lib/sticker-journey'
 import { CONTACT_FIELD_ID, getContactProgress } from '@/lib/contact-progress'
@@ -108,6 +109,12 @@ export default function Scene() {
           progress={ZERO}
           dissolve={getStickerDissolve}
           freeze={getStickerFreeze}
+          // Not part of the arrow's scene: they are frozen either side of it,
+          // and gone while the tunnel is up.
+          veil={getStickerVeil}
+          // Held back until you click the background of the hero or the
+          // closing screen. Invisible otherwise, so the cost is a matrix write.
+          burstCount={90}
         />
 
         {/* The closing screen repeats the hero's arrangement: its own ground,

@@ -56,9 +56,17 @@
    overlapping the photo rather than sitting beside it. */
 .signature {
   position: absolute;
-  top: calc(var(--s8) * -1);
-  left: calc(var(--s5) * -1);
-  width: clamp(180px, 26vw, 300px);
+  /*
+   * Percentages of the portrait, not fixed offsets: the mark has to sit in the
+   * same place on the picture at every width, and the artwork carries its own
+   * margin inside the viewBox — the ink starts about a seventh of the way down
+   * it — so a fixed top that suited one aspect leaves it floating above the
+   * photo at another. Written across the top-left corner, overlapping it, the
+   * way a signature on a print does.
+   */
+  top: -6%;
+  left: -5%;
+  width: clamp(220px, 30vw, 340px);
   margin: 0;
   /* Above the portrait, and above the WebGL canvas that may be drawing over it. */
   z-index: 1;
@@ -137,7 +145,8 @@
   }
 
   .signature {
-    top: calc(var(--s6) * -1);
-    left: 0;
+    top: -5%;
+    left: -3%;
+    width: clamp(200px, 58vw, 300px);
   }
 }

@@ -5,31 +5,63 @@
   color: var(--accent-2);
   overflow: visible;
   pointer-events: none;
+  /* Ink that sits on the photo rather than in front of it. Two shadows: a
+     tight one that reads as the wet edge of a marker, and a wide faint one
+     that separates the stroke from whatever tone of the portrait is under it. */
+  filter:
+    drop-shadow(0 0 4px color-mix(in srgb, var(--accent-2) 35%, transparent))
+    drop-shadow(0 0 14px color-mix(in srgb, var(--accent-2) 12%, transparent));
 }
 
 .stroke {
-  /* pathLength is 1, so one dash covers the whole path and one full offset
-     hides it. No measuring, and no dependence on the path's real length. */
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  /* pathLength is 1, so one dash covers a whole stroke and one full offset
+     hides it — whatever that stroke's real length happens to be. Declared,
+     not written by the effect, so there is no frame of finished signature
+     before it hides itself to draw. */
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
-  transition: stroke-dashoffset 1700ms var(--ease-out);
 }
 
-.drawn .stroke {
-  stroke-dashoffset: 0;
+/*
+ * Defaults for the two custom properties the effect measures.
+ *
+ * If it never runs — an engine that will not report a path length, a hydration
+ * that failed — both strokes still draw, at one duration and one after the
+ * other. They just share a pen speed instead of each keeping its own.
+ */
+.drawing .stroke {
+  animation: draw-signature var(--path-duration, 900ms) var(--ease-out)
+    var(--path-delay, 300ms) forwards;
+}
+
+.drawing .stroke:last-child {
+  --path-delay: 1000ms;
+}
+
+@keyframes draw-signature {
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 /*
  * Reduced motion gets the finished mark, declared rather than decided in JS.
  *
- * The component initialises its drawn state from prefersReducedMotion(), which
- * is false on the server and true on the client — so hydration renders the
- * undrawn markup and, with the observer skipped, nothing ever flips it. The
- * signature simply never appeared. A media query cannot fall out of step with
+ * The component cannot initialise its state from prefersReducedMotion(): that
+ * is false on the server and true on the client, so hydration renders the
+ * undrawn markup and, with the observer skipped, nothing ever flips it — the
+ * signature simply never appears. A media query cannot fall out of step with
  * hydration because it is not state.
  */
 @media (prefers-reduced-motion: reduce) {
   .stroke {
     stroke-dashoffset: 0;
+    animation: none;
   }
 }
