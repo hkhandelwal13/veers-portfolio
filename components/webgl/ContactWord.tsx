@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
-import type { GLTF } from 'three-stdlib'
+import { mergeBufferGeometries } from 'three-stdlib'
 import {
   canRenderGlass,
   getCapabilities,
@@ -38,13 +38,32 @@ import { isRectVisible, rectToWorld } from './rect-space'
  * way.
  */
 
-type ContactGLTF = GLTF & { nodes: { g_groupNumber_0_n3d: THREE.Mesh } }
-
 export const CONTACT_TARGET_ID = 'wordmark'
 
-/** The GLB's baked transform, kept so the geometry sits where it was authored. */
-const BAKED_POSITION: [number, number, number] = [0.157, 1.782, 0.18]
-const BAKED_SCALE = 2.199
+/**
+ * A plain float copy of an attribute.
+ *
+ * The packed model is quantized (KHR_mesh_quantization), so its positions and
+ * normals arrive as normalized integers with the real scale carried on the
+ * node. Transforming one of those in place truncates every coordinate to a
+ * whole number — the word collapses into a row of flat slabs, which is a
+ * convincing enough shape to look like a loading bug rather than a rounding
+ * one. getX/getY/getZ denormalize, so this reads the values the file actually
+ * means and writes them somewhere that can hold them.
+ */
+function toFloatAttribute(
+  attribute: THREE.BufferAttribute | THREE.InterleavedBufferAttribute,
+): THREE.BufferAttribute {
+  const { count, itemSize } = attribute
+  const values = new Float32Array(count * itemSize)
+  for (let i = 0; i < count; i++) {
+    const at = i * itemSize
+    values[at] = attribute.getX(i)
+    if (itemSize > 1) values[at + 1] = attribute.getY(i)
+    if (itemSize > 2) values[at + 2] = attribute.getZ(i)
+  }
+  return new THREE.BufferAttribute(values, itemSize)
+}
 
 /** Grows past its reserved rect, as the hero's word does. */
 const FILL = 1.22
@@ -61,31 +80,70 @@ export function ContactWord() {
   const ringLight = useRef<ReturnType<typeof createRingLight> | null>(null)
 
   const camera = useThree((state) => state.camera)
-  const { nodes } = useGLTF('/models/contact.glb') as unknown as ContactGLTF
-  const geometry = nodes.g_groupNumber_0_n3d.geometry
+  const { scene } = useGLTF('/models/contact.glb')
 
   const initialUniforms = useMemo(() => createGlassUniforms(), [])
 
-  /** Bounds from the geometry and its baked transform — never Box3 on the
-   *  mounted object, which measures in world space and folds in the scale this
-   *  component has already applied. */
+  /**
+   * One geometry for the whole word, with every part's own transform baked in,
+   * and its bounds.
+   *
+   * Read off the loaded asset rather than from a hard-coded node name and a
+   * pair of transcribed constants. The word has been re-exported twice now, and
+   * each export changed both: the first was a single node called
+   * g_groupNumber_0_n3d carrying a position and a uniform scale, the second was
+   * nine nodes at identity with the coordinates in the vertices, and the packed
+   * build is one node called mesh_0 with a quantization scale of 0.001. Naming
+   * any of that in the component means the next export renders a ninth of the
+   * word, or throws on a node that no longer exists.
+   *
+   * Merged rather than rendered as nine meshes because everything downstream
+   * assumes one: the layer assignment, the refraction pass's view of it, and
+   * the tint gradient, which normalises against a single local Y range.
+   *
+   * Still not Box3.setFromObject on the mounted object — that measures in world
+   * space and folds in whatever scale this component has already applied, so it
+   * shrinks the word a little more on every remount.
+   */
   const measured = useMemo(() => {
+    const parts: THREE.BufferGeometry[] = []
+
+    scene.traverse((object) => {
+      const mesh = object as THREE.Mesh
+      if (!mesh.isMesh) return
+
+      // Only position and normal: that is all the glass shader reads, and
+      // merging requires every part to carry the same attributes — an export
+      // with UVs on some meshes and not others fails outright.
+      const part = new THREE.BufferGeometry()
+      part.setAttribute('position', toFloatAttribute(mesh.geometry.attributes.position))
+      if (mesh.geometry.attributes.normal) {
+        part.setAttribute('normal', toFloatAttribute(mesh.geometry.attributes.normal))
+      }
+      if (mesh.geometry.index) part.setIndex(mesh.geometry.index.clone())
+
+      // Recomputed from the ancestors at this moment, so it is the transform
+      // inside the GLB and not whatever the cached scene was last mounted under.
+      mesh.updateWorldMatrix(true, false)
+      part.applyMatrix4(mesh.matrixWorld)
+      parts.push(part)
+    })
+
+    const geometry = parts.length === 1 ? parts[0] : mergeBufferGeometries(parts, false)
+    if (parts.length > 1) for (const part of parts) part.dispose()
+    if (!geometry) throw new Error('contact.glb: no mesh to render')
+
     geometry.computeBoundingBox()
-    const box = geometry.boundingBox!.clone()
-    box.applyMatrix4(
-      new THREE.Matrix4().compose(
-        new THREE.Vector3(...BAKED_POSITION),
-        new THREE.Quaternion(),
-        new THREE.Vector3(BAKED_SCALE, BAKED_SCALE, BAKED_SCALE),
-      ),
-    )
-    const raw = geometry.boundingBox!
+    const box = geometry.boundingBox!
     return {
+      geometry,
       size: box.getSize(new THREE.Vector3()),
       center: box.getCenter(new THREE.Vector3()),
-      localY: new THREE.Vector2(raw.min.y, raw.max.y),
+      // Post-transform, because the mesh below renders this geometry at
+      // identity — so this IS what the vertex shader sees.
+      localY: new THREE.Vector2(box.min.y, box.max.y),
     }
-  }, [geometry])
+  }, [scene])
 
   useEffect(() => {
     meshRef.current?.layers.set(LAYER_GLASS)
@@ -165,7 +223,7 @@ export function ContactWord() {
   return (
     <group ref={outer} visible={false}>
       <group position={[-measured.center.x, -measured.center.y, -measured.center.z]}>
-        <mesh ref={meshRef} geometry={geometry} position={BAKED_POSITION} scale={BAKED_SCALE}>
+        <mesh ref={meshRef} geometry={measured.geometry}>
           {canRenderGlass(caps) ? (
             <shaderMaterial
               vertexShader={glassVertexShader}
