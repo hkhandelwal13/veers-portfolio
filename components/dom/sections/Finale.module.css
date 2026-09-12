@@ -2,8 +2,12 @@
  * Six and a half viewports of travel for one viewport of stage. The rest is the
  * timeline, and the largest part of it is the hold: the tunnel has to keep
  * answering scroll for long enough to stop reading as an effect and start
- * reading as a distance. Two viewports of that, not three — past a point the
- * endlessness stops being a feeling and becomes a wait.
+ * reading as a distance. Two viewports of that, not three.
+ *
+ * Deliberately unchanged while the approach was shortened. Every other beat in
+ * lib/finale-progress is an absolute fraction of this, so trimming the section
+ * shortens the hold, the rings and the manifesto along with the join — and the
+ * join is the only part that needed it.
  */
 .section {
   position: relative;

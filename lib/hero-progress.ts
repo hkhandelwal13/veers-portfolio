@@ -18,8 +18,15 @@
 
 import { getScrollSnapshot } from './scroll-bus'
 
-/** Scroll distance the exit is spread over, as a share of the viewport. */
-const TRAVEL = 1.35
+/**
+ * Scroll distance the exit is spread over, as a share of the viewport.
+ *
+ * Just over one screen, not a third more. The about section's top edge arrives
+ * at exactly one, so anything past that is the hero still finishing its exit
+ * on top of the section that has already taken over — which is the shape of a
+ * gap even though the two sections are flush against each other.
+ */
+const TRAVEL = 1.05
 
 /**
  * The objects lag the ground.

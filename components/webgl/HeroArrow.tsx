@@ -6,6 +6,10 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import type { GLTF } from 'three-stdlib'
 import { canRenderGlass, getCapabilities } from '@/lib/capabilities'
+import {
+  applyFlatArrowDefinition,
+  ARROW_REST_ATTITUDE,
+} from './arrow-attitude'
 import { getHeroObjectDissolve, getHeroProgress } from '@/lib/hero-progress'
 import { pointer } from '@/lib/pointer-bus'
 import { getTargetRect } from '@/lib/rect-sampler'
@@ -40,9 +44,21 @@ const ANCHOR_Y = 0.72
 /** Its height as a fraction of the section's — deliberately a small accent. */
 const RELATIVE_HEIGHT = 0.12
 
+/**
+ * Turns the arrow makes across the hero's exit.
+ *
+ * The word makes about half of one. The arrow is a fraction of its size and
+ * reads as an accent rather than as the subject, so it can afford to be the
+ * fast-moving part of the same gesture — a small thing spinning several times
+ * while a large one turns once is the whole reason to have both.
+ */
+const EXIT_TURNS = 4.5
+
 export function HeroArrow() {
   const outer = useRef<THREE.Group>(null)
   const meshRef = useRef<THREE.Mesh>(null)
+  /** The damped pointer lean, kept apart from the scroll-driven spin. */
+  const leanRef = useRef({ x: 0, y: 0 })
   const camera = useThree((state) => state.camera)
 
   const { nodes } = useGLTF('/models/arrow.glb') as unknown as ArrowGLTF
@@ -50,10 +66,9 @@ export function HeroArrow() {
 
   const uniforms = useMemo(() => {
     const created = createGlassUniforms()
-    // Reads at a fraction of the word's size, so it needs less body to carry
-    // the same colour and a tighter highlight to stay crisp.
-    created.uThickness.value = 0.9
-    created.uRimStrength.value = 0.9
+    // It starts face-on, which is the orientation the glass has least to work
+    // with — see the note in arrow-attitude.
+    applyFlatArrowDefinition(created)
     return created
   }, [])
 
@@ -110,16 +125,16 @@ export function HeroArrow() {
       0,
     )
 
-    // Leans toward the pointer, and turns as the hero leaves — the same two
-    // gestures the word makes, at a smaller amplitude.
-    group.rotation.y = THREE.MathUtils.damp(
-      group.rotation.y,
-      pointer.cx * 0.5 + progress * 1.6,
-      5,
-      delta,
-    )
-    group.rotation.x = THREE.MathUtils.damp(group.rotation.x, pointer.cy * 0.3, 5, delta)
-    group.rotation.z = Math.sin(state.clock.elapsedTime * 0.5) * 0.08
+    // Flat at rest, then several whole turns as the hero leaves.
+    //
+    // Written straight rather than damped: it is a function of scroll, and
+    // damping a scroll-driven angle makes it lag the page on a fast flick and
+    // then catch up afterwards, which reads as the arrow being dragged rather
+    // than turned. The pointer lean is damped, because that one IS chasing.
+    const spin = progress * EXIT_TURNS * Math.PI * 2
+    leanRef.current.x = THREE.MathUtils.damp(leanRef.current.x, pointer.cy * 0.3, 5, delta)
+    leanRef.current.y = THREE.MathUtils.damp(leanRef.current.y, pointer.cx * 0.5, 5, delta)
+    group.rotation.set(leanRef.current.x, spin + leanRef.current.y, 0)
 
     const material = mesh.material as THREE.ShaderMaterial
     material.uniforms.uSceneTexture.value = glassPasses.refraction?.texture ?? null
@@ -135,15 +150,22 @@ export function HeroArrow() {
 
   return (
     <group ref={outer} visible={false}>
-      <group position={[-measured.center.x, -measured.center.y, -measured.center.z]}>
-        <mesh ref={meshRef} geometry={geometry} position={BAKED_POSITION} scale={BAKED_SCALE}>
-          <shaderMaterial
-            vertexShader={glassVertexShader}
-            fragmentShader={glassFragmentShader}
-            uniforms={uniforms}
-            transparent
-          />
-        </mesh>
+      {/* Fixed: squares the plate up to the camera, so the spin above starts
+          from flat rather than from the diagonal the model was authored on. */}
+      <group quaternion={ARROW_REST_ATTITUDE}>
+        <group position={[-measured.center.x, -measured.center.y, -measured.center.z]}>
+          <mesh ref={meshRef} geometry={geometry} position={BAKED_POSITION} scale={BAKED_SCALE}>
+            <shaderMaterial
+              vertexShader={glassVertexShader}
+              fragmentShader={glassFragmentShader}
+              uniforms={uniforms}
+              // Face-on and several turns per exit: a back-face cull blinks it
+              // out every half turn.
+              side={THREE.DoubleSide}
+              transparent
+            />
+          </mesh>
+        </group>
       </group>
     </group>
   )

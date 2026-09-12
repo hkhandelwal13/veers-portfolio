@@ -48,8 +48,15 @@ export const FINALE = {
    * is the moment the growth changes hands, not the moment it starts.
    */
   settle: 0,
-  /** Grown to reading size, still flat-on. The headlines are up. */
-  swell: 0.26,
+  /**
+   * Grown to reading size, still flat-on. The headlines are up.
+   *
+   * Pulled in from 0.26. The approach is the join to the work grid, and at
+   * a quarter of the timeline it was a screen and a half of nothing but a
+   * small arrow getting bigger — which reads as a gap between the two
+   * sections even though they are flush against each other.
+   */
+  swell: 0.2,
   /** One revolution done; past every edge; the tunnel has taken over. */
   flip: 0.44,
   /**

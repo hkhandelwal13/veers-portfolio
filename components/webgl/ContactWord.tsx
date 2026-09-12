@@ -74,6 +74,9 @@ const TILT_Y = 0.16
 /** Lying flat, face to the ceiling — where the word starts before it stands. */
 const LAID_FLAT = -Math.PI / 2
 
+/** Screens of scroll the stand-up is spread over, ending at the centre. */
+const ENTRANCE_TRAVEL = 0.62
+
 export function ContactWord() {
   const outer = useRef<THREE.Group>(null)
   const meshRef = useRef<THREE.Mesh>(null)
@@ -198,10 +201,20 @@ export function ContactWord() {
       return
     }
 
-    // Standing up, scrubbed rather than played: 1 while the slot is still low
-    // on the screen, 0 once it has risen into place. A timed entrance would
-    // fire once and then be wrong for anyone who scrolled back.
-    const laid = THREE.MathUtils.clamp((rect.y - height * 0.2) / (height * 0.5), 0, 1)
+    // Standing up, scrubbed rather than played: a timed entrance would fire
+    // once and then be wrong for anyone who scrolled back.
+    //
+    // Keyed to the slot's CENTRE meeting the viewport's, so the word is exactly
+    // upright at the moment it arrives in the middle of the screen. Keyed to
+    // its top edge — which is where this started — it finishes standing up a
+    // third of a screen after it has already settled, and the last of the
+    // rotation happens while it sits there looking like it should be still.
+    const centre = rect.y + rect.height / 2
+    const laid = THREE.MathUtils.clamp(
+      (centre - height * 0.5) / (height * ENTRANCE_TRAVEL),
+      0,
+      1,
+    )
 
     const float = Math.sin(state.clock.elapsedTime * 0.6) * boxHeight * FLOAT_AMPLITUDE
     group.position.set(seat.x, seat.y + float, 0)
