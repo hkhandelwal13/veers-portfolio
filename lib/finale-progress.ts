@@ -51,24 +51,25 @@ export const FINALE = {
   /**
    * Grown to reading size, still flat-on. The headlines are up.
    *
-   * The approach is the join to the work grid. A screen and a half of nothing
-   * but a small arrow getting bigger reads as a gap between the two sections
-   * even though they are flush against each other — and reads as a slow zoom,
-   * because the same growth is spread over more scroll. Now under half a
-   * viewport: the same arrival, arrived at faster.
+   * The approach is the join to the work grid. There is no padding between the
+   * two sections at all — the whole of what reads as a gap is this leg, a
+   * stretch of scroll in which nothing happens but an arrow getting bigger.
+   * Which is also why it reads as a slow zoom: the same growth spread over
+   * more scroll. Under a third of a viewport now, so the arrow is at reading
+   * size almost as soon as the grid is gone.
    */
-  swell: 0.13,
+  swell: 0.10,
   /** One revolution done; past every edge; the tunnel has taken over. */
-  flip: 0.31,
+  flip: 0.26,
   /**
    * End of the hold.
    *
    * Still the largest single beat by far: the hold is the part that has to
    * feel endless, and endlessness is a thing you can only spend scroll on.
-   * It keeps its ~1.75 viewports while the legs either side lose theirs —
-   * the shortening is all join and zoom, none of it the distance.
+   * It keeps ~1.6 viewports while the legs either side are cut to well under
+   * half of one each — the shortening is nearly all join and zoom.
    */
-  peak: 0.83,
+  peak: 0.84,
 } as const
 
 /** Rest → reading size → past every edge. Multipliers on the seated height. */
@@ -173,8 +174,15 @@ export function getArrowScale(t: number): number {
  * to come at you are one movement, not two, so the approach is part of the
  * growth: the arrow is already swelling while the grid is still on screen, and
  * arrives at its seated size exactly as the stage pins.
+ *
+ * This leg cannot be shortened — it is the section scrolling into frame, one
+ * viewport, fixed. So the only way to make the arrival read faster is to make
+ * it cover more: at 3.6 the arrow enters at well under a third of its seated
+ * size rather than at half, so the same screen of scroll carries half again as
+ * much growth. It also keeps the arrow small for longer over the departing
+ * grid, which is the other half of what reads as a gap here.
  */
-const ENTRY_GAIN = 2.4
+const ENTRY_GAIN = 3.6
 
 export function getEntryScale(): number {
   const rect = getTargetRect(FINALE_TARGET_ID)
@@ -291,7 +299,7 @@ export function getRingPhase(t: number): number {
  * sequence builds to is the tunnel alone: nothing in the frame but the field at
  * its longest and fullest, and one line of type across it.
  */
-const RINGS_END = 0.64
+const RINGS_END = 0.63
 const RINGS_GONE = 0.77
 
 /**
@@ -309,8 +317,8 @@ export function getRingLive(t: number): number {
 
 /** Which of the three headlines is up, or -1 for none. */
 export function getHeadlineStep(t: number): number {
-  const start = 0.11
-  const end = 0.31
+  const start = 0.08
+  const end = 0.26
   if (t < start || t >= end) return -1
   return Math.min(2, Math.floor(((t - start) / (end - start)) * 3))
 }
@@ -330,7 +338,7 @@ export function isTunnelBehind(t: number): boolean {
 
 /** True across the middle of the hold, where the manifesto sits around the tunnel. */
 export function isManifestoUp(t: number): boolean {
-  return t >= 0.37 && t < 0.68
+  return t >= 0.33 && t < 0.67
 }
 
 /**
@@ -342,5 +350,5 @@ export function isManifestoUp(t: number): boolean {
  * starts to empty.
  */
 export function isClosingUp(t: number): boolean {
-  return t >= 0.68 && t < 0.9
+  return t >= 0.67 && t < 0.91
 }
