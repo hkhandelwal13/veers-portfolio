@@ -59,32 +59,28 @@
   padding: 3px 7px;
 }
 
-/* --- Player ---------------------------------------------------------------
-   Chrome only. The real <video>, R2 sources and control wiring are Phase 5;
-   this establishes the layout and control positions they'll drop into. */
+/* --- Player ----------------------------------------------------------------
+   Our own chrome over a plain <video> — see VideoPlayer.tsx, which shares this
+   module rather than restating these rules in one of its own. */
 .player {
   position: relative;
   aspect-ratio: var(--card-ratio);
   border: 1px solid var(--dark-line);
   overflow: hidden;
+  /* The ground behind the poster while it decodes, and the letterbox if a film
+     is not exactly 16:9. */
+  background: var(--dark-surface);
 }
 
-.playerFill {
+.video {
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(
-    45deg,
-    var(--dark-surface-2) 0 6px,
-    var(--dark-surface) 6px 12px
-  );
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: var(--fs-label);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--on-dark-muted);
+  width: 100%;
+  height: 100%;
+  /* contain, not cover: a frame the editor chose is not ours to crop. */
+  object-fit: contain;
+  display: block;
+  cursor: pointer;
 }
 
 .playButton {
@@ -126,11 +122,63 @@
   gap: var(--s4);
   background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.55));
   color: var(--on-dark);
+  transition: opacity var(--dur-med) var(--ease-out);
+}
+
+/* Out of the way while it plays and the pointer is elsewhere. Never while
+   paused, and never on a touch device, which has no pointer to take away. */
+.controls[data-hidden] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.controls:focus-within {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .scrubber {
+  position: relative;
   height: 3px;
   background: color-mix(in srgb, var(--on-dark) 28%, transparent);
+}
+
+/* The real control, laid transparently over the drawn bar: dragging, arrow
+   keys, Home/End and assistive tech all come free, and the bar above stays
+   exactly the two rules the wireframe specified. */
+.seek {
+  position: absolute;
+  inset: -8px 0;
+  width: 100%;
+  height: calc(100% + 16px);
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  appearance: none;
+  background: transparent;
+}
+
+.seek:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+}
+
+.smallPlayGlyph {
+  width: 0;
+  height: 0;
+  border-left: 11px solid var(--on-dark);
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+}
+
+.time {
+  font-variant-numeric: tabular-nums;
 }
 
 .progress {

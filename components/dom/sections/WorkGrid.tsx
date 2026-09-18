@@ -9,15 +9,15 @@ import { Scramble } from '@/components/dom/Scramble'
  * HARD SPEC from the wireframe: 2 columns of 16:9 cards with a 24px gap on
  * desktop and tablet, 1 column on mobile.
  *
- * The second card is held open so the resting and revealed states are
- * reviewable side by side, exactly as the wireframe presents them.
+ * Every card is closed at rest. One used to be pinned open so the resting and
+ * revealed states could be approved side by side from a screenshot; with real
+ * posters and real footage on the cards that is no longer a review aid, it is
+ * one card behaving differently from the other seven.
  */
 export function WorkGrid({
-  showHoverExample = true,
   /** False when another section already cleared the fixed nav above it. */
   standalone = true,
 }: {
-  showHoverExample?: boolean
   standalone?: boolean
 }) {
   return (
@@ -41,19 +41,9 @@ export function WorkGrid({
       </div>
 
       <div className={styles.grid}>
-        {PROJECTS.map((project, i) => (
-          <ProjectCard
-            key={project.slug}
-            project={project}
-            forceReveal={showHoverExample && i === 1}
-          />
+        {PROJECTS.map((project) => (
+          <ProjectCard key={project.slug} project={project} />
         ))}
-      </div>
-
-      <div className={styles.more}>
-        <span className={styles.moreButton}>
-          Load more — {SITE.totalProjects - PROJECTS.length} remaining
-        </span>
       </div>
     </section>
   )

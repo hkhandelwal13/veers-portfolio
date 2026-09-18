@@ -111,6 +111,21 @@ export function canAnimateCardReveal(caps: Capabilities = current): boolean {
 }
 
 /**
+ * Card previews play when the card reaches the middle of the screen.
+ *
+ * The touch counterpart to the hover reveal, not an addition to it: without a
+ * pointer there is no hover to start the clip, and a tap has to follow the
+ * link rather than animate. Scroll position is the only intent a touchscreen
+ * offers, so the card you have brought to the middle of the screen is the one
+ * treated as chosen.
+ *
+ * Off under reduced motion, where the poster is the whole of the card.
+ */
+export function canPlayCardPreviewInView(caps: Capabilities = current): boolean {
+  return !caps.hoverCapable && !caps.reducedMotion
+}
+
+/**
  * Develop-on-enter: cards fade up from a negative as they come into view.
  *
  * Skipped entirely under reduced motion — unlike the hover reveal, nothing is

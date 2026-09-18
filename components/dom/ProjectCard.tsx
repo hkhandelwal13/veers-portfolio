@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect } from 'react'
 import type { PlaceholderProject } from '@/lib/placeholder-content'
 import { CARD_TARGET_PREFIX } from '@/components/webgl/card-target-id'
+import { registerCardAssets } from '@/lib/card-assets'
 import { clearHoverIntent, setHoverIntent } from '@/lib/hover-bus'
 import { WebGLTarget } from './WebGLTarget'
 import styles from './ProjectCard.module.css'
@@ -20,29 +21,21 @@ import styles from './ProjectCard.module.css'
  * would buy nothing. Focus is wired alongside hover so the reveal is never
  * mouse-only.
  *
- * `forceReveal` holds a card open, which the work grid uses to show the default
- * and revealed states side by side, exactly as the wireframe presents them.
+ * The poster and the preview clip are registered the same way and for the same
+ * reason — see lib/card-assets.
  */
-export function ProjectCard({
-  project,
-  forceReveal = false,
-}: {
-  project: PlaceholderProject
-  forceReveal?: boolean
-}) {
+export function ProjectCard({ project }: { project: PlaceholderProject }) {
   const targetId = `${CARD_TARGET_PREFIX}${project.slug}`
 
-  useEffect(() => {
-    if (forceReveal) setHoverIntent(targetId, true)
-    return () => clearHoverIntent(targetId)
-  }, [targetId, forceReveal])
+  useEffect(() => clearHoverIntent.bind(null, targetId), [targetId])
 
-  const open = () => {
-    if (!forceReveal) setHoverIntent(targetId, true)
-  }
-  const close = () => {
-    if (!forceReveal) setHoverIntent(targetId, false)
-  }
+  useEffect(
+    () => registerCardAssets(targetId, { poster: project.poster, preview: project.preview }),
+    [targetId, project.poster, project.preview],
+  )
+
+  const open = () => setHoverIntent(targetId, true)
+  const close = () => setHoverIntent(targetId, false)
 
   return (
     <article className={styles.card}>
@@ -55,18 +48,17 @@ export function ProjectCard({
         onBlur={close}
       >
         <WebGLTarget targetId={targetId} className={styles.poster}>
-          <span className={styles.posterLabel} aria-hidden="true">
-            Poster 16:9
-          </span>
+          {/* The CSS fallback for a page with no canvas: a real <img>, so the
+              work is still there without WebGL, and so the poster is in the
+              markup for a crawler and for a print. Hidden once the stage is
+              live, where the mirrored plane supplies the same image. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={project.poster} alt="" className={styles.posterImage} loading="lazy" />
 
           {/* Metadata only. The imagery underneath it is the WebGL reveal, so
               this layer must not paint over the card — just a scrim strong
               enough to keep the text legible. */}
-          <div
-            className={styles.overlay}
-            style={forceReveal ? { opacity: 1 } : undefined}
-            aria-hidden="true"
-          >
+          <div className={styles.overlay} aria-hidden="true">
             {project.categories[0] && (
               <span className={styles.badge}>{project.categories[0]}</span>
             )}

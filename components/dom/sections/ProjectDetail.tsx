@@ -2,15 +2,14 @@ import Link from 'next/link'
 import type { PlaceholderProject } from '@/lib/placeholder-content'
 import styles from './ProjectDetail.module.css'
 import { Scramble } from '@/components/dom/Scramble'
+import { VideoPlayer } from './VideoPlayer'
 
 /**
  * Project detail — wireframe 1d, dark treatment.
  *
- * The player is chrome only: poster frame, centre play control, scrubber and
- * the control row. The real <video>, its R2 sources and the control wiring are
- * Phase 5 — this fixes the layout they drop into. Controls are always visible
- * here; the wireframe notes they fade on hover/pause on pointer devices and
- * stay visible on touch, which is behaviour, not layout.
+ * The player is a real <video> behind our own chrome — see VideoPlayer. This
+ * component stays a server component: only the player needs to be interactive,
+ * so only the player crosses to the client.
  */
 export function ProjectDetail({
   project,
@@ -45,39 +44,7 @@ export function ProjectDetail({
         </ul>
       </header>
 
-      <div className={styles.player}>
-        <div className={styles.playerFill}>Poster frame / full video 16:9</div>
-
-        <button type="button" className={styles.playButton} aria-label={`Play ${project.title}`}>
-          <span className={styles.playGlyph} aria-hidden="true" />
-        </button>
-
-        {/* Static control chrome — wired to a real <video> in Phase 5. */}
-        <div className={styles.controls}>
-          <div className={styles.scrubber}>
-            <div className={styles.progress} style={{ width: '34%' }}>
-              <span className={styles.knob} />
-            </div>
-          </div>
-
-          <div className={styles.controlRow}>
-            <div className={styles.controlLeft}>
-              <span className={styles.pauseGlyph} aria-hidden="true">
-                <span />
-                <span />
-              </span>
-              <span>00:42 / {project.runtime}</span>
-            </div>
-
-            <div className={styles.controlRight}>
-              <button type="button">Mute</button>
-              <button type="button">CC</button>
-              <button type="button">1080p</button>
-              <button type="button">⤢ Fullscreen</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <VideoPlayer src={project.video} poster={project.poster} title={project.title} />
 
       <div className={styles.body}>
         <section aria-labelledby="about-edit">
