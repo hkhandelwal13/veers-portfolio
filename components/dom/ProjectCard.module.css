@@ -34,17 +34,21 @@
   background: none;
 }
 
-.posterLabel {
+/* The poster as a real image, for the page without a canvas.
+   Once the stage is live the mirrored plane draws the same file behind this
+   box, so the <img> steps aside rather than doubling it — and the box goes
+   back to being the transparent placeholder the rect sampler measures. */
+.posterImage {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: var(--fs-label);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+:global(html[data-webgl='live']) .posterImage {
+  visibility: hidden;
 }
 
 /* --- Hover overlay ---------------------------------------------------------

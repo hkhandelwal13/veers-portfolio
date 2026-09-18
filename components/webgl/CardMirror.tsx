@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { getTargetRect } from '@/lib/rect-sampler'
@@ -10,10 +10,13 @@ import {
   canAnimateCardReveal,
   canCurlOnScroll,
   canDevelopOnEnter,
+  canPlayCardPreviewInView,
   getCapabilities,
 } from '@/lib/capabilities'
+import { getCardAssets } from '@/lib/card-assets'
 import { getScrollActivity } from '@/lib/scroll-activity'
 import { domSyncFragmentShader, domSyncVertexShader } from '@/shaders/dom-sync'
+import { getPosterTexture, releaseCardClips, wantCardClip } from './card-media'
 import { getPlaceholderPosterTexture, getPlaceholderRevealTexture } from './placeholder-poster'
 import { isRectVisible, rectToUniform } from './rect-space'
 
@@ -33,6 +36,16 @@ const REVEAL_SECONDS = 0.45
 const DEVELOP_SECONDS = 0.8
 /** Curl at full scroll speed. Small on purpose — it should read as give, not warp. */
 const CURL_MAX = 0.06
+/**
+ * How near the middle of the screen a card must be for its clip to roll, with
+ * no pointer to say so. A share of the viewport's height, either side of
+ * centre.
+ *
+ * Narrow enough that one card is normally chosen, wide enough that a card
+ * stays chosen while you read its title rather than flickering off the moment
+ * the page drifts.
+ */
+const IN_VIEW_BAND = 0.3
 
 function createUniforms() {
   return {
@@ -78,8 +91,14 @@ export function CardMirror({ targetId }: { targetId: string }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const progress = useRef(0)
   const develop = useRef(0)
+  /** Whether this card currently holds a claim on a clip. */
+  const holding = useRef(false)
 
   const initialUniforms = useMemo(() => createUniforms(), [])
+
+  // Whatever this card was holding open, let go of on unmount — otherwise a
+  // route change away from the grid leaves a clip playing to nobody.
+  useEffect(() => () => releaseCardClips(targetId), [targetId])
 
   useFrame((state, delta) => {
     const mesh = meshRef.current
@@ -100,6 +119,15 @@ export function CardMirror({ targetId }: { targetId: string }) {
       progress.current = 0
       develop.current = 0
       uniforms.uRevealProgress.value = 0
+      // And let go of the clip. This branch returns before the frame's normal
+      // release, so without it a card that is scrolled away mid-reveal keeps
+      // its claim for the life of the page — which on the touch path, where
+      // every card that passes the middle of the screen takes one, means the
+      // claims only ever accumulate and the budget stops meaning anything.
+      if (holding.current) {
+        releaseCardClips(targetId)
+        holding.current = false
+      }
       return
     }
 
@@ -108,7 +136,39 @@ export function CardMirror({ targetId }: { targetId: string }) {
     uniforms.uViewportPx.value.set(state.size.width, height)
 
     const caps = getCapabilities()
-    const target = canAnimateCardReveal(caps) ? getHoverIntent(targetId) : 0
+    const assets = getCardAssets(targetId)
+
+    // --- What the card is showing ------------------------------------------
+    // The poster replaces the placeholder hatch the moment it has decoded, and
+    // not before: swapping to a texture with no image in it would blank the
+    // card for the length of the download.
+    if (assets) {
+      const poster = getPosterTexture(assets.poster)
+      if (poster) uniforms.uMap.value = poster
+    }
+
+    // Two ways to be the chosen card, and a device only ever offers one of
+    // them. With a pointer it is hover (and keyboard focus, which the DOM side
+    // pushes onto the same bus). Without one it is having been scrolled to the
+    // middle of the screen — see canPlayCardPreviewInView.
+    let target = 0
+    if (canAnimateCardReveal(caps)) {
+      target = getHoverIntent(targetId)
+    } else if (canPlayCardPreviewInView(caps)) {
+      const centre = rect.y + rect.height / 2
+      target = Math.abs(centre - height / 2) < height * IN_VIEW_BAND ? 1 : 0
+    }
+
+    // The clip rolls while the card is chosen *or* still closing over it, so
+    // the picture under a retreating reveal is live rather than a frozen frame.
+    if (assets?.preview) {
+      const wanted = target > 0 || progress.current > 0
+      holding.current = wanted
+      const clip = wantCardClip(assets.preview, targetId, wanted)
+      // Falls back to the placeholder panel until the first frame is decoded,
+      // so an early hover reveals something rather than black.
+      uniforms.uMapReveal.value = clip ?? getPlaceholderRevealTexture()
+    }
 
     if (caps.reducedMotion) {
       progress.current = target
