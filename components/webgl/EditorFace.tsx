@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
-import { canRenderGlass, getCapabilities } from '@/lib/capabilities'
+import { canRenderGlass } from '@/lib/capabilities'
 import { pointer } from '@/lib/pointer-bus'
 import { getTargetRect } from '@/lib/rect-sampler'
 import { getScrollSnapshot } from '@/lib/scroll-bus'
@@ -105,7 +105,7 @@ function DepthPortrait({ color, depth }: { color: string; depth: string }) {
     const { viewportHeight } = getScrollSnapshot()
     const height = viewportHeight || state.size.height
 
-    if (!rect || !rect.valid || !canRenderGlass(getCapabilities())) {
+    if (!rect || !rect.valid || !canRenderGlass()) {
       mesh.visible = false
       return
     }

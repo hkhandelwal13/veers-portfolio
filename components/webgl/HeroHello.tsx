@@ -1,6 +1,6 @@
 'use client'
 
-import { useLayoutEffect, useMemo, useRef, useSyncExternalStore } from 'react'
+import { useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
@@ -8,16 +8,10 @@ import type { GLTF } from 'three-stdlib'
 import { getTargetRect } from '@/lib/rect-sampler'
 import { getScrollSnapshot } from '@/lib/scroll-bus'
 import { pointer } from '@/lib/pointer-bus'
-import {
-  canRenderGlass,
-  getCapabilities,
-  getServerCapabilities,
-  subscribeToCapabilities,
-} from '@/lib/capabilities'
+import { getCapabilities } from '@/lib/capabilities'
 import { getHeroObjectDissolve, getHeroProgress } from '@/lib/hero-progress'
 import { createRingLight } from '@/lib/ring-light'
 import { isSurfaceDark } from '@/lib/surface'
-import { getServerTheme, getTheme, subscribeToTheme } from '@/lib/theme'
 import { glassFragmentShader, glassVertexShader } from '@/shaders/glass'
 import { glassPasses } from './glass-passes'
 import { LAYER_GLASS } from './layers'
@@ -240,41 +234,23 @@ export function HeroHello() {
     group.rotation.x = THREE.MathUtils.damp(group.rotation.x, targetX, 5, delta)
   })
 
-  // Subscribed, not read once: capabilities start at their server defaults and
-  // resolve after mount, so choosing the material from a single render-time
-  // read leaves a small screen holding the refraction shader whose pass has
-  // been gated off — a shader sampling a target nobody renders.
-  const caps = useSyncExternalStore(
-    subscribeToCapabilities,
-    getCapabilities,
-    getServerCapabilities,
-  )
-  const glass = canRenderGlass(caps)
-  // The fallback has no refraction to tint, so its body colour is the only
-  // thing carrying the theme. Same two brand blues the shader mixes between.
-  const theme = useSyncExternalStore(subscribeToTheme, getTheme, getServerTheme)
-
   return (
     <group ref={outer} visible={false}>
       <group position={[-measured.center.x, -measured.center.y, -measured.center.z]}>
         <mesh ref={meshRef} geometry={geometry} position={BAKED_POSITION} scale={BAKED_SCALE}>
-          {glass ? (
-            <shaderMaterial
-              vertexShader={glassVertexShader}
-              fragmentShader={glassFragmentShader}
-              uniforms={initialUniforms}
-              // The dissolve writes alpha. Depth is still written, so stickers
-              // behind the word stay occluded while it is solid.
-              transparent
-            />
-          ) : (
-            // Small-screen fallback: no second scene render, no refraction.
-            <meshStandardMaterial
-              color={theme === 'dark' ? '#4E76D0' : '#8EBFE8'}
-              roughness={0.25}
-              metalness={0.1}
-            />
-          )}
+          {/* One material now, on every screen. The small-screen fallback that
+              used to sit here was an opaque standard material standing in for
+              the refraction — and standing in badly, since the refraction is
+              what the word *is*. The cost came off the target's resolution
+              instead (see RefractionPass). */}
+          <shaderMaterial
+            vertexShader={glassVertexShader}
+            fragmentShader={glassFragmentShader}
+            uniforms={initialUniforms}
+            // The dissolve writes alpha. Depth is still written, so stickers
+            // behind the word stay occluded while it is solid.
+            transparent
+          />
         </mesh>
       </group>
     </group>

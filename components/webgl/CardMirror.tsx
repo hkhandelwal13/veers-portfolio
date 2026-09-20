@@ -41,11 +41,14 @@ const CURL_MAX = 0.06
  * no pointer to say so. A share of the viewport's height, either side of
  * centre.
  *
- * Narrow enough that one card is normally chosen, wide enough that a card
- * stays chosen while you read its title rather than flickering off the moment
- * the page drifts.
+ * Narrow enough that ONE card is chosen, which is the whole point — at 0.3 a
+ * phone had two cards inside the band at once, because a card there is about
+ * a quarter of the screen tall and the band was more than half of it. Two
+ * cards playing at once is not a preview, it is a wall. Still wide enough
+ * that the chosen card stays chosen while you read its title rather than
+ * flickering off the moment the page drifts.
  */
-const IN_VIEW_BAND = 0.3
+const IN_VIEW_BAND = 0.17
 
 function createUniforms() {
   return {
@@ -165,9 +168,13 @@ export function CardMirror({ targetId }: { targetId: string }) {
       const wanted = target > 0 || progress.current > 0
       holding.current = wanted
       const clip = wantCardClip(assets.preview, targetId, wanted)
-      // Falls back to the placeholder panel until the first frame is decoded,
-      // so an early hover reveals something rather than black.
-      uniforms.uMapReveal.value = clip ?? getPlaceholderRevealTexture()
+      // Until the clip has a frame, reveal the poster — which is to say,
+      // reveal nothing. The placeholder panel that used to stand in here is an
+      // abstract hatch, so a card whose video had not arrived yet swapped its
+      // photograph for a blue rectangle and called it a preview. Opening onto
+      // the same image is the honest empty state: the dot grid still runs, and
+      // the picture changes the moment there is a picture to change to.
+      uniforms.uMapReveal.value = clip ?? uniforms.uMap.value
     }
 
     if (caps.reducedMotion) {

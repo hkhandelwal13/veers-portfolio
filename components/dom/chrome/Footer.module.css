@@ -114,3 +114,27 @@
     display: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Touch targets.
+   A 16px line of mono type is a 18px-tall box, which is a fine link to click
+   and a poor one to hit with a thumb — the usual guidance is 44px, and the
+   audit found most of these between 16 and 21. Scoped to coarse pointers so
+   the desktop rhythm is untouched, and done with padding rather than a taller
+   font so nothing about the type changes.
+   ------------------------------------------------------------------------ */
+@media (pointer: coarse) {
+  .column a,
+  .calloutTitle a,
+  .toTop {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .column {
+    /* The links carry their own height now, so the list's own gap would stack
+       on top of it and leave the column twice as tall as it reads. */
+    gap: 0;
+  }
+}
