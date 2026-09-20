@@ -41,11 +41,13 @@
 
   /* --- Surfaces (dark — project detail / dark sections) --------------------
      The deep end of the same blue, so a dark section reads as the site going
-     under rather than as a different site. Derived from Ocean Blue #4E76D0. */
-  --dark-bg: #0c1442;
-  --dark-surface: #16205c;
-  --dark-surface-2: #1d2870;
-  --dark-line: #2b3888;
+     under rather than as a different site. Sits on the ground colour itself —
+     a project page opened from the grid has to be the same blue you were just
+     looking at, not a navy a shade off it. */
+  --dark-bg: #071669;
+  --dark-surface: #0e2180;
+  --dark-surface-2: #182d94;
+  --dark-line: #2a41ad;
   --on-dark: #eaf1fb;
   --on-dark-muted: #8fa3d8;
 
@@ -180,15 +182,15 @@
      ground the result collapses to a flat slab of whichever channel survives —
      no refraction, no dispersion, no stickers. A deep blue gives the blend
      something to lift, which is the state the reference art is in. */
-  --bg: #0a1038;
-  --surface: #131b52;
+  --bg: #071668;
+  --surface: #0d1f7d;
   /* The hatch pair lifts clear of --dark-surface: the card's reveal state is
      that deeper panel, and poster and reveal have to stay legible against
      each other. */
-  --surface-2: #1d2870;
-  --surface-3: #24307e;
-  --line: #2b3888;
-  --fill: #3a49a0;
+  --surface-2: #172b92;
+  --surface-3: #1d33a0;
+  --line: #2a41ad;
+  --fill: #3a53c4;
 
   --ink: #eaf1fb;
   --muted: #a9bce6;
@@ -198,7 +200,7 @@
      light end and reads as a focus ring on it. */
   --accent: #8ebfe8;
 
-  --menu-bg: #16205c;
+  --menu-bg: #0d1f7d;
 
   /* Cool and much weaker: on the deep ground the same alpha that reads as a
      hairline on paper reads as fog. */

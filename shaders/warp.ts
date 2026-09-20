@@ -119,9 +119,16 @@ vec3 warpLayer(float angle, float radius, float count, float seed) {
   float weight = max(3.1415927 * radius / count * BIN_FILL, MIN_HALF_WIDTH);
   float line = smoothstep(weight, weight * 0.3, perp);
 
+  // Both ends resolved against the pixel, not against a fixed slice of the
+  // radius. The tail used to fade over 0.015 — nearly four times the head's
+  // 0.004 — which at this scale is tens of pixels of gradient, so every
+  // segment trailed off into a smudge instead of ending. One pixel of
+  // anti-aliasing each end gives them a head and a tail you can see, and is
+  // the correct width at any resolution rather than at one.
+  float ends = max(fwidth(radius), 1e-5);
   float radial =
-    smoothstep(start, start + 0.004, radius) *
-    (1.0 - smoothstep(start + len - 0.015, start + len, radius));
+    smoothstep(start - ends, start + ends, radius) *
+    (1.0 - smoothstep(start + len - ends, start + len + ends, radius));
 
   // Weighted cool. The hot end is an accent — spread evenly it stops being a
   // field of light and becomes a colour wheel.
@@ -215,12 +222,13 @@ vec3 warpField(vec2 screenUv, float aspect) {
     // narrower bins, and a narrower bin is a thinner line.
     rays += warpLayer(angle, radius, RAY_COUNT, 3.1);
     rays += warpLayer(angle, radius, RAY_COUNT, 61.7);
-    // The last is the crowd, and the bulk of the cost — a small screen keeps
-    // the tunnel and drops it. There were two; thinning the field is a matter
-    // of taking a whole pass out rather than of narrowing the bins, since a
-    // narrower bin is a thinner line and the weight of the lines is the look.
+    // The last two are the crowd, and the bulk of the cost — a small screen
+    // keeps the tunnel and drops them. Back to four: the rush is dialled down
+    // at the travel rate instead, because taking a pass out thins the field
+    // rather than slowing it, and the weight of the field is the look.
     if (uFine > 0.5) {
       rays += warpLayer(angle, radius, RAY_COUNT, 127.3);
+      rays += warpLayer(angle, radius, RAY_COUNT, 211.9);
     }
   }
 

@@ -45,7 +45,7 @@ const FLAT_WIPE: [number, number] = [1, 1]
  *
  * Below 1 at both ends on purpose — see the note at the SectionField below.
  */
-const STAGE_WIPE: [number, number] = [0.52, 0.4]
+const STAGE_WIPE: [number, number] = [1.45, 1.1]
 
 export default function Scene() {
   return (
@@ -112,9 +112,6 @@ export default function Scene() {
           // Not part of the arrow's scene: they are frozen either side of it,
           // and gone while the tunnel is up.
           veil={getStickerVeil}
-          // Held back until you click the background of the hero or the
-          // closing screen. Invisible otherwise, so the cost is a matrix write.
-          burstCount={55}
         />
 
         {/* The closing screen repeats the hero's arrangement: its own ground,
