@@ -33,7 +33,7 @@
    * Safe to overlap because the stage is pointer-events: none and paints no
    * ground of its own — both sections sit on the same shared WebGL field.
    */
-  margin-top: -60svh;
+  margin-top: -20svh;
 }
 
 .stageTarget {

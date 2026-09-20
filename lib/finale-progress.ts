@@ -184,14 +184,25 @@ export function getArrowScale(t: number): number {
  */
 const ENTRY_GAIN = 3.6
 
-export function getEntryScale(): number {
+/**
+ * How far the section has arrived, 0 at the fold and 1 once it has pinned.
+ *
+ * Separate from the scrub, which only starts at the pin. This is the approach —
+ * the stretch where the section is on screen but the timeline has not begun —
+ * and two things need it: the arrow's own entry growth, and the sticker field,
+ * which thaws over exactly this span (lib/sticker-journey).
+ */
+export function getFinaleArrival(): number {
   const rect = getTargetRect(FINALE_TARGET_ID)
   const { viewportHeight } = getScrollSnapshot()
-  if (!rect || !rect.valid || viewportHeight <= 0) return 1
+  if (!rect || !rect.valid || viewportHeight <= 0) return 0
+  return clamp01(1 - rect.y / viewportHeight)
+}
 
-  // 0 with the section's top edge at the fold, 1 once it has reached the top.
-  const entry = clamp01(1 - rect.y / viewportHeight)
-  return Math.pow(ENTRY_GAIN, smooth(entry) - 1)
+export function getEntryScale(): number {
+  const { viewportHeight } = getScrollSnapshot()
+  if (viewportHeight <= 0) return 1
+  return Math.pow(ENTRY_GAIN, smooth(getFinaleArrival()) - 1)
 }
 
 /**

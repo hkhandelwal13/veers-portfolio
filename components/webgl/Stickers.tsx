@@ -299,6 +299,18 @@ export function Stickers({
     const hidden = veil ? veil() : 0
     if (hidden >= 0.995) {
       mesh.visible = false
+      if (process.env.NODE_ENV !== 'production' && burstCount > 0) {
+        // Also from here, or the readout keeps whatever it said last frame and
+        // a fully veiled field reads as an unveiled one that simply stopped
+        // being measured.
+        ;(window as unknown as { __stickerField?: unknown }).__stickerField = {
+          total: particles.length,
+          woken: wokenRef.current,
+          onScreen: 0,
+          freeze: +(freeze ? freeze() : 0).toFixed(2),
+          veil: +hidden.toFixed(2),
+        }
+      }
       return
     }
     material.uniforms.uFade.value = (1 - exit * 0.85) * (1 - hidden)
@@ -418,6 +430,11 @@ export function Stickers({
         total: particles.length,
         woken: wokenRef.current,
         onScreen,
+        // Whether the fall is held, and how far into the dot grid they are.
+        // Both are scroll signals with no DOM of their own, so a screenshot
+        // cannot tell a frozen field from a slow one.
+        freeze: +(freeze ? freeze() : 0).toFixed(2),
+        veil: +hidden.toFixed(2),
       }
     }
   })

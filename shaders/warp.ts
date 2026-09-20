@@ -215,11 +215,12 @@ vec3 warpField(vec2 screenUv, float aspect) {
     // narrower bins, and a narrower bin is a thinner line.
     rays += warpLayer(angle, radius, RAY_COUNT, 3.1);
     rays += warpLayer(angle, radius, RAY_COUNT, 61.7);
-    // The last two are the crowd, and the bulk of the cost — a small screen
-    // keeps the tunnel and drops them.
+    // The last is the crowd, and the bulk of the cost — a small screen keeps
+    // the tunnel and drops it. There were two; thinning the field is a matter
+    // of taking a whole pass out rather than of narrowing the bins, since a
+    // narrower bin is a thinner line and the weight of the lines is the look.
     if (uFine > 0.5) {
       rays += warpLayer(angle, radius, RAY_COUNT, 127.3);
-      rays += warpLayer(angle, radius, RAY_COUNT, 211.9);
     }
   }
 
