@@ -3,9 +3,12 @@
  *
  * They fall, clear, in the hero. They freeze where they are as the about
  * section takes over and break up into the dot matrix, and they stay frozen —
- * visible, in that broken-up form — through about, work, and the arrow's
- * approach. Then, as the arrow collapses back and the closing screen arrives,
- * they thaw out of the grid and start falling again from where they stopped.
+ * visible, in that broken-up form — through about and work. The arrow section
+ * thaws them again on its way in, so the fall resumes there, pauses only for
+ * as long as the tunnel is over them, and carries on down the closing screen.
+ *
+ * One journey, top of the page to the bottom, held still twice in the middle —
+ * rather than held still for everything between the two ends.
  *
  * Two signals, both pure functions of scroll:
  *
@@ -23,7 +26,7 @@
  * pure dots at that moment the swap has nothing to show.
  */
 
-import { getFinaleProgress, getPortalMix } from './finale-progress'
+import { getFinaleArrival, getFinaleProgress, getPortalMix } from './finale-progress'
 import { getMidSectionPresence } from './mid-sections'
 
 /** The whole-page rect the field is measured against. */
@@ -35,7 +38,11 @@ export const PAGE_FIELD_ID = 'page-field'
  * than a second copy of the same arithmetic.
  */
 export function getStickerFreeze(): number {
-  return getMidSectionPresence()
+  // Released again over the arrow section's approach. Without this the hold
+  // covers everything between the hero and the closing screen, which is most
+  // of the page: the stickers spend longer frozen than falling, and the fall
+  // reads as two short bursts at the ends rather than as one journey down.
+  return getMidSectionPresence() * (1 - getFinaleArrival())
 }
 
 /** How far the stickers have broken up into the dot grid, 0..1. */

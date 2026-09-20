@@ -17,8 +17,16 @@
 import { getContactProgress } from './contact-progress'
 import { getHeroProgress } from './hero-progress'
 
-/** How far through the hero's exit the middle has fully taken over. */
-const ENTER_AT = 0.34
+/**
+ * How far through the hero's exit the middle has fully taken over.
+ *
+ * Nearly all of it. At a third the hold was more than half on by the time you
+ * had scrolled a fifth of the hero — so the stickers spent most of the section
+ * they are supposed to be falling through already stiffening, and the fall
+ * never read as the start of a journey. This lands the hold as the about
+ * section arrives, which is the section that actually wants them still.
+ */
+const ENTER_AT = 0.85
 
 function clamp01(v: number) {
   return v <= 0 ? 0 : v >= 1 ? 1 : v

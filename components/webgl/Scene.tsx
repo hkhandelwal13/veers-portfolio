@@ -45,7 +45,7 @@ const FLAT_WIPE: [number, number] = [1, 1]
  *
  * Below 1 at both ends on purpose — see the note at the SectionField below.
  */
-const STAGE_WIPE: [number, number] = [0.78, 0.6]
+const STAGE_WIPE: [number, number] = [0.52, 0.4]
 
 export default function Scene() {
   return (
@@ -105,7 +105,7 @@ export default function Scene() {
             hand-over between two of them is a seam wherever it lands. */}
         <Stickers
           fieldId={PAGE_FIELD_ID}
-          count={140}
+          count={85}
           progress={ZERO}
           dissolve={getStickerDissolve}
           freeze={getStickerFreeze}
@@ -114,7 +114,7 @@ export default function Scene() {
           veil={getStickerVeil}
           // Held back until you click the background of the hero or the
           // closing screen. Invisible otherwise, so the cost is a matrix write.
-          burstCount={90}
+          burstCount={55}
         />
 
         {/* The closing screen repeats the hero's arrangement: its own ground,
