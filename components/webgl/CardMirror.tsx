@@ -211,7 +211,20 @@ export function CardMirror({ targetId }: { targetId: string }) {
       // The quad ignores the camera, so frustum culling would be meaningless
       // and occasionally wrong.
       frustumCulled={false}
-      renderOrder={-1}
+      /*
+       * Above the sticker field, which is the other thing on the content layer.
+       *
+       * This quad has depthTest off — it is screen-space, so there is no depth
+       * to test against — which leaves render order as the only thing deciding
+       * what covers what. At -1 it drew before the stickers and they painted
+       * straight over the posters: through about and work they are dissolved
+       * into the dot grid, so what landed on every card was a field of dots.
+       *
+       * A card is the page's content and the field is its background, so the
+       * card wins. It only paints inside its own rect — everything outside is
+       * masked to zero alpha — so the field is untouched around it.
+       */
+      renderOrder={1}
       visible={false}
     >
       <planeGeometry args={[2, 2]} />
