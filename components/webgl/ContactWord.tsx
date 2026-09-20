@@ -13,7 +13,6 @@ import {
 } from '@/lib/capabilities'
 import { pointer } from '@/lib/pointer-bus'
 import { getTargetRect } from '@/lib/rect-sampler'
-import { getScrollActivity } from '@/lib/scroll-activity'
 import { getScrollSnapshot } from '@/lib/scroll-bus'
 import { createRingLight } from '@/lib/ring-light'
 import { isSurfaceDark } from '@/lib/surface'
@@ -77,24 +76,6 @@ const LAID_FLAT = -Math.PI / 2
 
 /** Screens of scroll the stand-up is spread over, ending at the centre. */
 const ENTRANCE_TRAVEL = 0.22
-/**
- * How fast the word turns toward where the scroll says it should be, per
- * second, when the page is still.
- *
- * Low, because standing still is the one time nothing should be racing: it
- * settles rather than snaps.
- */
-const TURN_RATE = 3
-/**
- * Extra turn rate at full scroll speed.
- *
- * This is what makes the move answer the gesture. Keyed to the same smoothed
- * speed signal the cards curl on, so a flick stands it up in a few frames and
- * a slow drag walks it up under your finger — and because the target is still
- * a function of position, scrolling back up lowers it again by the same rule
- * rather than by a second one written for the reverse.
- */
-const TURN_SPEED_GAIN = 26
 
 export function ContactWord() {
   const outer = useRef<THREE.Group>(null)
@@ -167,9 +148,6 @@ export function ContactWord() {
     }
   }, [scene])
 
-  /** How far over it is, 0 upright and 1 flat. Chased, not read. */
-  const laidRef = useRef(1)
-
   useEffect(() => {
     meshRef.current?.layers.set(LAYER_GLASS)
     ringLight.current = createRingLight(1)
@@ -220,52 +198,46 @@ export function ContactWord() {
     if (caps.reducedMotion) {
       group.position.set(seat.x, seat.y, 0)
       group.rotation.set(0, 0, 0)
-      laidRef.current = 0
       return
     }
 
-    // Standing up at the speed you are scrolling.
+    // Standing up, welded to the scroll rather than chasing it.
     //
-    // Where it should be is still a function of position — the slot's centre
-    // meeting the viewport's is upright — so it can never drift out of step
-    // with the page, and scrolling back up lies it down again by the same
-    // rule rather than by a second one written for the reverse.
+    // The scroll is the animation: the slot's centre meeting the viewport's
+    // is upright, and every position between is a fixed angle. So it turns at
+    // exactly the rate you scroll — a flick stands it up in a flick, a slow
+    // drag walks it up under your finger — and scrolling back up lies it down
+    // again by the same rule rather than by a second one written for the
+    // reverse.
     //
-    // How fast it gets there is the scroll. Read straight off position it
-    // moved at exactly the rate the page did, which is what left it sitting
-    // at whatever half-turned angle you happened to stop at, looking posed.
-    // Chasing the target at a rate that rises with scroll speed means a flick
-    // stands it up in a few frames and a slow drag walks it up under your
-    // finger — the same distance either way, covered at the pace you asked
-    // for.
+    // Nothing is damped here, and that is the point. An earlier version
+    // chased this target at a rate that rose with scroll speed, which sounds
+    // like the same thing and is not: a chase is always behind, and on a slow
+    // deliberate scroll — where the rate is lowest and you are watching most
+    // closely — it lagged the page visibly. Lenis has already smoothed the
+    // scroll; smoothing what is derived from it only adds delay.
     const centre = rect.y + rect.height / 2
-    const laidTarget = THREE.MathUtils.clamp(
+    const laid = THREE.MathUtils.clamp(
       (centre - height * 0.5) / (height * ENTRANCE_TRAVEL),
       0,
       1,
     )
-    laidRef.current = THREE.MathUtils.damp(
-      laidRef.current,
-      laidTarget,
-      TURN_RATE + getScrollActivity() * TURN_SPEED_GAIN,
-      delta,
-    )
-    const laid = laidRef.current
 
-    // Dev-only readout. Where it is, where the scroll says it should be, and
-    // how hard the scroll is pushing — none of which a screenshot separates
-    // from one another. Stripped from production by the constant condition.
+    // Dev-only readout: where the scroll puts it, sampled mid-scroll, which is
+    // the only time a lag would exist. Stripped from production by the
+    // constant condition.
     if (process.env.NODE_ENV !== 'production') {
       ;(window as unknown as { __contactWord?: unknown }).__contactWord = {
         laid: +laid.toFixed(3),
-        target: +laidTarget.toFixed(3),
-        activity: +getScrollActivity().toFixed(3),
+        centre: Math.round(centre),
       }
     }
 
     const float = Math.sin(state.clock.elapsedTime * 0.6) * boxHeight * FLOAT_AMPLITUDE
     group.position.set(seat.x, seat.y + float, 0)
     group.rotation.y = THREE.MathUtils.damp(group.rotation.y, pointer.cx * TILT_Y, 5, delta)
+    // The pointer tilt is damped — the pointer jumps, and easing toward it is
+    // the effect. The entrance is added on top undamped, for the reason above.
     group.rotation.x =
       THREE.MathUtils.damp(group.rotation.x - LAID_FLAT * laid, pointer.cy * TILT_X, 5, delta) +
       LAID_FLAT * laid
