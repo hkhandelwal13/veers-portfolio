@@ -3,12 +3,14 @@
  *
  * They fall, clear, in the hero. They freeze where they are as the about
  * section takes over and break up into the dot matrix, and they stay frozen —
- * visible, in that broken-up form — through about and work. The arrow section
- * thaws them again on its way in, so the fall resumes there, pauses only for
- * as long as the tunnel is over them, and carries on down the closing screen.
+ * visible, in that broken-up form — through about, through work, and through
+ * the whole of the arrow section. Only as the arrow collapses and the closing
+ * screen arrives do they thaw and start falling again, from exactly where they
+ * stopped.
  *
- * One journey, top of the page to the bottom, held still twice in the middle —
- * rather than held still for everything between the two ends.
+ * One hold, not two. Thawing them on the arrow's way in put them back in
+ * motion at the tail of the work section, which is the one place a moving
+ * field competes with the cards for attention.
  *
  * Two signals, both pure functions of scroll:
  *
@@ -26,7 +28,7 @@
  * pure dots at that moment the swap has nothing to show.
  */
 
-import { getFinaleArrival, getFinaleProgress, getPortalMix } from './finale-progress'
+import { getFinaleProgress, getPortalMix } from './finale-progress'
 import { getMidSectionPresence } from './mid-sections'
 
 /** The whole-page rect the field is measured against. */
@@ -38,11 +40,7 @@ export const PAGE_FIELD_ID = 'page-field'
  * than a second copy of the same arithmetic.
  */
 export function getStickerFreeze(): number {
-  // Released again over the arrow section's approach. Without this the hold
-  // covers everything between the hero and the closing screen, which is most
-  // of the page: the stickers spend longer frozen than falling, and the fall
-  // reads as two short bursts at the ends rather than as one journey down.
-  return getMidSectionPresence() * (1 - getFinaleArrival())
+  return getMidSectionPresence()
 }
 
 /** How far the stickers have broken up into the dot grid, 0..1. */

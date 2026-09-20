@@ -92,7 +92,7 @@ const READING_SHARE = Math.log(READING_SIZE) / Math.log(PEAK_SIZE)
  * segments travel out of the centre on the way down and back into it on the
  * way up.
  */
-const TUNNEL_LENGTH = 12
+const TUNNEL_LENGTH = 7
 
 /** Rings emitted across the hold. One arrives per unit; six are alive at once. */
 const RING_RATE = 46

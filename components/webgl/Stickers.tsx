@@ -12,7 +12,6 @@ import {
   type StickerAtlas,
 } from '@/lib/sticker-atlas'
 import { getTargetRect } from '@/lib/rect-sampler'
-import { getStickerSpawn, installStickerBurst } from '@/lib/sticker-burst'
 import { getHeroObjectDissolve, getHeroProgress } from '@/lib/hero-progress'
 import { getScrollSnapshot } from '@/lib/scroll-bus'
 import { stickerFragmentShader, stickerVertexShader } from '@/shaders/stickers'
@@ -52,9 +51,6 @@ const FALL_SECONDS = 17
 /** Height of the field they fall through, as a multiple of the hero section. */
 const SPREAD_Y = 1.25
 
-/** How fast a woken sticker swells to full size. Per second. */
-const GROW_RATE = 7
-
 type Particle = {
   sticker: number
   /** 0..1 down the field; wraps independently of every other particle. */
@@ -72,25 +68,8 @@ type Particle = {
   scale: number
   rotation: number
   spin: number
-  /**
-   * False for a reserve sticker no click has reached yet.
-   *
-   * Not an index comparison, because which ones to wake is a question about
-   * the screen rather than about the array — see the frame loop.
-   */
-  awake: boolean
   /** Last frame's world Y, at the glass plane. Dev readout only. */
   screenY: number
-  /**
-   * How far grown this one is, 0..1, and it only ever rises.
-   *
-   * State rather than something derived per frame because waking is a step —
-   * a click either reached this sticker or it did not. Derived, it would snap
-   * into existence at full size; eased, it swells into place over a fraction
-   * of a second and then stays there, falling with everything else. Nothing
-   * winds it back: a sticker you called up is part of the field now.
-   */
-  grow: number
 }
 
 /**
@@ -120,8 +99,6 @@ export function Stickers({
   freeze,
   /** 1 hides them completely — the arrow's tunnel, which they are not part of. */
   veil,
-  /** Reserve particles on top of `count`, revealed by clicking the background. */
-  burstCount = 0,
   /** Extra gate on top of the rect test — for fields that hand over. */
   active,
 }: {
@@ -132,15 +109,11 @@ export function Stickers({
   dissolve?: () => number
   freeze?: () => number
   veil?: () => number
-  burstCount?: number
   active?: () => boolean
 } = {}) {
   const meshRef = useRef<THREE.InstancedMesh>(null)
   const [atlas, setAtlas] = useState<StickerAtlas | null>(null)
-  /** The field plus its reserve — one mesh, so one draw call either way. */
-  const total = count + burstCount
-  /** How many of the reserve this field has actually woken so far. */
-  const wokenRef = useRef(0)
+
   // Both carry state across frames, so neither can be a memo result.
   const particlesRef = useRef<Particle[]>([])
   const dummyRef = useRef(new THREE.Object3D())
@@ -160,14 +133,6 @@ export function Stickers({
     loadStickerAtlas(controller.signal).then(setAtlas)
     return () => controller.abort()
   }, [])
-
-  // The field is what the gesture acts on, so the field is what asks for it,
-  // and tells it how many it has in reserve. Ref-counted in the module, so a
-  // second instance cannot double the count per click.
-  useEffect(
-    () => (burstCount > 0 ? installStickerBurst(burstCount) : undefined),
-    [burstCount],
-  )
 
   const uniforms = useMemo(
     () => ({
@@ -192,8 +157,7 @@ export function Stickers({
       seed = (seed * 1664525 + 1013904223) % 4294967296
       return seed / 4294967296
     }
-    particlesRef.current = Array.from({ length: total }, (_, i) => {
-      const reserve = i >= count
+    particlesRef.current = Array.from({ length: count }, (_, i) => {
       return {
         sticker: i % atlas.stickers.length,
         // Independent on every axis. Sharing a fall rate, or a fixed column,
@@ -210,14 +174,10 @@ export function Stickers({
         scale: 0.075 + random() * 0.075,
         rotation: random() * Math.PI * 2,
         spin: (random() - 0.5) * 0.5,
-        // The field itself starts at full size; the reserve grows in when a
-        // click reaches it.
-        awake: !reserve,
         screenY: 0,
-        grow: reserve ? 0 : 1,
       }
     })
-  }, [atlas, count, burstCount, total])
+  }, [atlas, count])
 
   // Per-instance atlas slices, uploaded once.
   useEffect(() => {
@@ -225,8 +185,8 @@ export function Stickers({
     const particles = particlesRef.current
     if (!mesh || !atlas || particles.length === 0) return
 
-    const uvRects = new Float32Array(total * 4)
-    const opacities = new Float32Array(total)
+    const uvRects = new Float32Array(count * 4)
+    const opacities = new Float32Array(count)
 
     particles.forEach((particle, i) => {
       const entry = atlas.stickers[particle.sticker]
@@ -238,7 +198,7 @@ export function Stickers({
     mesh.geometry.setAttribute('aUvRect', new THREE.InstancedBufferAttribute(uvRects, 4))
     mesh.geometry.setAttribute('aOpacity', new THREE.InstancedBufferAttribute(opacities, 1))
     mesh.layers.set(LAYER_CONTENT)
-  }, [atlas, total])
+  }, [atlas, count])
 
   useFrame((state, delta) => {
     const mesh = meshRef.current
@@ -299,13 +259,12 @@ export function Stickers({
     const hidden = veil ? veil() : 0
     if (hidden >= 0.995) {
       mesh.visible = false
-      if (process.env.NODE_ENV !== 'production' && burstCount > 0) {
+      if (process.env.NODE_ENV !== 'production') {
         // Also from here, or the readout keeps whatever it said last frame and
         // a fully veiled field reads as an unveiled one that simply stopped
         // being measured.
         ;(window as unknown as { __stickerField?: unknown }).__stickerField = {
           total: particles.length,
-          woken: wokenRef.current,
           onScreen: 0,
           freeze: +(freeze ? freeze() : 0).toFixed(2),
           veil: +hidden.toFixed(2),
@@ -326,32 +285,9 @@ export function Stickers({
     const screenWorld = height * seat.unitsPerPixel
     const step = (delta / FALL_SECONDS) * (screenWorld / Math.max(bandHeight, 1e-4)) * held
     const time = state.clock.elapsedTime
-    let wokenThisFrame = 0
-
-    // --- Clicking the background ----------------------------------------------
-    // How many of the reserve the clicking has called for, and how many are
-    // still owed.
-    //
-    // Owed rather than read as an index, because this field is the whole page
-    // tall: a sticker chosen by its position in the array is somewhere in
-    // eight screens of field, and seven times out of eight that is somewhere
-    // you cannot see. Waking those spends a click on nothing. Waking only the
-    // sleepers that happen to be in frame is no better — there are about a
-    // dozen at any moment, so the first two clicks use them up and every click
-    // after that goes into a backlog that drains at the speed of the fall.
-    //
-    // So a woken sticker is *placed* in frame: dropped at a random point on
-    // the screen you are looking at and left to fall from there, on the same
-    // trajectory as everything else. Where it was sleeping was never visible,
-    // so nothing is lost by moving it, and every click puts its full five in
-    // front of you.
-    const owed = burstCount > 0 ? getStickerSpawn() - wokenRef.current : 0
-    // Half the viewport either side of centre, a little under so one does not
-    // arrive against the very edge of frame.
+    // Half the viewport either side of centre — the band the dev readout
+    // counts as "on screen".
     const inFrameSpan = state.viewport.height * 0.46
-    // Frame-rate independent approach, so the swell takes the same wall time
-    // at 8fps as at 120.
-    const growStep = 1 - Math.exp(-GROW_RATE * Math.min(delta, 1 / 15))
 
     for (let i = 0; i < particles.length; i++) {
       const particle = particles[i]
@@ -368,67 +304,32 @@ export function Stickers({
       // band they fall through — the same as if they were at the word's depth.
       const depthScale = (camera.position.z - particle.z) / Math.max(camera.position.z, 0.001)
 
-      if (!particle.awake) {
-        if (owed <= wokenThisFrame) {
-          // Nothing to draw. Collapse it rather than leaving last frame's
-          // matrix standing — an instanced mesh has no way to skip an
-          // instance. Its fall has been advanced regardless, so the field it
-          // eventually joins is not one it has to catch up with.
-          dummy.scale.set(0, 0, 0)
-          dummy.position.set(0, 0, particle.z)
-          dummy.rotation.set(0, 0, particle.rotation)
-          dummy.updateMatrix()
-          mesh.setMatrixAt(i, dummy.matrix)
-          continue
-        }
-        // Placed on the screen in front of you. Math.random rather than the
-        // seeded sequence the layout uses: that one exists so a screenshot of
-        // the page at rest is reproducible, and this only ever runs in answer
-        // to a click, which is not.
-        const target = (Math.random() - 0.5) * 2 * inFrameSpan * depthScale
-        particle.progress =
-          0.5 - (target - seat.y) / (depthScale * Math.max(bandHeight, 1e-4))
-        particle.lane = Math.random()
-        particle.awake = true
-        wokenThisFrame += 1
-      }
-
       const sway = Math.sin(time * particle.swayRate + particle.swayPhase) * particle.swayAmount
       const x = seat.x + (particle.lane - 0.5 + sway) * bandWidth * depthScale
       const y = seat.y + (bandHeight * 0.5 - particle.progress * bandHeight) * depthScale
       particle.screenY = y / depthScale
 
-      if (particle.grow < 1) {
-        particle.grow += (1 - particle.grow) * growStep
-        if (particle.grow > 0.998) particle.grow = 1
-      }
-
       dummy.position.set(x, y, particle.z)
       dummy.rotation.set(0, 0, particle.rotation)
-      // Eased rather than linear: growth that starts and ends abruptly reads
-      // as a pop at both ends however long it takes.
-      const swell = particle.grow * particle.grow * (3 - 2 * particle.grow)
-      const size = particle.scale * sizeBase * depthScale * exitScale * swell
+      const size = particle.scale * sizeBase * depthScale * exitScale
       const aspect = atlas.stickers[particle.sticker].aspect
       dummy.scale.set(size * aspect, size, 1)
       dummy.updateMatrix()
       mesh.setMatrixAt(i, dummy.matrix)
     }
-    wokenRef.current += wokenThisFrame
     mesh.instanceMatrix.needsUpdate = true
 
     // Dev-only readout. What matters is how many stickers are actually drawn
     // in frame, and screenshots of a field that is always falling cannot tell
     // that from which ones happen to be passing. Stripped from production by
     // the constant condition.
-    if (process.env.NODE_ENV !== 'production' && burstCount > 0) {
+    if (process.env.NODE_ENV !== 'production') {
       let onScreen = 0
       for (const particle of particles) {
-        if (particle.grow > 0.5 && Math.abs(particle.screenY) < inFrameSpan) onScreen += 1
+        if (Math.abs(particle.screenY) < inFrameSpan) onScreen += 1
       }
       ;(window as unknown as { __stickerField?: unknown }).__stickerField = {
         total: particles.length,
-        woken: wokenRef.current,
         onScreen,
         // Whether the fall is held, and how far into the dot grid they are.
         // Both are scroll signals with no DOM of their own, so a screenshot
@@ -442,7 +343,7 @@ export function Stickers({
   return (
     <instancedMesh
       ref={meshRef}
-      args={[undefined, undefined, total]}
+      args={[undefined, undefined, count]}
       frustumCulled={false}
       visible={false}
     >

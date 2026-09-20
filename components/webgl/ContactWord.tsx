@@ -75,7 +75,7 @@ const TILT_Y = 0.16
 const LAID_FLAT = -Math.PI / 2
 
 /** Screens of scroll the stand-up is spread over, ending at the centre. */
-const ENTRANCE_TRAVEL = 0.4
+const ENTRANCE_TRAVEL = 0.22
 
 export function ContactWord() {
   const outer = useRef<THREE.Group>(null)
