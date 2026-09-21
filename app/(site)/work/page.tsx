@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: 'Work' }
 export default function WorkPage() {
   return (
     <main>
-      <Hud status="Selected work" />
+      <Hud />
       <WorkGrid />
     </main>
   )

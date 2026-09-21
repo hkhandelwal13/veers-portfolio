@@ -20,6 +20,8 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  /* Between the link list, the sound meter and the menu button. */
+  gap: var(--s6);
   /* The wordmark is the HUD's, drawn over this bar's left end — see Hud.module.
      This padding is what it aligns to, so the two have to stay in step. */
   padding-inline: var(--s5);
@@ -88,6 +90,9 @@
   border-bottom-color: var(--accent-2);
 }
 
+/* Same job as .themeSlot, for the sound control — which sits outside the link
+   list (see Nav.tsx) and so inherits nothing from it. */
+.soundSlot,
 /* The THEME[A] slot. <ThemeToggle> inherits its type and colour from here so
    it matches the links either side of it on both surfaces. */
 .themeSlot {

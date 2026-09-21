@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useCallback, useState } from 'react'
 import { useScrollFlag } from '@/lib/use-scroll'
 import { MobileMenu } from './MobileMenu'
+import { SoundToggle } from './SoundToggle'
 import { ThemeToggle } from './ThemeToggle'
 import styles from './Nav.module.css'
 
@@ -56,6 +57,15 @@ export function Nav() {
             <ThemeToggle />
           </li>
         </ul>
+
+        {/* Outside the list on purpose: the list collapses into the menu
+            button below desktop, and the sound control has to stay reachable
+            in one tap while the music is playing. The wrapper carries the
+            bar's typography, which the control would otherwise have inherited
+            from the list it is no longer in. */}
+        <div className={styles.soundSlot}>
+          <SoundToggle />
+        </div>
 
         <button
           type="button"

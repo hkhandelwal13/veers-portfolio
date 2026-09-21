@@ -1,0 +1,77 @@
+/* Typography and colour are inherited from the row this sits in — see the
+   component's note. Only layout and the bars belong here. */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s3);
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.toggle:hover {
+  color: var(--accent-2);
+}
+
+/* A four-bar meter. 14px tall so it matches the cap height of the mono label
+   beside it rather than the line box, which is taller than the letters. */
+.bars {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+
+.bars span {
+  width: 2px;
+  background: currentColor;
+  /* Off: a flat line along the bottom. */
+  height: 2px;
+  transition: height var(--dur-fast) var(--ease-out);
+}
+
+/* On but silent — armed and waiting, or ducked by a video. Standing still at
+   the heights it would be moving between, so the difference the visitor reads
+   is motion rather than shape. */
+.bars[data-on] span:nth-child(1) { height: 6px; }
+.bars[data-on] span:nth-child(2) { height: 12px; }
+.bars[data-on] span:nth-child(3) { height: 8px; }
+.bars[data-on] span:nth-child(4) { height: 4px; }
+
+.bars[data-live] span {
+  animation: bar 900ms var(--ease-out) infinite alternate;
+}
+
+.bars[data-live] span:nth-child(2) { animation-delay: 160ms; }
+.bars[data-live] span:nth-child(3) { animation-delay: 320ms; }
+.bars[data-live] span:nth-child(4) { animation-delay: 80ms; }
+
+@keyframes bar {
+  from { height: 3px; }
+  to { height: 14px; }
+}
+
+/* Below desktop the label goes and the meter stays — see the component's note
+   about why this control does not collapse into the menu. */
+@media (max-width: 1024px) {
+  .label {
+    display: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .toggle {
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bars[data-live] span {
+    animation: none;
+  }
+}

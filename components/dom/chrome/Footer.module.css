@@ -19,8 +19,8 @@
   z-index: var(--z-content);
   margin: var(--chrome-float) var(--margin) var(--chrome-float);
   border-radius: var(--chrome-radius-panel);
-  border: 1px solid color-mix(in srgb, var(--on-dark) 14%, transparent);
-  background: color-mix(in srgb, var(--dark-surface) 62%, transparent);
+  border: 1px solid color-mix(in srgb, var(--on-dark) 20%, transparent);
+  background: color-mix(in srgb, var(--dark-surface) 38%, transparent);
   box-shadow: var(--chrome-lift);
   backdrop-filter: var(--chrome-blur);
   color: var(--on-dark-muted);

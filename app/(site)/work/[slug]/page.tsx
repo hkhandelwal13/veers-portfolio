@@ -31,7 +31,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
     <main>
       {/* Dark screen — the nav, HUD and footer invert to match. */}
       <SurfaceTheme value="dark" />
-      <Hud status={project.client} />
+      <Hud />
       <ProjectDetail project={project} next={next} />
     </main>
   )

@@ -1,38 +1,92 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import styles from './Hud.module.css'
-import { Scramble } from '@/components/dom/Scramble'
+import { pointerRaw, subscribeToPointer } from '@/lib/pointer-bus'
+import { fetchTemperature } from '@/lib/weather'
+import { getTimeZone, getZonePlace, type ZonePlace } from '@/lib/zone-places'
 
 /**
  * Four-corner HUD (PHASE2_KICKOFF "HUD motif") — built once, mounted in the
  * site layout, shared by every screen:
  *
  *   top-left      VEERLABS wordmark (the nav does not repeat it)
- *   bottom-left   live GMT+5:30 timestamp
- *   bottom-centre per-screen status line
- *   bottom-right  small ring
+ *   bottom-left   the visitor's own zone, country, clock and temperature
+ *   bottom-centre the pointer's position, live
+ *   bottom-right  a turning globe
+ *
+ * Everything in the bottom row is the visitor's, not the studio's. It used to
+ * be the studio's local time and a per-screen status line, which is a caption;
+ * a readout that answers questions about *you* is telemetry, which is what the
+ * motif is pretending to be.
  *
  * The overlay is pointer-events:none so it never blocks the page; the wordmark
  * link opts back in. Its ink follows the --chrome-* tokens, so it inverts on
  * dark screens without needing to be told which page it's on.
  */
 
-const IST_FORMATTER = new Intl.DateTimeFormat('en-GB', {
-  timeZone: 'Asia/Kolkata',
-  hour: '2-digit',
-  minute: '2-digit',
-  hour12: false,
-})
+/**
+ * The visitor's UTC offset, as the HUD prints it.
+ *
+ * `shortOffset` gives "GMT+5:30" on some engines and "GMT+05:30" on others, so
+ * the leading zero comes off here — otherwise the corner reads differently in
+ * Chrome and Safari on the same machine.
+ */
+function zoneLabel(): string | null {
+  try {
+    const parts = new Intl.DateTimeFormat(undefined, { timeZoneName: 'shortOffset' }).formatToParts(
+      new Date(),
+    )
+    const name = parts.find((part) => part.type === 'timeZoneName')?.value
+    return name ? name.replace(/([+-])0(\d)/, '$1$2') : null
+  } catch {
+    return null
+  }
+}
 
-function useIstClock() {
+/*
+ * The zone and the place it implies, read from the browser once and then held.
+ *
+ * Through useSyncExternalStore with a subscribe that never fires, rather than
+ * through an effect that sets state: neither value can change while the tab is
+ * open, and an effect would render the corner empty and then render it again a
+ * beat later — a visible flicker in exchange for nothing. The server snapshot
+ * is null on purpose, because the server has no idea where the visitor is and
+ * guessing is a hydration mismatch.
+ *
+ * Memoised at module level because getSnapshot must return the same value each
+ * call: a fresh object every time is an infinite render loop.
+ */
+const NEVER_CHANGES = () => () => {}
+
+let zoneMemo: string | null | undefined
+function readZone(): string | null {
+  if (zoneMemo === undefined) zoneMemo = zoneLabel()
+  return zoneMemo
+}
+
+let placeMemo: ZonePlace | null | undefined
+function readPlace(): ZonePlace | null {
+  if (placeMemo === undefined) placeMemo = getZonePlace(getTimeZone())
+  return placeMemo
+}
+
+const noZone = () => null
+const noPlace = () => null
+
+function useLocalClock() {
   // Null until mounted: the server and the visitor's machine are in different
   // zones and would render different text, so the first paint stays neutral.
   const [time, setTime] = useState<string | null>(null)
 
   useEffect(() => {
-    const tick = () => setTime(IST_FORMATTER.format(new Date()))
+    const formatter = new Intl.DateTimeFormat(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+    const tick = () => setTime(formatter.format(new Date()))
     tick()
     // Align to the next minute, then tick once a minute — the readout only
     // shows hours and minutes, so a per-second interval would be waste.
@@ -49,6 +103,30 @@ function useIstClock() {
   }, [])
 
   return time
+}
+
+/**
+ * Country and temperature, both derived from the browser's own timezone.
+ *
+ * See lib/zone-places for why it is the zone and not an IP lookup. Either half
+ * can come back empty — an unlisted zone, a blocked request — and the corner
+ * simply prints what it has.
+ */
+function useLocalPlace() {
+  const place = useSyncExternalStore(NEVER_CHANGES, readPlace, noPlace)
+  const [temperature, setTemperature] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!place) return
+
+    const controller = new AbortController()
+    void fetchTemperature(place.lat, place.lon, controller.signal).then((value) => {
+      if (!controller.signal.aborted) setTemperature(value)
+    })
+    return () => controller.abort()
+  }, [place])
+
+  return { cc: place?.cc ?? null, temperature }
 }
 
 /**
@@ -71,8 +149,86 @@ function useFooterInView() {
   return inView
 }
 
-export function Hud({ status }: { status: string }) {
-  const time = useIstClock()
+function pad(value: number): string {
+  return String(Math.max(0, Math.round(value))).padStart(4, '0')
+}
+
+/**
+ * The pointer's position in the middle of the bottom row.
+ *
+ * Written straight to the text node rather than held in state. The bus
+ * republishes at most once a frame and only when the pointer has actually
+ * moved, but "once a frame" through React is a re-render of this subtree per
+ * frame for as long as the mouse is in motion — for four digits that change.
+ *
+ * Read from `pointerRaw`, the unsmoothed target, not from the eased `pointer`
+ * the 3D layer uses: a lens that lags is an effect, a coordinate readout that
+ * lags is wrong.
+ */
+function PointerCoords() {
+  const ref = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    const node = ref.current
+    if (!node) return
+
+    const write = () => {
+      const x = pointerRaw.x * window.innerWidth
+      const y = pointerRaw.y * window.innerHeight
+      node.textContent = `${pad(x)} X ${pad(y)} Y`
+    }
+
+    write()
+    return subscribeToPointer(write)
+  }, [])
+
+  // Rendered with the same shape the client will write, so the server's markup
+  // and the first client paint agree.
+  return (
+    <span ref={ref} className={styles.coords}>
+      0000 X 0000 Y
+    </span>
+  )
+}
+
+/**
+ * A turning globe.
+ *
+ * The meridians are a group scaled on X from 1 to -1 and back, which is what a
+ * sphere's lines of longitude actually do as it turns: they flatten to nothing
+ * at the limb, then open again on the far side. Passing through -1 rather than
+ * bouncing off 0 is what makes it one continuous rotation instead of a wobble.
+ *
+ * Done this way rather than with a real 3D transform because at eighteen pixels
+ * the perspective is invisible and the cost is not — and because the outline
+ * and the latitudes, which do not move, stay perfectly crisp outside the
+ * animated group.
+ */
+function Globe() {
+  return (
+    <svg
+      className={styles.globe}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9.5" />
+      {/* Latitudes: chords of the same circle, so they meet the rim exactly. */}
+      <path d="M 3.6 7.3 H 20.4 M 2.5 12 H 21.5 M 3.6 16.7 H 20.4" />
+      <g className={styles.meridians}>
+        <ellipse cx="12" cy="12" rx="9.5" ry="9.5" />
+        <ellipse cx="12" cy="12" rx="4.6" ry="9.5" />
+      </g>
+    </svg>
+  )
+}
+
+export function Hud() {
+  const time = useLocalClock()
+  const { cc, temperature } = useLocalPlace()
+  const zone = useSyncExternalStore(NEVER_CHANGES, readZone, noZone)
   const footerInView = useFooterInView()
   // Only the bottom row defers to the footer; the top-left wordmark is the
   // home link and stays visible on every screen.
@@ -87,23 +243,23 @@ export function Hud({ status }: { status: string }) {
       </div>
 
       <div className={`${styles.corner} ${styles.bottomLeft} ${handoff}`}>
+        {/* Every part is null on the server and on the client's first paint
+            alike, so no suppressHydrationWarning is needed — and each is
+            independent, so a missing temperature does not take the clock with
+            it. */}
         <span>
-          GMT+5:30 IN
-          {/* suppressHydrationWarning isn't needed — time is null on the
-              server and on the client's first paint alike. */}
-          {time ? ` — ${time}` : ''}
+          {[zone, cc, time, temperature === null ? null : `${temperature}°C`]
+            .filter(Boolean)
+            .join(' ')}
         </span>
       </div>
 
       <div className={`${styles.corner} ${styles.bottomCenter} ${handoff}`}>
-        {/* The clock in the other corner deliberately does not decode: it
-            reprints every second, and a value that is always resolving reads
-            as broken rather than as arriving. */}
-        <Scramble text={status} />
+        <PointerCoords />
       </div>
 
       <div className={`${styles.corner} ${styles.bottomRight} ${handoff}`}>
-        <span className={styles.ring} aria-hidden="true" />
+        <Globe />
       </div>
     </div>
   )
