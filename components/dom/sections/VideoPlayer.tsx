@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { duckAudio, unduckAudio } from '@/lib/site-audio'
 import styles from './ProjectDetail.module.css'
 
 /**
@@ -21,7 +22,14 @@ import styles from './ProjectDetail.module.css'
  *   - the controls fade only while it is playing *and* the pointer is away —
  *     paused, or under the pointer, they stay. A touch device has no pointer
  *     to leave, so there they simply stay.
+ *
+ * It also holds the site's background track down for as long as it is playing
+ * (lib/site-audio) and hands it back when the film ends or is paused. Two
+ * soundtracks at once is nobody's design.
  */
+
+/** One player per project page, so one key is enough. */
+const DUCK_ID = 'project-player'
 
 function timecode(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return '00:00'
@@ -68,14 +76,28 @@ export function VideoPlayer({
     const video = videoRef.current
     if (!video) return
 
-    const onPlay = () => setPlaying(true)
-    const onPause = () => setPlaying(false)
+    // `ended` does not imply `pause` — a media element that reaches the end
+    // fires only the former — so both the button's state and the track's
+    // release have to be hung on each of them separately.
+    const onPlay = () => {
+      setPlaying(true)
+      duckAudio(DUCK_ID)
+    }
+    const onPause = () => {
+      setPlaying(false)
+      unduckAudio(DUCK_ID)
+    }
+    const onEnded = () => {
+      setPlaying(false)
+      unduckAudio(DUCK_ID)
+    }
     const onTime = () => setCurrent(video.currentTime)
     const onMeta = () => setDuration(video.duration)
     const onVolume = () => setMuted(video.muted)
 
     video.addEventListener('play', onPlay)
     video.addEventListener('pause', onPause)
+    video.addEventListener('ended', onEnded)
     video.addEventListener('timeupdate', onTime)
     video.addEventListener('loadedmetadata', onMeta)
     video.addEventListener('volumechange', onVolume)
@@ -85,9 +107,12 @@ export function VideoPlayer({
     return () => {
       video.removeEventListener('play', onPlay)
       video.removeEventListener('pause', onPause)
+      video.removeEventListener('ended', onEnded)
       video.removeEventListener('timeupdate', onTime)
       video.removeEventListener('loadedmetadata', onMeta)
       video.removeEventListener('volumechange', onVolume)
+      // Leaving the page mid-film would otherwise hold the track down forever.
+      unduckAudio(DUCK_ID)
     }
   }, [])
 

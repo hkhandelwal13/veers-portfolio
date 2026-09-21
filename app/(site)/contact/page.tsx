@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: 'Contact' }
 export default function ContactPage() {
   return (
     <main>
-      <Hud status="Veerlabs © 2026" />
+      <Hud />
       <Contact />
     </main>
   )

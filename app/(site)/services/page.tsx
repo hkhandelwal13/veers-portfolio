@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: 'Services' }
 export default function ServicesPage() {
   return (
     <main>
-      <Hud status="Services" />
+      <Hud />
       <Services />
     </main>
   )

@@ -73,11 +73,50 @@
   color: var(--chrome-ink);
 }
 
-.ring {
+/*
+ * The pointer readout.
+ *
+ * Tabular figures are the whole point: a proportional 1 is narrower than a 0,
+ * so without them the string changes width as the pointer moves and the
+ * centred readout shivers around its own midpoint.
+ */
+.coords {
+  font-variant-numeric: tabular-nums;
+}
+
+.globe {
   width: 18px;
   height: 18px;
-  border: 1px solid var(--chrome-muted);
-  border-radius: 50%;
+  color: var(--chrome-muted);
+  overflow: visible;
+}
+
+/*
+ * The turn. See the component: scaling from 1 through 0 to -1 is what a
+ * sphere's meridians do as it rotates, and passing through -1 rather than
+ * bouncing off 0 is what makes it one continuous turn rather than a wobble.
+ *
+ * fill-box, because an SVG child's transform-origin resolves against the
+ * view box by default and `center` would then be the centre of the viewBox
+ * rather than of this group. They happen to coincide here, which is exactly
+ * the kind of accident that breaks the next time the artwork moves.
+ */
+.meridians {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: turn 14s linear infinite;
+}
+
+@keyframes turn {
+  from { transform: scaleX(1); }
+  50% { transform: scaleX(-1); }
+  to { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meridians {
+    animation: none;
+  }
 }
 
 /* The centre slot has no room beside the corners below desktop; the
@@ -89,8 +128,7 @@
 }
 
 @media (max-width: 640px) {
-
-  .bottomRight .ring {
+  .bottomRight .globe {
     width: 14px;
     height: 14px;
   }

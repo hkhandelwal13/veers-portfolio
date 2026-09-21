@@ -11,7 +11,7 @@ import styles from './page.module.css'
 export default function HomePage() {
   return (
     <main className={styles.page}>
-      <Hud status="0174 X 0129 Y" />
+      <Hud />
       {/* The sticker field's rect — see page.module.css. */}
       <WebGLTarget targetId="page-field" className={styles.stickerField} aria-hidden="true" />
       {/* All three share one WebGL ground, so none of the boundaries between
