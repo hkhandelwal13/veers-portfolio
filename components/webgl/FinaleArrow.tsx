@@ -4,14 +4,8 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
-import type { GLTF } from 'three-stdlib'
 import { canRenderGlass, getCapabilities } from '@/lib/capabilities'
-import {
-  applyFlatArrowDefinition,
-  ARROW_REST_ATTITUDE,
-  computeArrowCentroid,
-  computeArrowSpinAxis,
-} from './arrow-attitude'
+import { applyFlatArrowDefinition, computeArrowAttitude } from './arrow-attitude'
 import {
   FINALE_ARROW_ID,
   getArrowScale,
@@ -37,6 +31,7 @@ import {
 import { glassPasses } from './glass-passes'
 import { createGlassUniforms } from './HeroHello'
 import { LAYER_GLASS } from './layers'
+import { flattenModel } from './model-geometry'
 import { isRectVisible, rectToWorld } from './rect-space'
 
 /**
@@ -66,12 +61,6 @@ import { isRectVisible, rectToWorld } from './rect-space'
  * the arrow has something to bend while it is still an object.
  */
 
-type ArrowGLTF = GLTF & { nodes: { g_groupNumber_0_n3d: THREE.Mesh } }
-
-/** The GLB's baked transform, kept so the geometry sits where it was authored. */
-const BAKED_POSITION: [number, number, number] = [-5.549, 2.201, -2.095]
-const BAKED_SCALE = 1.534
-
 /** Height at rest, as a share of the stage — the small arrow you start on. */
 const IDLE_HEIGHT = 0.14
 
@@ -99,8 +88,11 @@ export function FinaleArrow() {
   const ringLight = useRef<ReturnType<typeof createRingLight> | null>(null)
   const camera = useThree((state) => state.camera)
 
-  const { nodes } = useGLTF('/models/arrow.glb') as unknown as ArrowGLTF
-  const geometry = nodes.g_groupNumber_0_n3d.geometry
+  const { scene } = useGLTF('/models/cursor.glb')
+  /** One geometry with the GLB's own node transforms baked in — see
+   *  model-geometry. Never Box3 on the mounted object: that measures in world
+   *  space and folds in the scale this component has already applied. */
+  const model = useMemo(() => flattenModel(scene, 'cursor.glb'), [scene])
 
   /**
    * The hero's glass, retuned for a black stage.
@@ -156,50 +148,16 @@ export function FinaleArrow() {
   }, [])
 
   /**
-   * The axis the arrow turns about, and the point that axis runs through.
+   * How it rests, the axis it turns about, and the point that axis runs
+   * through — all derived from the mesh, see arrow-attitude.
    *
-   * Both derived from the mesh — see arrow-attitude. The finale used to spin
-   * this group about world Y, which for a flat plate is a page-turn: it goes
-   * edge-on halfway round and the two halves swap sides, which reads as the
-   * arrow swinging about its lower corner rather than rolling. Same axis the
-   * hero's arrow already uses, so the two turns are the same move.
+   * The finale used to spin this group about world Y, which for a flat plate is
+   * a page-turn: it goes edge-on halfway round and the two halves swap sides,
+   * which reads as the arrow swinging about its lower corner rather than
+   * rolling. Same attitude the hero's arrow uses, so the two turns are the same
+   * move.
    */
-  const spinAxis = useMemo(() => computeArrowSpinAxis(geometry), [geometry])
-
-  /**
-   * The centroid, carried through the GLB's baked transform.
-   *
-   * This group's child applies BAKED_POSITION and BAKED_SCALE, so the offset
-   * that brings the spin point to this group's origin has to be measured on
-   * the far side of them.
-   */
-  const pivot = useMemo(
-    () =>
-      computeArrowCentroid(geometry)
-        .multiplyScalar(BAKED_SCALE)
-        .add(new THREE.Vector3(...BAKED_POSITION)),
-    [geometry],
-  )
-
-  /** Bounds from the geometry and its baked transform, never Box3 on the
-   *  mounted object — that measures in world space and folds in the scale this
-   *  component has already applied. */
-  const measured = useMemo(() => {
-    geometry.computeBoundingBox()
-    const box = geometry.boundingBox!.clone()
-    box.applyMatrix4(
-      new THREE.Matrix4().compose(
-        new THREE.Vector3(...BAKED_POSITION),
-        new THREE.Quaternion(),
-        new THREE.Vector3(BAKED_SCALE, BAKED_SCALE, BAKED_SCALE),
-      ),
-    )
-    const raw = geometry.boundingBox!
-    return {
-      size: box.getSize(new THREE.Vector3()),
-      localY: new THREE.Vector2(raw.min.y, raw.max.y),
-    }
-  }, [geometry])
+  const attitude = useMemo(() => computeArrowAttitude(model.geometry), [model])
 
   useEffect(() => {
     meshRef.current?.layers.set(LAYER_GLASS)
@@ -209,7 +167,7 @@ export function FinaleArrow() {
   useFrame((state, delta) => {
     const group = outer.current
     const mesh = meshRef.current
-    if (!group || !mesh || measured.size.y === 0) return
+    if (!group || !mesh || model.size.y === 0) return
 
     const rect = getTargetRect(FINALE_ARROW_ID)
     const { viewportHeight } = getScrollSnapshot()
@@ -225,7 +183,7 @@ export function FinaleArrow() {
 
     const seat = rectToWorld(rect, camera as THREE.PerspectiveCamera, state.size.width, height)
     const boxHeight = rect.height * seat.unitsPerPixel
-    const fit = (boxHeight * IDLE_HEIGHT) / measured.size.y
+    const fit = (boxHeight * IDLE_HEIGHT) / model.size.y
     group.scale.setScalar(fit * getArrowScale(t) * getEntryScale())
 
     const caps = getCapabilities()
@@ -234,7 +192,7 @@ export function FinaleArrow() {
     const uniforms = material.uniforms
 
     if (uniforms && uniforms.uSceneTexture) {
-      uniforms.uLocalYRange.value.copy(measured.localY)
+      uniforms.uLocalYRange.value.copy(model.localY)
       // Where the refraction pass is gated off there is no picture of the page
       // to bend, so the arrow refracts a flat grey and the tint does the rest.
       // It still has to be the same shader: the tunnel lives inside it, and a
@@ -276,7 +234,7 @@ export function FinaleArrow() {
     // pointer tilt is a world-space lean, and the spin rides inside it.
     tiltEuler.current.set(pointer.cy * TILT_X * calm, pointer.cx * TILT_Y * calm, 0)
     tiltQuat.current.setFromEuler(tiltEuler.current)
-    spinQuat.current.setFromAxisAngle(spinAxis, getArrowSpin(t))
+    spinQuat.current.setFromAxisAngle(attitude.spinAxis, getArrowSpin(t))
     group.quaternion.copy(tiltQuat.current).multiply(spinQuat.current)
   })
 
@@ -285,9 +243,9 @@ export function FinaleArrow() {
       {/* Fixed: faces the plate at the camera and points it where it rests, so
           the spin above starts and ends flat-on. A property of the model, not
           of the timeline, which is why it is not in the frame loop. */}
-      <group quaternion={ARROW_REST_ATTITUDE}>
-        <group position={[-pivot.x, -pivot.y, -pivot.z]}>
-          <mesh ref={meshRef} geometry={geometry} position={BAKED_POSITION} scale={BAKED_SCALE}>
+      <group quaternion={attitude.rest}>
+        <group position={[-attitude.pivot.x, -attitude.pivot.y, -attitude.pivot.z]}>
+          <mesh ref={meshRef} geometry={model.geometry}>
             <shaderMaterial
               vertexShader={portalArrowVertexShader}
               fragmentShader={portalArrowFragmentShader}
@@ -305,4 +263,4 @@ export function FinaleArrow() {
   )
 }
 
-useGLTF.preload('/models/arrow.glb')
+useGLTF.preload('/models/cursor.glb')

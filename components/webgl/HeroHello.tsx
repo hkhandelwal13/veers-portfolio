@@ -4,7 +4,6 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
-import type { GLTF } from 'three-stdlib'
 import { getTargetRect } from '@/lib/rect-sampler'
 import { getScrollSnapshot } from '@/lib/scroll-bus'
 import { pointer } from '@/lib/pointer-bus'
@@ -15,6 +14,7 @@ import { isSurfaceDark } from '@/lib/surface'
 import { glassFragmentShader, glassVertexShader } from '@/shaders/glass'
 import { glassPasses } from './glass-passes'
 import { LAYER_GLASS } from './layers'
+import { flattenModel } from './model-geometry'
 import { isRectVisible, rectToWorld } from './rect-space'
 
 export const HERO_TARGET_ID = 'hero-hello'
@@ -54,12 +54,6 @@ const FLOAT_AMPLITUDE = 0.02
 /** Pointer parallax, in radians. */
 const TILT_X = 0.1
 const TILT_Y = 0.16
-
-/** The GLB carries this baked transform; kept so the geometry sits where it was authored. */
-const BAKED_POSITION: [number, number, number] = [8.158, 2.861, -62.453]
-const BAKED_SCALE = 8.019
-
-type HelloGLTF = GLTF & { nodes: { g_groupNumber_0_n3d: THREE.Mesh } }
 
 export function createGlassUniforms() {
   return {
@@ -119,14 +113,13 @@ export function HeroHello() {
   const ringLight = useRef<ReturnType<typeof createRingLight> | null>(null)
 
   const camera = useThree((state) => state.camera)
-  const { nodes } = useGLTF('/models/hello.glb') as unknown as HelloGLTF
-  const geometry = nodes.g_groupNumber_0_n3d.geometry
+  const { scene } = useGLTF('/models/hello.glb')
 
   const initialUniforms = useMemo(() => createGlassUniforms(), [])
 
-
   /**
-   * Bounds of the word, derived from the geometry and its baked transform.
+   * The word as one geometry, with the GLB's own node transforms in it, and its
+   * bounds — see model-geometry for why none of that is named here.
    *
    * Deliberately NOT Box3.setFromObject on the mounted group: that measures in
    * world space, so it silently folds in whatever scale the parent happens to
@@ -134,29 +127,8 @@ export function HeroHello() {
    * measure again after a frame has seated the model — which React does in
    * development, and which any remount does — and it returns the already-scaled
    * size, shrinking the word a little more each time.
-   *
-   * Deriving from the geometry makes the result independent of when it runs.
    */
-  const measured = useMemo(() => {
-    geometry.computeBoundingBox()
-    const box = geometry.boundingBox!.clone()
-    box.applyMatrix4(
-      new THREE.Matrix4().compose(
-        new THREE.Vector3(...BAKED_POSITION),
-        new THREE.Quaternion(),
-        new THREE.Vector3(BAKED_SCALE, BAKED_SCALE, BAKED_SCALE),
-      ),
-    )
-    const raw = geometry.boundingBox!
-    return {
-      size: box.getSize(new THREE.Vector3()),
-      center: box.getCenter(new THREE.Vector3()),
-      // Geometry-space Y range: the vertex shader sees `position` before the
-      // mesh's own transform, so the gradient has to be normalised against the
-      // raw bounds rather than the transformed ones.
-      localY: new THREE.Vector2(raw.min.y, raw.max.y),
-    }
-  }, [geometry])
+  const measured = useMemo(() => flattenModel(scene, 'hello.glb'), [scene])
 
   // The passes select on layer, so the mesh has to be assigned before they run.
   useLayoutEffect(() => {
@@ -248,7 +220,7 @@ export function HeroHello() {
   return (
     <group ref={outer} visible={false}>
       <group position={[-measured.center.x, -measured.center.y, -measured.center.z]}>
-        <mesh ref={meshRef} geometry={geometry} position={BAKED_POSITION} scale={BAKED_SCALE}>
+        <mesh ref={meshRef} geometry={measured.geometry}>
           {/* One material now, on every screen. The small-screen fallback that
               used to sit here was an opaque standard material standing in for
               the refraction — and standing in badly, since the refraction is
