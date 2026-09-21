@@ -1,40 +1,58 @@
+/*
+ * A floating pill, not a bar welded to the top.
+ *
+ * It sits --chrome-float in from the top and from both margins, is rounded all
+ * the way round, and carries the glass at rest rather than only once you have
+ * scrolled: the whole point of lifting it off the edge is that the page passes
+ * underneath it, and a bar that is invisible until you move does not read as
+ * floating, it reads as missing.
+ *
+ * Its height comes out of --nav-h rather than adding to it (see globals), so
+ * every section's clearance is still correct and nothing below had to move.
+ */
 .nav {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: var(--chrome-float);
+  left: var(--margin);
+  right: var(--margin);
   z-index: var(--z-nav);
-  height: var(--nav-h);
+  height: var(--chrome-bar-h);
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-inline: var(--margin);
-  /* Default state is transparent, sitting over the hero. */
-  background: transparent;
-  transition:
-    height var(--dur-fast) var(--ease-out),
-    background-color var(--dur-fast) var(--ease-out);
-}
-
-/* Scrolled: tint only, 56px. The wireframe drew a hairline under it, but on
-   the real ground it reads as a hard rule cutting the hero in half — the blur
-   and the tint carry the state on their own. */
-.scrolled {
-  height: var(--nav-h-scrolled);
-  /*
-   * Glass, not a panel. At 90% the tint was doing the work and the blur was
-   * decoration — the bar read as an opaque strip laid over the page. At 45%
-   * the page is genuinely visible through it and the blur is what makes it
-   * legible, which is the other way round. The saturate stops the blurred
-   * blue behind it going grey, as a wide blur of a saturated ground tends to.
-   */
-  background: color-mix(in srgb, var(--chrome-tint) 45%, transparent);
+  /* The wordmark is the HUD's, drawn over this bar's left end — see Hud.module.
+     This padding is what it aligns to, so the two have to stay in step. */
+  padding-inline: var(--s5);
+  /* A full pill. The bar is 44-48px tall, so half of that is the roundest it
+     can be — anything smaller reads as a rectangle with its corners filed. */
+  border-radius: 999px;
+  border: 1px solid var(--chrome-edge);
+  background: var(--chrome-glass);
+  box-shadow: var(--chrome-lift);
   /* Unprefixed only. Hand-writing the -webkit- twin alongside it made the
      build's minifier collapse the pair down to the prefixed one and drop the
      standard property — which is no blur at all in Chrome and Firefox. The
      toolchain adds the prefix from browserslist on its own; writing it twice
      is what broke it. */
-  backdrop-filter: blur(18px) saturate(1.5);
+  backdrop-filter: var(--chrome-blur);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+/*
+ * Scrolled: the same pane, a little more of it.
+ *
+ * It used to lose 16px of height here, which is a move that belongs to a bar
+ * spanning the full width — the edge it shrinks toward is the top of the
+ * screen. A pill has no such edge, and shrinking it also pulled it out from
+ * under the wordmark the HUD paints at its left end. So the state change is
+ * carried by the glass: denser tint and a firmer edge once there is page
+ * behind it, which is what you are being told.
+ */
+.scrolled {
+  background: var(--chrome-glass-strong);
+  border-color: color-mix(in srgb, var(--chrome-ink) 24%, transparent);
 }
 
 .links {

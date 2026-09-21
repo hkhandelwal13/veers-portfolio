@@ -68,38 +68,6 @@
   color: var(--ink);
 }
 
-.showreel {
-  position: absolute;
-  right: 0;
-  bottom: calc(var(--s9) + var(--s2));
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s4);
-  border: 1px solid var(--ink);
-  padding: var(--s4) var(--s5);
-  font-family: var(--font-mono);
-  font-size: var(--fs-label);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink);
-  background: transparent;
-  transition: background-color var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out);
-}
-
-.showreel:hover {
-  background: var(--accent-2);
-}
-
-.playGlyph {
-  width: 0;
-  height: 0;
-  border-left: 12px solid currentColor;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-}
-
 /* Scroll cue */
 .cue {
   position: absolute;
@@ -149,7 +117,7 @@
 
   /*
    * Below desktop the composition unwinds into one column, and the order is
-   * the reference's: headline, then the word, then the copy, then the CTA.
+   * the reference's: headline, then the word, then the copy.
    *
    * `display: contents` on the frame is what makes that orderable — the
    * headline, the copy block and the CTA become flex children of .hero
@@ -163,7 +131,6 @@
   }
 
   .headline,
-  .showreel,
   .cue {
     position: static;
     transform: none;
@@ -194,11 +161,6 @@
   .top {
     order: 3;
     padding-top: 0;
-  }
-
-  .showreel {
-    order: 4;
-    align-self: flex-start;
   }
 
   .cue {

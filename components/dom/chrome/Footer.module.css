@@ -1,16 +1,33 @@
 /* Dark footer — wireframe 1i. */
 
+/*
+ * The nav's floating pane, the other way up.
+ *
+ * Same treatment as the nav — inset from the edges, rounded, glass over
+ * whatever is behind — with bottom where the nav has top: it keeps
+ * --chrome-float clear of the bottom of the page instead of the top, and the
+ * page's own ground shows in the gap.
+ *
+ * Glass works here for the same reason it works up there: the WebGL stage is a
+ * fixed, full-screen canvas, so the closing screen's field and its sticker
+ * fall are still being drawn behind this panel and the blur has something to
+ * blur. It is not the flat --dark-bg any more; --dark-surface at the tint's
+ * own opacity is what keeps the type on it as legible as it was.
+ */
 .footer {
   position: relative;
   z-index: var(--z-content);
-  background: var(--dark-bg);
+  margin: var(--chrome-float) var(--margin) var(--chrome-float);
+  border-radius: var(--chrome-radius-panel);
+  border: 1px solid color-mix(in srgb, var(--on-dark) 14%, transparent);
+  background: color-mix(in srgb, var(--dark-surface) 62%, transparent);
+  box-shadow: var(--chrome-lift);
+  backdrop-filter: var(--chrome-blur);
   color: var(--on-dark-muted);
-  padding: var(--s8) var(--margin) var(--s7);
+  padding: var(--s8) var(--s7) var(--s7);
   display: flex;
   flex-direction: column;
   gap: var(--s7);
-  /* Clear the HUD's bottom row, which is fixed over everything. */
-  padding-bottom: calc(var(--s7) + var(--hud-inset));
 }
 
 .top {
@@ -103,6 +120,12 @@
 }
 
 @media (max-width: 640px) {
+  /* The margin is already doing what the page margin used to; keeping both
+     leaves the columns in a channel half the width of the screen. */
+  .footer {
+    padding-inline: var(--s5);
+  }
+
   .bottom {
     flex-direction: column;
     align-items: flex-start;

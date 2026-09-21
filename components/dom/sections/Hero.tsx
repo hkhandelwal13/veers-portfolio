@@ -52,11 +52,6 @@ export function Hero() {
           Story first. Everything else is finishing.
         </h1>
 
-        <a className={styles.showreel} href="#showreel">
-          <span className={styles.playGlyph} aria-hidden="true" />
-          Play showreel — {SITE.showreelRuntime}
-        </a>
-
         <div className={styles.cue} aria-hidden="true">
           <span className={styles.cueLine} />
           <Scramble className="label" text="Scroll" />
