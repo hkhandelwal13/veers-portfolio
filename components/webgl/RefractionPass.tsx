@@ -1,15 +1,32 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
-import { canRenderGlass, canRenderStarFlare, getCapabilities } from '@/lib/capabilities'
+import {
+  canRenderGlass,
+  canRenderStarFlare,
+  getCapabilities,
+  getServerCapabilities,
+  subscribeToCapabilities,
+} from '@/lib/capabilities'
 import { fullscreenVertexShader, star6FragmentShader } from '@/shaders/star6'
 import { getHeroObjectDissolve } from '@/lib/hero-progress'
 import { isPageSurfaceDark } from '@/lib/surface'
 import { subscribeToTheme } from '@/lib/theme'
 import { glassPasses } from './glass-passes'
 import { ALL_LAYERS_MASK, LAYER_CONTENT, LAYER_GLASS, LAYER_OVERLAY } from './layers'
+
+/**
+ * How much of the screen the refraction target gets on a small one.
+ *
+ * The second pass is fill-rate bound, so this is roughly a third of the work
+ * at 0.55 — and a refraction is a blurred, displaced read of the scene, which
+ * makes it the one thing in the frame that can lose resolution without anyone
+ * being able to point at what changed. This is what lets a phone have the
+ * glass at all rather than a flat slab where the subject should be.
+ */
+const COMPACT_REFRACTION_SCALE = 0.55
 
 /** The flare's source and streaks both run at half resolution. */
 const STAR_SCALE = 0.5
@@ -37,6 +54,13 @@ const BLACK = new THREE.Color(0x000000)
 export function RefractionPass() {
   const size = useThree((state) => state.size)
   const dpr = useThree((state) => state.viewport.dpr)
+  // Subscribed rather than read once: the flag flips on rotate and on resize,
+  // and the targets have to be rebuilt when it does.
+  const compact = useSyncExternalStore(
+    subscribeToCapabilities,
+    () => getCapabilities().compact,
+    () => getServerCapabilities().compact,
+  )
 
   const frame = useRef(0)
 
@@ -112,9 +136,12 @@ export function RefractionPass() {
     const height = Math.max(1, Math.floor(size.height * dpr))
     const starWidth = Math.max(1, Math.floor(width * STAR_SCALE))
     const starHeight = Math.max(1, Math.floor(height * STAR_SCALE))
+    const scale = compact ? COMPACT_REFRACTION_SCALE : 1
+    const refractWidth = Math.max(1, Math.floor(width * scale))
+    const refractHeight = Math.max(1, Math.floor(height * scale))
 
     const options = { type: THREE.HalfFloatType }
-    const refraction = new THREE.WebGLRenderTarget(width, height, options)
+    const refraction = new THREE.WebGLRenderTarget(refractWidth, refractHeight, options)
     const glassOnly = new THREE.WebGLRenderTarget(starWidth, starHeight, options)
     const star = new THREE.WebGLRenderTarget(starWidth, starHeight, options)
 
@@ -131,7 +158,7 @@ export function RefractionPass() {
       glassOnly.dispose()
       star.dispose()
     }
-  }, [size.width, size.height, dpr])
+  }, [size.width, size.height, dpr, compact])
 
   useFrame((state) => {
     // Renderer, scene and camera come from the frame state rather than from
@@ -149,7 +176,7 @@ export function RefractionPass() {
     }
 
     const caps = getCapabilities()
-    if (!canRenderGlass(caps)) return
+    if (!canRenderGlass()) return
 
     const refraction = glassPasses.refraction
     const glassOnly = glassPasses.glassOnly

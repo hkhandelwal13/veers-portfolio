@@ -88,3 +88,12 @@
     height: 14px;
   }
 }
+
+/* See the note in Nav.module.css — a thumb needs 44px, a cursor does not. */
+@media (pointer: coarse) {
+  .wordmark {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}

@@ -87,6 +87,11 @@
   line-height: 1.1;
   color: var(--on-dark);
   width: fit-content;
+  /* 28px of display type is a 31px box. This menu exists only for touch, so
+     the hit area is the one that matters — see the note in Nav.module.css. */
+  display: flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 .link:hover {

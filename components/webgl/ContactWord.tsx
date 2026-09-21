@@ -1,22 +1,16 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import { mergeBufferGeometries } from 'three-stdlib'
-import {
-  canRenderGlass,
-  getCapabilities,
-  getServerCapabilities,
-  subscribeToCapabilities,
-} from '@/lib/capabilities'
+import { getCapabilities } from '@/lib/capabilities'
 import { pointer } from '@/lib/pointer-bus'
 import { getTargetRect } from '@/lib/rect-sampler'
 import { getScrollSnapshot } from '@/lib/scroll-bus'
 import { createRingLight } from '@/lib/ring-light'
 import { isSurfaceDark } from '@/lib/surface'
-import { getServerTheme, getTheme, subscribeToTheme } from '@/lib/theme'
 import { glassFragmentShader, glassVertexShader } from '@/shaders/glass'
 import { glassPasses } from './glass-passes'
 import { createGlassUniforms } from './HeroHello'
@@ -243,31 +237,17 @@ export function ContactWord() {
       LAID_FLAT * laid
   })
 
-  const caps = useSyncExternalStore(
-    subscribeToCapabilities,
-    getCapabilities,
-    getServerCapabilities,
-  )
-  const theme = useSyncExternalStore(subscribeToTheme, getTheme, getServerTheme)
 
   return (
     <group ref={outer} visible={false}>
       <group position={[-measured.center.x, -measured.center.y, -measured.center.z]}>
         <mesh ref={meshRef} geometry={measured.geometry}>
-          {canRenderGlass(caps) ? (
-            <shaderMaterial
-              vertexShader={glassVertexShader}
-              fragmentShader={glassFragmentShader}
-              uniforms={initialUniforms}
-              transparent
-            />
-          ) : (
-            <meshStandardMaterial
-              color={theme === 'dark' ? '#4E76D0' : '#8EBFE8'}
-              roughness={0.25}
-              metalness={0.1}
-            />
-          )}
+          <shaderMaterial
+            vertexShader={glassVertexShader}
+            fragmentShader={glassFragmentShader}
+            uniforms={initialUniforms}
+            transparent
+          />
         </mesh>
       </group>
     </group>

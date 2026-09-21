@@ -15,7 +15,10 @@ import { Scramble } from '@/components/dom/Scramble'
 export function Contact({ standalone = true }: { standalone?: boolean }) {
   const Heading = standalone ? 'h1' : 'h2'
   return (
-    <section className={styles.section} aria-labelledby="contact-heading">
+    <section
+      className={`${styles.section} ${standalone ? '' : styles.stacked}`}
+      aria-labelledby="contact-heading"
+    >
       {/* The WebGL ground is seated on this. */}
       <WebGLTarget targetId="contact-field" className={styles.fieldTarget} aria-hidden="true" />
       <div className={styles.frame}>

@@ -406,3 +406,34 @@
     width: 100%;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Touch targets.
+   A 16px line of mono type is a 18px-tall box, which is a fine link to click
+   and a poor one to hit with a thumb — the usual guidance is 44px, and the
+   audit found most of these between 16 and 21. Scoped to coarse pointers so
+   the desktop rhythm is untouched, and done with padding rather than a taller
+   font so nothing about the type changes.
+   ------------------------------------------------------------------------ */
+@media (pointer: coarse) {
+  .back,
+  .controlRight button,
+  .transport {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .transport,
+  .controlRight button {
+    min-width: 44px;
+    justify-content: center;
+  }
+
+  /* The scrubber is a 3px bar; the thing you drag should not be. The input is
+     already laid over it transparently, so this only grows the hit box. */
+  .seek {
+    inset: -21px 0;
+    height: calc(100% + 42px);
+  }
+}

@@ -5,7 +5,7 @@ import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import type { GLTF } from 'three-stdlib'
-import { canRenderGlass, getCapabilities } from '@/lib/capabilities'
+import { canRenderGlass } from '@/lib/capabilities'
 import {
   applyFlatArrowDefinition,
   ARROW_REST_ATTITUDE,
@@ -112,7 +112,7 @@ export function HeroArrow() {
 
     const rect = getTargetRect(FIELD_TARGET_ID)
     const progress = getHeroProgress()
-    if (!rect || !rect.valid || !canRenderGlass(getCapabilities()) || progress >= 1) {
+    if (!rect || !rect.valid || !canRenderGlass() || progress >= 1) {
       group.visible = false
       return
     }

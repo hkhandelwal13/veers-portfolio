@@ -142,41 +142,48 @@ export function canDevelopOnEnter(caps: Capabilities = current): boolean {
  * Scroll-velocity curl: cards flex slightly with scroll speed.
  *
  * Off under reduced motion — it is motion tied to motion, the most likely of
- * these effects to provoke discomfort. Off on small screens too: touch
- * scrolling is fast and flingy, so the curl reads as wobble rather than
- * momentum, and this is exactly the kind of ornament the mobile budget exists
- * to drop.
+ * these effects to provoke discomfort. On everywhere else: it is one mix in a
+ * fragment shader the card is already running, and a phone that scrolls fast
+ * is exactly where a velocity effect has something to say.
  */
 export function canCurlOnScroll(caps: Capabilities = current): boolean {
-  return !caps.reducedMotion && !caps.compact
+  return !caps.reducedMotion
 }
 
 /**
  * Glass `hello`: two-pass refraction with chromatic dispersion.
  *
  * The expensive one — it renders the scene a second time every frame to give
- * the refraction something to sample. Off on small screens, where that second
- * pass is the difference between a smooth page and a hot phone; the model still
- * renders, just with a cheap opaque material.
+ * the refraction something to sample. It used to be off below 640px, and what
+ * that bought was a phone looking at a flat blue slab where the desktop has
+ * the site's whole subject: the hero, the arrow and the closing word are all
+ * this material.
+ *
+ * On now, everywhere, with the cost taken out of the resolution instead of out
+ * of the effect — the refraction target is rendered at a fraction of the
+ * screen on a small one (see RefractionPass). The second pass is fill-rate
+ * bound, so a target at 55% of the pixels is roughly a third of the work, and
+ * a refraction is a blurred, displaced read of the scene: it is the one thing
+ * in the frame that can lose resolution without anyone being able to tell.
  *
  * Kept under reduced motion: refraction is a material, not a movement. What
  * reduced motion switches off is the idle float and the pointer-driven rim
  * light, handled where those are applied.
  */
-export function canRenderGlass(caps: Capabilities = current): boolean {
-  return !caps.compact
+export function canRenderGlass(): boolean {
+  return true
 }
 
 /**
  * Floating stickers behind the glass.
  *
- * They exist to give the refraction something with colour and movement to bend;
- * with no glass in front of them they are just confetti, so they follow the
- * glass. Also off under reduced motion — this is continuous ambient movement,
- * the clearest case for honouring that preference.
+ * One instanced mesh and one draw call for the whole field, which is why the
+ * phone keeps it: the field is the page's ambient life, and dropping it left
+ * mobile with an empty ground. Off under reduced motion — this is continuous
+ * ambient movement, the clearest case for honouring that preference.
  */
 export function canRenderStickers(caps: Capabilities = current): boolean {
-  return canRenderGlass(caps) && !caps.reducedMotion
+  return !caps.reducedMotion
 }
 
 /**
@@ -187,7 +194,7 @@ export function canRenderStickers(caps: Capabilities = current): boolean {
  * everything but name.
  */
 export function canRenderStarFlare(caps: Capabilities = current): boolean {
-  return canRenderGlass(caps) && !caps.reducedMotion
+  return canRenderGlass() && !caps.reducedMotion
 }
 
 /**

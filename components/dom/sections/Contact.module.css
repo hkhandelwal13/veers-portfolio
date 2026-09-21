@@ -28,6 +28,25 @@
   padding-inline: var(--margin);
 }
 
+/*
+ * Overlapped with the arrow's exit, on the home page only.
+ *
+ * The arrow spends its last half-screen collapsing back to nothing, and the
+ * closing screen used to begin only once that was over — so the two read as
+ * one thing finishing and then another starting. Pulled up, they share that
+ * stretch: the arrow shrinks *through* the closing screen's arrival, which is
+ * the intersection the sequence was always implying.
+ *
+ * Safe to overlap because the arrow is opaque and larger than the frame for
+ * most of it, and because the ground under both is the same WebGL field — see
+ * .fieldTarget above, which already reaches far enough up to cover this.
+ *
+ * Not on /contact, where there is no arrow above it to intersect with.
+ */
+.stacked {
+  margin-top: -40svh;
+}
+
 .frame {
   min-height: calc(100svh - var(--nav-h) - var(--hud-inset) - var(--s9));
   display: flex;
@@ -120,5 +139,23 @@
 
   .socials {
     gap: var(--s5);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Touch targets.
+   A 16px line of mono type is a 18px-tall box, which is a fine link to click
+   and a poor one to hit with a thumb — the usual guidance is 44px, and the
+   audit found most of these between 16 and 21. Scoped to coarse pointers so
+   the desktop rhythm is untouched, and done with padding rather than a taller
+   font so nothing about the type changes.
+   ------------------------------------------------------------------------ */
+@media (pointer: coarse) {
+  .social,
+  .socialBoxed,
+  .email {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
   }
 }

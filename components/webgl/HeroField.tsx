@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
-import { canRenderGlass, getCapabilities } from '@/lib/capabilities'
+import { canRenderGlass } from '@/lib/capabilities'
 import { getTargetRect } from '@/lib/rect-sampler'
 import { subscribeToTheme } from '@/lib/theme'
 import { heroFieldFragmentShader, heroFieldVertexShader } from '@/shaders/hero-field'
@@ -180,7 +180,7 @@ export function SectionField({
     if (
       !rect ||
       !rect.valid ||
-      !canRenderGlass(getCapabilities()) ||
+      !canRenderGlass() ||
       !isRectVisible(rect, state.size.height, 200)
     ) {
       mesh.visible = false

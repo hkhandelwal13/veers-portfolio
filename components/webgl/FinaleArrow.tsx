@@ -229,7 +229,7 @@ export function FinaleArrow() {
     group.scale.setScalar(fit * getArrowScale(t) * getEntryScale())
 
     const caps = getCapabilities()
-    const glass = canRenderGlass(caps)
+    const glass = canRenderGlass()
     const material = mesh.material as THREE.ShaderMaterial
     const uniforms = material.uniforms
 

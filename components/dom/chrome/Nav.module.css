@@ -21,8 +21,20 @@
    and the tint carry the state on their own. */
 .scrolled {
   height: var(--nav-h-scrolled);
-  background: color-mix(in srgb, var(--chrome-tint) 90%, transparent);
-  backdrop-filter: blur(10px);
+  /*
+   * Glass, not a panel. At 90% the tint was doing the work and the blur was
+   * decoration — the bar read as an opaque strip laid over the page. At 45%
+   * the page is genuinely visible through it and the blur is what makes it
+   * legible, which is the other way round. The saturate stops the blurred
+   * blue behind it going grey, as a wide blur of a saturated ground tends to.
+   */
+  background: color-mix(in srgb, var(--chrome-tint) 45%, transparent);
+  /* Unprefixed only. Hand-writing the -webkit- twin alongside it made the
+     build's minifier collapse the pair down to the prefixed one and drop the
+     standard property — which is no blur at all in Chrome and Firefox. The
+     toolchain adds the prefix from browserslist on its own; writing it twice
+     is what broke it. */
+  backdrop-filter: blur(18px) saturate(1.5);
 }
 
 .links {
@@ -89,5 +101,27 @@
 
   .menuButton {
     display: block;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Touch targets.
+   A 16px line of mono type is a 18px-tall box, which is a fine link to click
+   and a poor one to hit with a thumb — the usual guidance is 44px, and the
+   audit found most of these between 16 and 21. Scoped to coarse pointers so
+   the desktop rhythm is untouched, and done with padding rather than a taller
+   font so nothing about the type changes.
+   ------------------------------------------------------------------------ */
+@media (pointer: coarse) {
+  .menuButton,
+  .themeSlot {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .menuButton {
+    min-width: 44px;
+    justify-content: flex-end;
   }
 }
