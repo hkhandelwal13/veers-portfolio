@@ -27,6 +27,16 @@ export const HERO_TARGET_ID = 'hero-hello'
  * strict contain leaves it looking like a small object in a large box.
  */
 const HERO_FILL = 1.3
+/**
+ * The same overfill once the layout stacks, where the slot IS the column.
+ *
+ * On desktop the word is meant to cross its reserved rect — the rect is half
+ * the viewport, so 1.3 still leaves margin either side. On mobile the slot is
+ * the content column itself, and 1.3 ran the h and the final o off both edges.
+ * Contained instead: the drama comes from the band being a third of the screen
+ * tall, not from the word escaping it.
+ */
+const HERO_FILL_COMPACT = 0.98
 
 /**
  * The exit, driven by lib/hero-progress.
@@ -183,7 +193,8 @@ export function HeroHello() {
     const boxWidth = rect.width * seat.unitsPerPixel
     const boxHeight = rect.height * seat.unitsPerPixel
     const fit = Math.min(boxWidth / measured.size.x, boxHeight / measured.size.y)
-    group.scale.setScalar(fit * HERO_FILL * (1 - EXIT_SHRINK * progress))
+    const fill = getCapabilities().stacked ? HERO_FILL_COMPACT : HERO_FILL
+    group.scale.setScalar(fit * fill * (1 - EXIT_SHRINK * progress))
 
     const caps = getCapabilities()
 
