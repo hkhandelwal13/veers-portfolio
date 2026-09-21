@@ -6,19 +6,20 @@
  * tree and none of them should have to re-render to be heard. The nav's toggle
  * writes it, the scroll bus arms it, and the project page's player ducks it.
  *
- * Three gates, all of which must be open before a note plays:
+ * Two gates, both of which must be open before a note plays:
  *
- *   enabled  the visitor's own choice, remembered between visits
- *   armed    they have scrolled at least once on this load
+ *   enabled  on by default, and off only because the visitor said so
  *   ducks    nothing else is claiming the room (a video that is playing)
  *
- * The arming gate is the brief: nothing plays on arrival, and the first scroll
- * from the top starts it. What the brief cannot change is that every browser
- * refuses `play()` on an unmuted element until the page has had a real user
- * gesture — and a scroll is not one of those, in any engine. So a refusal is
- * not an error here: it parks the track and starts it at the next genuine
- * gesture instead, which on a page you are scrolling through arrives within
- * moments. The toggle is a click, so turning it on by hand always works.
+ * The choice is deliberately NOT remembered. Every load starts from the
+ * default, which is what "reset on refresh" means: turning it off is a
+ * decision about this visit, not a setting.
+ *
+ * What no amount of wanting can change is that every browser refuses `play()`
+ * on an unmuted element until the page has had a real user gesture. So a
+ * refusal is not an error here: it parks the track and starts it at the next
+ * genuine click, key or tap. The toggle is itself a gesture, so turning it on
+ * by hand always works.
  */
 
 export type AudioState = Readonly<{
@@ -33,7 +34,6 @@ export type AudioState = Readonly<{
 }>
 
 const SRC = '/audio/veerlabs-theme.mp3'
-export const AUDIO_STORAGE_KEY = 'vl-sound'
 
 /**
  * Well under the track's own level: it plays under the whole site, and a
@@ -46,7 +46,6 @@ const FADE_SECONDS = 0.6
 
 let element: HTMLAudioElement | null = null
 let enabled = true
-let armed = false
 let waitingForGesture = false
 const ducks = new Set<string>()
 
@@ -94,8 +93,9 @@ function ensureElement(): HTMLAudioElement | null {
   element = new Audio()
   element.src = SRC
   element.loop = true
-  // Nothing is fetched until the track is actually wanted. The file is over a
-  // megabyte and most visits never reach the first scroll before leaving.
+  // Metadata only until it is actually wanted: the file is over a megabyte,
+  // and a visit that bounces before the browser grants a gesture should not
+  // have paid for it.
   element.preload = 'none'
   element.volume = 0
   // Both events fire from outside our own calls too — a media key, the OS
@@ -140,9 +140,8 @@ function rampTo(target: number) {
 /**
  * Starts the track at the next click, key or tap.
  *
- * Armed only when a `play()` has already been refused — a listener installed
- * speculatively would start the music on the first click of a visit, which is
- * exactly the arrival the brief asks us not to make noise on.
+ * Installed only once a `play()` has actually been refused, so a browser that
+ * lets the page open with sound never pays for these listeners at all.
  */
 function waitForGesture() {
   if (gestureCleanup) return
@@ -167,7 +166,7 @@ function reconcile() {
   const audio = ensureElement()
   if (!audio) return
 
-  const wanted = enabled && armed && ducks.size === 0
+  const wanted = enabled && ducks.size === 0
 
   if (!wanted) {
     gestureCleanup?.()
@@ -200,17 +199,14 @@ function reconcile() {
     })
 }
 
-/** The visitor's own choice, from the toggle. */
+/**
+ * The visitor's own choice, from the toggle.
+ *
+ * Not written to storage: the default is on, and every load starts there.
+ */
 export function setAudioEnabled(value: boolean) {
   if (enabled === value) return
   enabled = value
-  // Turning it on by hand IS the gesture, so it need not wait for a scroll.
-  if (value) armed = true
-  try {
-    localStorage.setItem(AUDIO_STORAGE_KEY, value ? 'on' : 'off')
-  } catch {
-    // Private mode or blocked storage: the choice just will not persist.
-  }
   reconcile()
 }
 
@@ -219,20 +215,19 @@ export function toggleAudio() {
 }
 
 /**
- * The first scroll of this load opens the second gate.
+ * Tries to start the track.
  *
- * Deliberately not persisted: the brief is that a visit begins in silence and
- * the scroll starts it, and a remembered "already armed" would make the next
- * visit open playing. What IS remembered is a visitor who turned it off.
+ * Called once on mount and again on the first scroll — not because a scroll is
+ * a gesture (it is not, in any engine) but because by then the page may have
+ * accrued enough media engagement for the browser to relent, and the attempt
+ * costs one function call.
  */
-export function armAudio() {
-  if (armed) return
-  armed = true
+export function startAudio() {
   reconcile()
 }
 
-export function isAudioArmed(): boolean {
-  return armed
+export function isAudioPlaying(): boolean {
+  return element !== null && !element.paused
 }
 
 /**
@@ -267,17 +262,6 @@ export function getServerAudioState(): AudioState {
   return SERVER_STATE
 }
 
-/** Adopts a remembered preference. Called once, from <SiteAudio>. */
-export function initAudio() {
-  if (typeof window === 'undefined') return
-  try {
-    if (localStorage.getItem(AUDIO_STORAGE_KEY) === 'off') enabled = false
-  } catch {
-    // Blocked storage: fall back to the default.
-  }
-  publish()
-}
-
 /**
  * Dev-only readout.
  *
@@ -289,7 +273,6 @@ export function initAudio() {
 if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') {
   ;(window as unknown as { __siteAudio?: () => unknown }).__siteAudio = () => ({
     enabled,
-    armed,
     waitingForGesture,
     ducks: [...ducks],
     exists: element !== null,
@@ -335,7 +318,6 @@ export function resetSiteAudio() {
   element?.pause()
   element = null
   enabled = true
-  armed = false
   waitingForGesture = false
   ducks.clear()
   snapshot = SERVER_STATE

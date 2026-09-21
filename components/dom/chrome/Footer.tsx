@@ -48,9 +48,6 @@ export function Footer() {
 
       <div className={styles.bottom}>
         <span>Veerlabs © {new Date().getFullYear()} — All rights reserved</span>
-        <span className={styles.coords} aria-hidden="true">
-          0220 X 0441 Y
-        </span>
         <button type="button" className={styles.toTop} onClick={toTop}>
           Back to top ↑
         </button>

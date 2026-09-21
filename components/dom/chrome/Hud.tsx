@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import styles from './Hud.module.css'
@@ -11,7 +12,8 @@ import { getTimeZone, getZonePlace, type ZonePlace } from '@/lib/zone-places'
  * Four-corner HUD (PHASE2_KICKOFF "HUD motif") — built once, mounted in the
  * site layout, shared by every screen:
  *
- *   top-left      VEERLABS wordmark (the nav does not repeat it)
+ *   top-left      the mark and the VEERLABS wordmark (the nav does not repeat
+ *                 them; this slot sits inside the nav's floating bar)
  *   bottom-left   the visitor's own zone, country, clock and temperature
  *   bottom-centre the pointer's position, live
  *   bottom-right  a turning globe
@@ -237,8 +239,26 @@ export function Hud() {
   return (
     <div className={styles.hud}>
       <div className={`${styles.corner} ${styles.topLeft}`}>
-        <Link href="/" className={styles.wordmark}>
-          Veerlabs
+        <Link href="/" className={styles.wordmark} aria-label="Veerlabs — home">
+          {/* priority: it is the first thing above the fold on every route, and
+              a logo that pops in after the bar has drawn reads as a fault.
+              alt is empty because the link already carries the name — a
+              screen reader announcing "Veerlabs Veerlabs" is worse. */}
+          <Image
+            className={styles.mark}
+            src="/logo/veerlabs-mark.png"
+            alt=""
+            width={325}
+            height={160}
+            /* Without this the optimizer sizes from the `width` prop and
+               serves a 750px file for a 45px logo. Stated per breakpoint, it
+               picks the smallest variant that still has retina to spare. */
+            sizes="(max-width: 640px) 40px, 48px"
+            priority
+          />
+          <span className={styles.wordmarkText} aria-hidden="true">
+            Veerlabs
+          </span>
         </Link>
       </div>
 
