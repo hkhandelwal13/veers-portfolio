@@ -65,12 +65,47 @@
   right: var(--margin);
 }
 
+/* The mark and the name, as one lockup and one link. */
 .wordmark {
   pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s3);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.1em;
   color: var(--chrome-ink);
+}
+
+/*
+ * Sized by height, never by width: the mark is a long diagonal and the bar it
+ * sits in is only 44-48px tall, so the height is the constraint and the width
+ * follows. `auto` rather than a second number so the aspect is the file's own
+ * and cannot drift if the artwork is re-cut.
+ */
+.mark {
+  height: 22px;
+  width: auto;
+  flex: none;
+}
+
+@media (max-width: 1024px) {
+  .mark {
+    height: 20px;
+  }
+}
+
+/* On a phone the bar carries the mark, the sound meter and the menu button in
+   350px. The name is the thing that can go — it is the one part of the lockup
+   that is also the page's <title> and the first heading. */
+@media (max-width: 640px) {
+  .wordmarkText {
+    display: none;
+  }
+
+  .mark {
+    height: 18px;
+  }
 }
 
 /*
@@ -140,5 +175,11 @@
     display: inline-flex;
     align-items: center;
     min-height: 44px;
+    /* The name is hidden on a phone, so the link is only as wide as the mark —
+       37px, which is a thumb's width short. The hit area extends to the right
+       of the mark rather than around it, so the mark still sits against the
+       bar's own padding. */
+    min-width: 44px;
+    justify-content: flex-start;
   }
 }

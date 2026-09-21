@@ -25,9 +25,7 @@
   /* The wordmark is the HUD's, drawn over this bar's left end — see Hud.module.
      This padding is what it aligns to, so the two have to stay in step. */
   padding-inline: var(--s5);
-  /* A full pill. The bar is 44-48px tall, so half of that is the roundest it
-     can be — anything smaller reads as a rectangle with its corners filed. */
-  border-radius: 999px;
+  border-radius: var(--chrome-radius-bar);
   border: 1px solid var(--chrome-edge);
   background: var(--chrome-glass);
   box-shadow: var(--chrome-lift);

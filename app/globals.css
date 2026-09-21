@@ -147,19 +147,26 @@
      drift apart. */
   --chrome-float: 12px;
   --chrome-bar-h: calc(var(--nav-h) - var(--chrome-float) * 2);
-  --chrome-blur: blur(34px) saturate(2);
-  --chrome-glass: color-mix(in srgb, var(--chrome-tint) 30%, transparent);
-  --chrome-glass-strong: color-mix(in srgb, var(--chrome-tint) 42%, transparent);
-  --chrome-edge: color-mix(in srgb, var(--chrome-ink) 22%, transparent);
-  --chrome-sheen: color-mix(in srgb, #ffffff 26%, transparent);
+  --chrome-blur: blur(40px) saturate(2.2);
+  --chrome-glass: color-mix(in srgb, var(--chrome-tint) 16%, transparent);
+  --chrome-glass-strong: color-mix(in srgb, var(--chrome-tint) 26%, transparent);
+  /* The tint is now light enough that the edge and the sheen are most of what
+     says there is a pane here at all, so both come up as the fill goes down. */
+  --chrome-edge: color-mix(in srgb, var(--chrome-ink) 28%, transparent);
+  --chrome-sheen: color-mix(in srgb, #ffffff 34%, transparent);
   /* Two inner lines, not one: a bright one along the top where a real pane
      catches the sky, and a dim one along the bottom where it catches the page.
      That pair is most of what separates glass from a tinted rectangle — the
      tint is now light enough that without them the panel has no thickness. */
   --chrome-lift:
     inset 0 1px 0 var(--chrome-sheen),
-    inset 0 -1px 0 color-mix(in srgb, #ffffff 8%, transparent),
-    0 12px 36px rgba(4, 10, 44, 0.3);
+    inset 0 -1px 0 color-mix(in srgb, #ffffff 10%, transparent),
+    0 12px 36px rgba(4, 10, 44, 0.32);
+  /* The bar: a curve on the corners, not a capsule. Roughly a third of the
+     bar's own height — enough to read as softened, not enough to read as a
+     pill. The footer panel keeps its larger radius, which suits a box that
+     tall. */
+  --chrome-radius-bar: 14px;
   --chrome-radius-panel: 28px;
 
   /* --- Motion --------------------------------------------------------------- */
@@ -283,6 +290,7 @@
     /* Keeps the bar at 44px — the height a thumb needs — once the links have
        collapsed into the menu button. */
     --chrome-float: 10px;
+    --chrome-radius-bar: 12px;
     --chrome-radius-panel: 24px;
   }
 }
@@ -296,6 +304,7 @@
     --columns: 4;
     --nav-h: 56px;
     --chrome-float: 6px;
+    --chrome-radius-bar: 12px;
     --chrome-radius-panel: 20px;
     --hud-inset: 16px;
   }
