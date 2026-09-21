@@ -125,10 +125,34 @@
      The nav, HUD and footer mount above the route and can't see which surface
      a screen paints, so they read these instead. <SurfaceTheme> flips them. */
   --nav-h: 72px;
-  --nav-h-scrolled: 56px;
   --chrome-ink: var(--ink);
   --chrome-muted: var(--muted);
   --chrome-tint: var(--surface);
+
+  /* --- Floating chrome -------------------------------------------------------
+     The nav and the footer are panels that sit off the edge of the page rather
+     than bars welded to it. --chrome-float is the gap they keep from that edge,
+     and it is taken out of --nav-h rather than added to it: --nav-h stays the
+     full band the bar occupies from the top of the viewport, so every section's
+     `padding-top: var(--nav-h)` still clears it and no layout had to move.
+
+     The glass is the iOS recipe rather than a tinted panel: a blur wide enough
+     that what is behind reads as colour and not as content, saturation to stop
+     that blur going grey — a wide blur of a saturated ground always does — a
+     hairline edge, and a light inner line along the top where a real pane would
+     catch the sky. Every layer is a token so the nav and the footer cannot
+     drift apart. */
+  --chrome-float: 12px;
+  --chrome-bar-h: calc(var(--nav-h) - var(--chrome-float) * 2);
+  --chrome-blur: blur(22px) saturate(1.8);
+  --chrome-glass: color-mix(in srgb, var(--chrome-tint) 52%, transparent);
+  --chrome-glass-strong: color-mix(in srgb, var(--chrome-tint) 68%, transparent);
+  --chrome-edge: color-mix(in srgb, var(--chrome-ink) 15%, transparent);
+  --chrome-sheen: color-mix(in srgb, #ffffff 16%, transparent);
+  --chrome-lift:
+    inset 0 1px 0 var(--chrome-sheen),
+    0 10px 30px rgba(4, 10, 44, 0.26);
+  --chrome-radius-panel: 28px;
 
   /* --- Motion --------------------------------------------------------------- */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -230,6 +254,10 @@
     --gutter: 16px;
     --columns: 8;
     --nav-h: 64px;
+    /* Keeps the bar at 44px — the height a thumb needs — once the links have
+       collapsed into the menu button. */
+    --chrome-float: 10px;
+    --chrome-radius-panel: 24px;
   }
 }
 
@@ -241,7 +269,8 @@
     --gutter: 12px;
     --columns: 4;
     --nav-h: 56px;
-    --nav-h-scrolled: 56px;
+    --chrome-float: 6px;
+    --chrome-radius-panel: 20px;
     --hud-inset: 16px;
   }
 }

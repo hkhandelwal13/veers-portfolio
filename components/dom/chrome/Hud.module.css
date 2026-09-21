@@ -32,11 +32,18 @@
   gap: var(--s3);
 }
 
-/* Top-left holds the wordmark, aligned to the nav row so the two read as one
-   bar. The nav itself deliberately does not repeat it. */
+/*
+ * Top-left holds the wordmark, inside the nav's floating pill so the two read
+ * as one bar. The nav itself deliberately does not repeat it.
+ *
+ * The box still spans the whole --nav-h band, which is what centres the
+ * wordmark on the pill: the pill is that band inset by --chrome-float top and
+ * bottom, so the two share a centre line. Horizontally it has to come in by
+ * the pill's own padding as well, or it sits against the rounded end.
+ */
 .topLeft {
   top: 0;
-  left: var(--margin);
+  left: calc(var(--margin) + var(--s5));
   height: var(--nav-h);
   transition: height var(--dur-fast) var(--ease-out);
 }

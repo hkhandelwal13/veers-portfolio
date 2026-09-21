@@ -4,13 +4,8 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
-import type { GLTF } from 'three-stdlib'
 import { canRenderGlass } from '@/lib/capabilities'
-import {
-  applyFlatArrowDefinition,
-  ARROW_REST_ATTITUDE,
-  computeArrowSpinAxis,
-} from './arrow-attitude'
+import { applyFlatArrowDefinition, computeArrowAttitude } from './arrow-attitude'
 import { getHeroObjectDissolve, getHeroProgress } from '@/lib/hero-progress'
 import { pointer } from '@/lib/pointer-bus'
 import { getTargetRect } from '@/lib/rect-sampler'
@@ -20,6 +15,7 @@ import { glassPasses } from './glass-passes'
 import { FIELD_TARGET_ID } from './HeroField'
 import { createGlassUniforms } from './HeroHello'
 import { LAYER_GLASS } from './layers'
+import { flattenModel } from './model-geometry'
 import { rectToWorld } from './rect-space'
 
 /**
@@ -31,12 +27,6 @@ import { rectToWorld } from './rect-space'
  * pass excludes it and the flare finds its highlights. Small, and parked in the
  * lower right where it does not compete with the headline.
  */
-
-type ArrowGLTF = GLTF & { nodes: { g_groupNumber_0_n3d: THREE.Mesh } }
-
-/** The GLB's baked transform, kept so the geometry sits where it was authored. */
-const BAKED_POSITION: [number, number, number] = [-5.549, 2.201, -2.095]
-const BAKED_SCALE = 1.534
 
 /** Where it sits in the hero, as a fraction of the section. */
 const ANCHOR_X = 0.82
@@ -66,8 +56,11 @@ export function HeroArrow() {
   const leanEuler = useRef(new THREE.Euler())
   const camera = useThree((state) => state.camera)
 
-  const { nodes } = useGLTF('/models/arrow.glb') as unknown as ArrowGLTF
-  const geometry = nodes.g_groupNumber_0_n3d.geometry
+  const { scene } = useGLTF('/models/cursor.glb')
+  /** One geometry with the GLB's own node transforms baked in — see
+   *  model-geometry. Never Box3 on the mounted object, which measures in world
+   *  space and folds in the scale this component has already applied. */
+  const model = useMemo(() => flattenModel(scene, 'cursor.glb'), [scene])
 
   const uniforms = useMemo(() => {
     const created = createGlassUniforms()
@@ -77,29 +70,8 @@ export function HeroArrow() {
     return created
   }, [])
 
-  /** Bounds from the geometry and its baked transform — never Box3 on the
-   *  mounted object, which measures in world space and folds in the scale this
-   *  component has already applied. */
-  const measured = useMemo(() => {
-    geometry.computeBoundingBox()
-    const box = geometry.boundingBox!.clone()
-    box.applyMatrix4(
-      new THREE.Matrix4().compose(
-        new THREE.Vector3(...BAKED_POSITION),
-        new THREE.Quaternion(),
-        new THREE.Vector3(BAKED_SCALE, BAKED_SCALE, BAKED_SCALE),
-      ),
-    )
-    const raw = geometry.boundingBox!
-    return {
-      size: box.getSize(new THREE.Vector3()),
-      center: box.getCenter(new THREE.Vector3()),
-      localY: new THREE.Vector2(raw.min.y, raw.max.y),
-    }
-  }, [geometry])
-
-  /** The arrow's own axis of symmetry — see computeArrowSpinAxis. */
-  const spinAxis = useMemo(() => computeArrowSpinAxis(geometry), [geometry])
+  /** How it rests and what it turns about, both read off the mesh. */
+  const attitude = useMemo(() => computeArrowAttitude(model.geometry), [model])
 
   useEffect(() => {
     meshRef.current?.layers.set(LAYER_GLASS)
@@ -108,7 +80,7 @@ export function HeroArrow() {
   useFrame((state, delta) => {
     const group = outer.current
     const mesh = meshRef.current
-    if (!group || !mesh || measured.size.y === 0) return
+    if (!group || !mesh || model.size.y === 0) return
 
     const rect = getTargetRect(FIELD_TARGET_ID)
     const progress = getHeroProgress()
@@ -123,7 +95,7 @@ export function HeroArrow() {
     const sectionHeight = rect.height * seat.unitsPerPixel
     const sectionWidth = rect.width * seat.unitsPerPixel
 
-    const fit = (sectionHeight * RELATIVE_HEIGHT) / measured.size.y
+    const fit = (sectionHeight * RELATIVE_HEIGHT) / model.size.y
     group.scale.setScalar(fit * (1 - 0.5 * progress))
 
     const float = Math.sin(state.clock.elapsedTime * 0.7) * sectionHeight * 0.012
@@ -147,14 +119,14 @@ export function HeroArrow() {
     // quaternions rather than set as Euler angles because the spin axis is a
     // diagonal in the screen plane, which no ordering of x/y/z rotations
     // expresses without the two gestures interfering.
-    spinQuat.current.setFromAxisAngle(spinAxis, spin)
+    spinQuat.current.setFromAxisAngle(attitude.spinAxis, spin)
     leanEuler.current.set(leanRef.current.x, leanRef.current.y, 0)
     leanQuat.current.setFromEuler(leanEuler.current)
     group.quaternion.copy(leanQuat.current).multiply(spinQuat.current)
 
     const material = mesh.material as THREE.ShaderMaterial
     material.uniforms.uSceneTexture.value = glassPasses.refraction?.texture ?? null
-    material.uniforms.uLocalYRange.value.copy(measured.localY)
+    material.uniforms.uLocalYRange.value.copy(model.localY)
     material.uniforms.uResolution.value.set(
       state.size.width * state.viewport.dpr,
       state.size.height * state.viewport.dpr,
@@ -166,11 +138,11 @@ export function HeroArrow() {
 
   return (
     <group ref={outer} visible={false}>
-      {/* Fixed: squares the plate up to the camera, so the spin above starts
-          from flat rather than from the diagonal the model was authored on. */}
-      <group quaternion={ARROW_REST_ATTITUDE}>
-        <group position={[-measured.center.x, -measured.center.y, -measured.center.z]}>
-          <mesh ref={meshRef} geometry={geometry} position={BAKED_POSITION} scale={BAKED_SCALE}>
+      {/* Fixed: squares the plate up to the camera and aims it, so the spin
+          above starts from flat however the model happens to be authored. */}
+      <group quaternion={attitude.rest}>
+        <group position={[-model.center.x, -model.center.y, -model.center.z]}>
+          <mesh ref={meshRef} geometry={model.geometry}>
             <shaderMaterial
               vertexShader={glassVertexShader}
               fragmentShader={glassFragmentShader}
@@ -187,4 +159,4 @@ export function HeroArrow() {
   )
 }
 
-useGLTF.preload('/models/arrow.glb')
+useGLTF.preload('/models/cursor.glb')
