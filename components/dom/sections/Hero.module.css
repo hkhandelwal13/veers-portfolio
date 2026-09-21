@@ -147,13 +147,19 @@
     max-width: none;
   }
 
-  /* Below desktop the wireframe stacks: 3D block, then headline, then CTA —
-     so the absolute composition unwinds into normal flow. */
+  /*
+   * Below desktop the composition unwinds into one column, and the order is
+   * the reference's: headline, then the word, then the copy, then the CTA.
+   *
+   * `display: contents` on the frame is what makes that orderable — the
+   * headline, the copy block and the CTA become flex children of .hero
+   * alongside the 3D slot, so `order` can interleave them. Nested, the slot
+   * could only ever sit before or after the whole frame, which is how it ended
+   * up above the headline: the first thing on the page was a word with no
+   * sentence around it yet.
+   */
   .frame {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s6);
-    min-height: 0;
+    display: contents;
   }
 
   .headline,
@@ -165,9 +171,33 @@
 
   .headline {
     max-width: none;
+    order: 1;
+  }
+
+  /*
+   * The word's own band — full-bleed, and tall enough to be a band rather than
+   * a strip. At 180px the model was taller than the box it was given and ran
+   * off the top of the screen; the reference gives it better than a third of
+   * the viewport and lets it touch both edges.
+   */
+  .hero > [data-webgl='hero-hello'] {
+    order: 2;
+    /* Inside the margin, not bled past it: the word is scaled to the box's
+       width, so a full-bleed band ran the h and the final o off both edges.
+       The reference keeps it within the same column as everything else and
+       lets the height carry the drama instead. */
+    height: auto;
+    min-height: 34svh;
+    aspect-ratio: 16 / 7;
+  }
+
+  .top {
+    order: 3;
+    padding-top: 0;
   }
 
   .showreel {
+    order: 4;
     align-self: flex-start;
   }
 

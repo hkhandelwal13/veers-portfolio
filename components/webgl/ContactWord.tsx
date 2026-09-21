@@ -61,6 +61,15 @@ function toFloatAttribute(
 
 /** Grows past its reserved rect, as the hero's word does. */
 const FILL = 1.22
+/**
+ * The same overfill once the layout stacks, where the slot IS the column.
+ *
+ * Crossing the reserved rect is the design on a wide screen. On a narrow one
+ * the rect is the column, so 1.22 clipped the first and last letters of every
+ * line against both edges — the word became unreadable exactly where reading
+ * it is the point.
+ */
+const FILL_COMPACT = 0.98
 const FLOAT_AMPLITUDE = 0.02
 const TILT_X = 0.1
 const TILT_Y = 0.16
@@ -166,7 +175,7 @@ export function ContactWord() {
     const boxWidth = rect.width * seat.unitsPerPixel
     const boxHeight = rect.height * seat.unitsPerPixel
     const fit = Math.min(boxWidth / measured.size.x, boxHeight / measured.size.y)
-    group.scale.setScalar(fit * FILL)
+    group.scale.setScalar(fit * (getCapabilities().stacked ? FILL_COMPACT : FILL))
 
     const caps = getCapabilities()
     const material = mesh.material as THREE.ShaderMaterial

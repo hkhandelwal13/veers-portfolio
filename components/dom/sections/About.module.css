@@ -105,14 +105,53 @@
   color: var(--muted-2);
 }
 
+/*
+ * Stacked: the sentence first, then the picture, then the copy.
+ *
+ * Collapsing the grid to one column put the portrait — a 4:5 box, and an empty
+ * placeholder one at that — across the whole first screen and pushed the
+ * heading 600px down the page, so a phone opened this section on nothing.
+ *
+ * Same correction the hero got. `display: contents` dissolves the two wrappers
+ * so the heading, the portrait, the copy and the facts become siblings in one
+ * column, and `order` states the reading sequence outright instead of leaving
+ * it to whichever wrapper happened to come first in the markup.
+ */
 @media (max-width: 1024px) {
-  .top {
-    grid-template-columns: 1fr;
-    gap: var(--s7);
+  .section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s5);
+  }
+
+  .top,
+  .body {
+    display: contents;
+  }
+
+  .heading {
+    order: 1;
+    max-width: none;
   }
 
   .portraitCol {
+    order: 2;
     max-width: 404px;
+    /* The one element that wants more air around it than the text rhythm. */
+    margin-block: var(--s2);
+  }
+
+  .copy {
+    order: 3;
+  }
+
+  .facts {
+    order: 4;
+    padding-top: 0;
+  }
+
+  .clients {
+    order: 5;
   }
 
   .logos {
@@ -121,6 +160,18 @@
 }
 
 @media (max-width: 640px) {
+  /* A 4:5 portrait at the full measure is 440px of picture before a word of
+     the page; two thirds of it reads as an illustration beside the text. */
+  .portraitCol {
+    max-width: 68%;
+  }
+
+  /* One step down, to the body size the rest of the page uses on a phone:
+     at --fs-body-l the introduction runs to nine lines on a 390 screen. */
+  .copy {
+    font-size: var(--fs-body);
+  }
+
   .facts {
     gap: var(--s5);
   }

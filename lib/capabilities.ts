@@ -9,6 +9,8 @@
  *   reducedMotion  the visitor asked for less movement
  *   hoverCapable   a real pointer that can hover — not a touchscreen
  *   compact        a small viewport, which stands in for the mobile budget
+ *   stacked        narrow enough that the layout is one column, so a reserved
+ *                  3D slot spans the whole of it rather than part of it
  *
  * These are live: the media queries are watched, so toggling the OS setting or
  * rotating a tablet updates the gates without a reload.
@@ -18,12 +20,15 @@ export type Capabilities = {
   reducedMotion: boolean
   hoverCapable: boolean
   compact: boolean
+  stacked: boolean
 }
 
 const QUERIES = {
   reducedMotion: '(prefers-reduced-motion: reduce)',
   hoverCapable: '(hover: hover) and (pointer: fine)',
   compact: '(max-width: 640px)',
+  // The same line the CSS stacks at — see Hero.module.css.
+  stacked: '(max-width: 1024px)',
 } as const
 
 const SERVER: Capabilities = {
@@ -32,6 +37,7 @@ const SERVER: Capabilities = {
   // hydration is far less jarring than tearing one away.
   hoverCapable: false,
   compact: false,
+  stacked: false,
 }
 
 let current: Capabilities = SERVER
@@ -43,6 +49,7 @@ function read(): Capabilities {
     reducedMotion: window.matchMedia(QUERIES.reducedMotion).matches,
     hoverCapable: window.matchMedia(QUERIES.hoverCapable).matches,
     compact: window.matchMedia(QUERIES.compact).matches,
+    stacked: window.matchMedia(QUERIES.stacked).matches,
   }
 }
 
@@ -51,7 +58,8 @@ function refresh() {
   if (
     next.reducedMotion === current.reducedMotion &&
     next.hoverCapable === current.hoverCapable &&
-    next.compact === current.compact
+    next.compact === current.compact &&
+    next.stacked === current.stacked
   ) {
     return
   }
