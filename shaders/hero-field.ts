@@ -13,9 +13,11 @@ import { dissolveChunk } from './fluid'
  *     dot-matrix wipe on scroll, so the black (or white) the editor intro
  *     paints in has already arrived by the time that section does.
  *
- * It draws the diagonal light, not the grid: the grid is one CSS layer drawn
- * over the whole site (see StageDressing), and a second copy here would double
- * every line inside the hero.
+ * It draws neither the grid nor the light. The grid is one CSS layer over the
+ * whole site (see StageDressing), and a second copy here would double every
+ * line inside the hero. The light is gone from the site entirely: a near-white
+ * wash at low alpha lifts every channel equally, which desaturates a blue
+ * rather than brightening it, and it was the film flattening the ground.
  */
 
 export const heroFieldVertexShader = /* glsl */ `
@@ -30,32 +32,52 @@ void main() {
 export const heroFieldFragmentShader = /* glsl */ `
 precision highp float;
 
-uniform vec3 uGround;      // --bg
 uniform vec3 uGroundEnd;   // what the section below is painted in
-uniform vec4 uStreakGlow;
-uniform vec4 uStreakBand;
-
+// The page's own wash, stop for stop — see the tokens in globals.
+uniform vec3 uWashLight;
+uniform vec3 uWashLight2;
+uniform vec3 uWashCore;
+uniform vec3 uWashMid;
+uniform vec3 uWashEdge;
 uniform vec2 uResolution;   // framebuffer pixels
 uniform float uDotPx;       // dot-matrix pitch for the handover
-uniform float uTime;
 uniform float uProgress;    // hero scroll progress, 0..1
 uniform vec2 uWipeBias;     // how much earlier the wipe reaches the top vs the bottom
 uniform float uTopFade;     // share of the plane's height held fully handed over
 uniform float uPixelRatio;  // device pixels per CSS pixel
-uniform float uAspect;
 
 varying vec2 vUv;
 
 ${dissolveChunk}
 
-/** Soft diagonal bands, drifting. Matches the CSS repeating-linear-gradient. */
-float streakMask(vec2 uv) {
-  float angle = 2.0;  // ~114deg, as in the CSS
-  vec2 dir = vec2(cos(angle), sin(angle));
-  float t = dot(uv * vec2(uAspect, 1.0), dir) * 3.4 + uTime * 0.012;
-  float band = fract(t);
-  // Wide, soft stops rather than hard edges.
-  return smoothstep(0.0, 0.45, band) * (1.0 - smoothstep(0.45, 1.0, band));
+/**
+ * The page ground, in viewport UV.
+ *
+ * A line-for-line port of --bg-wash: three radials composited source-over, so
+ * the plane and the CSS layer behind it paint the same picture at the same
+ * place. Both are anchored to the viewport, which is what lets them agree —
+ * the plane moves with its section, but what it *paints* is a function of
+ * where the fragment is on screen, not of where the plane is.
+ *
+ * It used to paint one flat colour, and that flat colour is why the closing
+ * screen looked like a different blue from the band below it: the band was
+ * the wash, and the section was a single value laid over the top of it.
+ *
+ * A CSS radial-gradient's stop positions are fractions of the gradient ray, so
+ * a stop at 62% is at 0.62 of the normalised radius. Dividing by the ellipse's
+ * own radii first is what turns the distance into that normalised measure.
+ */
+vec3 pageWash(vec2 uv) {
+  float t = length((uv - vec2(0.5, 0.42)) / vec2(1.5, 1.1));
+  vec3 base = t < 0.58
+    ? mix(uWashCore, uWashMid, t / 0.58)
+    : mix(uWashMid, uWashEdge, clamp((t - 0.58) / 0.42, 0.0, 1.0));
+
+  float lit = 1.0 - clamp(length((uv - vec2(0.14, -0.02)) / vec2(0.86, 0.62)) / 0.62, 0.0, 1.0);
+  base = mix(base, uWashLight, lit);
+
+  float lit2 = 1.0 - clamp(length((uv - vec2(0.88, 0.98)) / vec2(0.70, 0.58)) / 0.58, 0.0, 1.0);
+  return mix(base, uWashLight2, lit2);
 }
 
 void main() {
@@ -68,15 +90,8 @@ void main() {
     1.0 - gl_FragCoord.y / uResolution.y
   );
 
-  vec3 color = uGround;
+  vec3 color = pageWash(screenUv);
 
-  // The dressing fades out ahead of the handover, so the wipe lands on a clean
-  // ground rather than on a grid it then has to cover.
-  float dressing = 1.0 - smoothstep(0.1, 0.5, uProgress);
-
-  float glow = exp(-length((screenUv - vec2(0.16, -0.06)) * vec2(uAspect, 1.0)) * 2.1);
-  color += uStreakGlow.rgb * uStreakGlow.a * glow * dressing;
-  color += uStreakBand.rgb * uStreakBand.a * streakMask(screenUv) * 0.5 * dressing;
   // The handover, as the same dot-matrix rule used everywhere else: a circle
   // per cell, growing in the *next section's* colour until the circles merge
   // and the ground simply is that colour.

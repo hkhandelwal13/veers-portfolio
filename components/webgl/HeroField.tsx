@@ -46,44 +46,6 @@ function readColor(styles: CSSStyleDeclaration, token: string, target: THREE.Col
   if (value) target.set(value)
 }
 
-const scratch = new THREE.Color()
-
-/**
- * Splits a translucent colour token into a colour and an alpha.
- *
- * The dressing tokens carry their own alpha because one CSS element paints both
- * the hairlines and the crosses from a single colour; the shader needs the two
- * halves separately.
- *
- * Both spellings have to be handled. These are authored as `rgba(...)`, but
- * getComputedStyle hands back whatever the engine settled on — Chromium
- * serialises them as 8-digit hex — and a naive number scrape over `#6e91ff29`
- * reads "6, 91, 29", which is a dark green rather than a pale blue.
- */
-function readRgba(styles: CSSStyleDeclaration, token: string, target: THREE.Vector4) {
-  const value = styles.getPropertyValue(token).trim()
-  if (!value) return
-
-  if (value.startsWith('#')) {
-    const hex = value.slice(1)
-    // #rgba and #rrggbbaa carry the alpha in their last 1 or 2 digits.
-    const short = hex.length === 4 || hex.length === 3
-    const alphaDigits = hex.length === 4 || hex.length === 8 ? (short ? 1 : 2) : 0
-    const rgb = hex.slice(0, hex.length - alphaDigits)
-    scratch.set(`#${rgb}`)
-    const alpha = alphaDigits
-      ? parseInt(short ? hex.slice(-1).repeat(2) : hex.slice(-2), 16) / 255
-      : 1
-    target.set(scratch.r, scratch.g, scratch.b, alpha)
-    return
-  }
-
-  const parts = value.match(/[\d.]+/g)
-  if (!parts || parts.length < 3) return
-  scratch.set(`rgb(${parts[0]}, ${parts[1]}, ${parts[2]})`)
-  target.set(scratch.r, scratch.g, scratch.b, parts.length > 3 ? Number(parts[3]) : 1)
-}
-
 export function SectionField({
   targetId,
   /** 0 = the section's own ground, 1 = fully handed over to --section-ground. */
@@ -116,20 +78,20 @@ export function SectionField({
 
   const uniforms = useMemo(
     () => ({
-      uGround: { value: new THREE.Color('#0a1038') },
       uGroundEnd: { value: new THREE.Color('#000000') },
-      uStreakGlow: { value: new THREE.Vector4(0.43, 0.57, 1, 0.16) },
-      uStreakBand: { value: new THREE.Vector4(0.59, 0.69, 1, 0.075) },
+      uWashLight: { value: new THREE.Color('#143ad6') },
+      uWashLight2: { value: new THREE.Color('#1330a8') },
+      uWashCore: { value: new THREE.Color('#07144a') },
+      uWashMid: { value: new THREE.Color('#040c2e') },
+      uWashEdge: { value: new THREE.Color('#020617') },
       uResolution: { value: new THREE.Vector2(1, 1) },
       // Small: the matrix is a texture the ground passes through, not a
       // pattern to be read. Large cells read as polka dots.
       uDotPx: { value: 7 },
-      uTime: { value: 0 },
       uProgress: { value: 0 },
       uWipeBias: { value: new THREE.Vector2(2.4, 0.35) },
       uTopFade: { value: 0 },
       uPixelRatio: { value: 1 },
-      uAspect: { value: 1 },
     }),
     [],
   )
@@ -144,20 +106,24 @@ export function SectionField({
    * reached through the mesh ref and mutation is fine.
    */
   const paletteRef = useRef({
-    ground: new THREE.Color('#0a1038'),
     groundEnd: new THREE.Color('#000000'),
-    streakGlow: new THREE.Vector4(0.43, 0.57, 1, 0.16),
-    streakBand: new THREE.Vector4(0.59, 0.69, 1, 0.075),
+    washLight: new THREE.Color('#143ad6'),
+    washLight2: new THREE.Color('#1330a8'),
+    washCore: new THREE.Color('#07144a'),
+    washMid: new THREE.Color('#040c2e'),
+    washEdge: new THREE.Color('#020617'),
   })
 
   useEffect(() => {
     const read = () => {
       const styles = getComputedStyle(document.documentElement)
       const palette = paletteRef.current
-      readColor(styles, '--bg', palette.ground)
       readColor(styles, '--section-ground', palette.groundEnd)
-      readRgba(styles, '--streak-glow', palette.streakGlow)
-      readRgba(styles, '--streak-band', palette.streakBand)
+      readColor(styles, '--wash-light', palette.washLight)
+      readColor(styles, '--wash-light-2', palette.washLight2)
+      readColor(styles, '--wash-core', palette.washCore)
+      readColor(styles, '--wash-mid', palette.washMid)
+      readColor(styles, '--wash-edge', palette.washEdge)
     }
     read()
     return subscribeToTheme(read)
@@ -203,17 +169,17 @@ export function SectionField({
 
     const material = mesh.material as THREE.ShaderMaterial
     const palette = paletteRef.current
-    material.uniforms.uGround.value.copy(palette.ground)
     material.uniforms.uGroundEnd.value.copy(palette.groundEnd)
-    material.uniforms.uStreakGlow.value.copy(palette.streakGlow)
-    material.uniforms.uStreakBand.value.copy(palette.streakBand)
+    material.uniforms.uWashLight.value.copy(palette.washLight)
+    material.uniforms.uWashLight2.value.copy(palette.washLight2)
+    material.uniforms.uWashCore.value.copy(palette.washCore)
+    material.uniforms.uWashMid.value.copy(palette.washMid)
+    material.uniforms.uWashEdge.value.copy(palette.washEdge)
     material.uniforms.uResolution.value.set(
       state.size.width * state.viewport.dpr,
       state.size.height * state.viewport.dpr,
     )
-    material.uniforms.uAspect.value = state.size.width / Math.max(state.size.height, 1)
     material.uniforms.uPixelRatio.value = state.viewport.dpr
-    material.uniforms.uTime.value = state.clock.elapsedTime
     material.uniforms.uProgress.value = value
     material.uniforms.uWipeBias.value.set(wipeBias[0], wipeBias[1])
     material.uniforms.uTopFade.value = topFade

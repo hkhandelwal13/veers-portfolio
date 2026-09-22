@@ -69,8 +69,6 @@
      turns it the other way up, which is how the reference reads at each size. */
   --grid-cell-x: 480px;
   --grid-cell-y: 300px;
-  --streak-glow: rgba(255, 252, 240, 0.55);
-  --streak-band: rgba(255, 255, 255, 0.3);
 
   /* The mobile menu's ground. Semantic rather than a --dark-* value because it
      is an overlay: it has to sit clearly *above* the page in either theme, and
@@ -242,7 +240,7 @@
      ground the result collapses to a flat slab of whichever channel survives —
      no refraction, no dispersion, no stickers. A deep blue gives the blend
      something to lift, which is the state the reference art is in. */
-  --bg: #050e38;
+  --bg: #07144a;
   /*
    * The ground is a wash, not a flat fill.
    *
@@ -258,10 +256,25 @@
    * down ten screens of document — stretched over the whole page the stops are
    * hundreds of pixels apart and the wash disappears entirely.
    */
+  /*
+   * Named stops, because the WebGL ground paints this same wash (see
+   * shaders/hero-field) and the two cannot be allowed to drift. Everything
+   * below is one source of truth read from both sides.
+   */
+  --wash-light: #143ad6;
+  --wash-light-2: #1330a8;
+  --wash-core: #07144a;
+  --wash-mid: #040c2e;
+  --wash-edge: #020617;
   --bg-wash:
-    radial-gradient(86% 62% at 14% -2%, #143ad6 0%, rgba(20, 58, 214, 0) 62%),
-    radial-gradient(70% 58% at 88% 98%, #1330a8 0%, rgba(19, 48, 168, 0) 58%),
-    radial-gradient(150% 110% at 50% 42%, #07144a 0%, #040c2e 58%, #020617 100%);
+    radial-gradient(86% 62% at 14% -2%, var(--wash-light) 0%, transparent 62%),
+    radial-gradient(70% 58% at 88% 98%, var(--wash-light-2) 0%, transparent 58%),
+    radial-gradient(
+      150% 110% at 50% 42%,
+      var(--wash-core) 0%,
+      var(--wash-mid) 58%,
+      var(--wash-edge) 100%
+    );
   --surface: #0d1f7d;
   /* The hatch pair lifts clear of --dark-surface: the card's reveal state is
      that deeper panel, and poster and reveal have to stay legible against
@@ -287,8 +300,6 @@
   --section-ground: #000000;
   --section-ink: #f2f5fa;
   --section-muted: #8b93a5;
-  --streak-glow: rgba(110, 145, 255, 0.16);
-  --streak-band: rgba(150, 175, 255, 0.075);
 
   color-scheme: dark;
 }
