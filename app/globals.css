@@ -58,14 +58,17 @@
      The faint blueprint grid and the diagonal light that sit behind everything.
      Alpha is baked into the token so one element can carry both, and so a
      theme only has to restate these two values. */
-  --grid-mark: rgba(12, 21, 38, 0.42);
+  --grid-mark: rgba(12, 21, 38, 0.55);
   /* What the hero hands over to. The editor intro paints in it, and the hero's
      WebGL ground travels toward it on scroll so the handover has already
      happened by the time that section arrives. */
   --section-ground: #ffffff;
   --section-ink: #0c1526;
   --section-muted: #55637a;
-  --grid-cell: 360px;
+  /* The block the rules draw. Wider than tall on a screen; the phone override
+     turns it the other way up, which is how the reference reads at each size. */
+  --grid-cell-x: 480px;
+  --grid-cell-y: 300px;
   --streak-glow: rgba(255, 252, 240, 0.55);
   --streak-band: rgba(255, 255, 255, 0.3);
 
@@ -148,45 +151,38 @@
   --chrome-float: 12px;
   --chrome-bar-h: calc(var(--nav-h) - var(--chrome-float) * 2);
   /*
-   * The supplied glassmorphism recipe, verbatim in its values: a 9px blur, a
-   * 13% white fill, a 30% white hairline, and an inner glow with a 5px spread
-   * that does most of the work — it is what gives the pane a lit thickness
-   * rather than a flat tint. White rather than the brand blue, which is the
-   * difference between frosted glass and a coloured panel.
+   * Liquid glass, in the macOS/iOS sense: four layers rather than one fill.
    *
-   * --chrome-tint is no longer in it, but stays defined: it is the per-surface
-   * value a future opaque chrome state would read.
+   *   effect  the backdrop, blurred a little and then bent by an SVG
+   *           displacement map (see GlassFilter) — the bend is what makes it
+   *           read as a lens rather than as frosting
+   *   tint    a thin white wash, so the pane has a body
+   *   shine   the lit edges, as inset shadows on their own layer so they sit
+   *           over the tint instead of under it
+   *   content on top of all three
+   *
+   * A single element cannot do this: `filter` applies to an element's whole
+   * rendering, so putting the displacement on the bar itself would bend the
+   * nav links along with the page behind them.
    */
-  --chrome-blur: blur(9px);
-  --chrome-glass: rgba(255, 255, 255, 0.13);
-  /* Scrolled — the one value not in the recipe, which describes a single
-     resting card. A touch more fill once there is page travelling underneath. */
-  --chrome-glass-strong: rgba(255, 255, 255, 0.18);
-  --chrome-edge: rgba(255, 255, 255, 0.3);
-  /* Two inner lines, not one: a bright one along the top where a real pane
-     catches the sky, and a dim one along the bottom where it catches the page.
-     That pair is most of what separates glass from a tinted rectangle — the
-     tint is now light enough that without them the panel has no thickness. */
+  --chrome-blur: blur(3px);
+  --chrome-tint-wash: rgba(255, 255, 255, 0.1);
+  /* Scrolled — a little more body once there is page travelling underneath. */
+  --chrome-tint-wash-strong: rgba(255, 255, 255, 0.16);
+  --chrome-edge: rgba(255, 255, 255, 0.22);
+  /*
+   * The lit edges. Two insets from opposite corners, which is what gives a
+   * pane a top-left that catches the light and a bottom-right that catches a
+   * little less — the macOS dock's own trick. Weaker than the reference's,
+   * which is drawn for a light desktop; at full strength on this ground the
+   * bar reads as outlined rather than as lit.
+   */
+  --chrome-shine:
+    inset 2px 2px 1px 0 rgba(255, 255, 255, 0.34),
+    inset -1px -1px 1px 1px rgba(255, 255, 255, 0.22);
   --chrome-lift:
-    0 8px 32px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
-    inset 0 0 10px 5px rgba(255, 255, 255, 0.5);
-  /* The two drawn edges from the recipe, as gradients a pseudo-element can
-     carry: a lit line along the top and down the left, which is where a pane
-     of glass catches a room. Tokens so the bar and the panel cannot drift. */
-  --chrome-edge-top: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.8),
-    transparent
-  );
-  --chrome-edge-left: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.8),
-    transparent,
-    rgba(255, 255, 255, 0.3)
-  );
+    0 6px 6px rgba(0, 0, 0, 0.2),
+    0 0 20px rgba(0, 0, 0, 0.1);
   /* The bar: a curve on the corners, not a capsule. Roughly a third of the
      bar's own height — enough to read as softened, not enough to read as a
      pill. The footer panel keeps its larger radius, which suits a box that
@@ -246,25 +242,26 @@
      ground the result collapses to a flat slab of whichever channel survives —
      no refraction, no dispersion, no stickers. A deep blue gives the blend
      something to lift, which is the state the reference art is in. */
-  --bg: #071568;
+  --bg: #050e38;
   /*
    * The ground is a wash, not a flat fill.
    *
-   * Four values off the supplied scale — #07144A #071670 #071568 — which are
-   * close enough to each other that the whole thing reads as one colour with
-   * depth in it rather than as a gradient you can name the stops of. The two
-   * radials are the light in it: one from the top left where the hero's word
-   * sits, one from the bottom right. The linear underneath carries the
-   * top-to-bottom fall, darkest at the very top.
+   * Three radials, no linear: the brief asks for these colours without the
+   * banding a linear ramp gives a ground this large. #143AD6 is the light —
+   * one source at the top left, where the hero's word sits — a weaker blue
+   * answers it from the bottom right, and underneath them a wide radial falls
+   * from #07144A through to #020617 at the corners. Darker overall than the
+   * wash it replaces, which is what lets the bright blue register as light
+   * rather than as more ground.
    *
    * Fixed to the viewport on the body (see the rule there) rather than painted
    * down ten screens of document — stretched over the whole page the stops are
    * hundreds of pixels apart and the wash disappears entirely.
    */
   --bg-wash:
-    radial-gradient(118% 86% at 16% 4%, #071670 0%, rgba(7, 22, 112, 0) 58%),
-    radial-gradient(96% 76% at 86% 96%, #071670 0%, rgba(7, 22, 112, 0) 54%),
-    linear-gradient(168deg, #07144a 0%, #071568 46%, #071670 100%);
+    radial-gradient(86% 62% at 14% -2%, #143ad6 0%, rgba(20, 58, 214, 0) 62%),
+    radial-gradient(70% 58% at 88% 98%, #1330a8 0%, rgba(19, 48, 168, 0) 58%),
+    radial-gradient(150% 110% at 50% 42%, #07144a 0%, #040c2e 58%, #020617 100%);
   --surface: #0d1f7d;
   /* The hatch pair lifts clear of --dark-surface: the card's reveal state is
      that deeper panel, and poster and reveal have to stay legible against
@@ -286,7 +283,7 @@
 
   /* Cool and much weaker: on the deep ground the same alpha that reads as a
      hairline on paper reads as fog. */
-  --grid-mark: rgba(180, 205, 255, 0.26);
+  --grid-mark: rgba(186, 210, 255, 0.36);
   --section-ground: #000000;
   --section-ink: #f2f5fa;
   --section-muted: #8b93a5;
@@ -323,7 +320,8 @@
 /* --- Mobile 390 ------------------------------------------------------------- */
 @media (max-width: 640px) {
   :root {
-    --grid-cell: 220px;
+    --grid-cell-x: 220px;
+    --grid-cell-y: 280px;
     --margin: var(--margin-mobile);
     --gutter: 12px;
     --columns: 4;

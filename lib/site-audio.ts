@@ -51,6 +51,19 @@ const ducks = new Set<string>()
 
 let fade: number | null = null
 let gestureCleanup: (() => void) | null = null
+/**
+ * Bumped by every reconcile. A `play()` that resolves after a newer decision
+ * has been taken must not act on it.
+ *
+ * This is the whole of the bug that made the toggle look broken on a phone. A
+ * tap is a pointerdown and then a click: the pointerdown satisfied the parked
+ * gesture listener and started a play(), the click turned the sound off and
+ * paused it, and then the play() promise resolved and ramped the volume
+ * straight back up. On a desktop the first click of a visit is rarely the
+ * toggle, so it almost never showed; on a phone the toggle is exactly what
+ * people reach for first.
+ */
+let generation = 0
 
 const listeners = new Set<() => void>()
 let snapshot: AudioState = Object.freeze({
@@ -166,6 +179,7 @@ function reconcile() {
   const audio = ensureElement()
   if (!audio) return
 
+  const mine = ++generation
   const wanted = enabled && ducks.size === 0
 
   if (!wanted) {
@@ -189,11 +203,18 @@ function reconcile() {
   void audio
     .play()
     .then(() => {
+      // Stale: something was decided while this was in flight. Undo it rather
+      // than ramping up over the top of a newer intention.
+      if (mine !== generation) {
+        if (!(enabled && ducks.size === 0)) audio.pause()
+        return
+      }
       gestureCleanup?.()
       rampTo(VOLUME)
       publish()
     })
     .catch(() => {
+      if (mine !== generation) return
       // Refused for want of a gesture. Not a failure — park it.
       waitForGesture()
     })

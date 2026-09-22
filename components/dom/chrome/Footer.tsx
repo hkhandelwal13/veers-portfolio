@@ -17,6 +17,11 @@ export function Footer() {
 
   return (
     <footer className={styles.footer}>
+      {/* The three glass layers, under everything the panel shows. */}
+      <span className={styles.glassEffect} aria-hidden="true" />
+      <span className={styles.glassTint} aria-hidden="true" />
+      <span className={styles.glassShine} aria-hidden="true" />
+
       <div className={styles.top}>
         <div className={styles.callout}>
           <span className={styles.calloutLabel}>Let&rsquo;s cut something good</span>

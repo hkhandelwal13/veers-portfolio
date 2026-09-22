@@ -20,10 +20,8 @@
   margin: var(--chrome-float) var(--margin) var(--chrome-float);
   border-radius: var(--chrome-radius-panel);
   border: 1px solid var(--chrome-edge);
-  background: var(--chrome-glass);
   box-shadow: var(--chrome-lift);
-  backdrop-filter: var(--chrome-blur);
-  /* Clips the drawn edges below to the panel's radius. */
+  /* Clips the glass layers below to the panel's radius. */
   overflow: hidden;
   color: var(--on-dark-muted);
   padding: var(--s8) var(--s7) var(--s7);
@@ -32,27 +30,46 @@
   gap: var(--s7);
 }
 
-/* The lit top edge, and the lit left edge — the same pair the bar carries. */
-.footer::before {
-  content: '';
+/* ---------------------------------------------------------------------------
+   Liquid glass, the panel. Three stacked layers under the content — see the
+   token block in globals for why it cannot be one element.
+   ------------------------------------------------------------------------ */
+
+/* The backdrop, blurred and then bent. Both filters live here and nowhere
+   else, so the panel's own content is never displaced. */
+.glassEffect {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: var(--chrome-edge-top);
+  inset: 0;
+  z-index: 0;
+  backdrop-filter: var(--chrome-blur);
+  filter: url(#liquid-glass);
   pointer-events: none;
 }
 
-.footer::after {
-  content: '';
+.glassTint {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 1px;
-  height: 100%;
-  background: var(--chrome-edge-left);
+  inset: 0;
+  z-index: 1;
+  background: var(--chrome-tint-wash);
+  transition: background-color var(--dur-fast) var(--ease-out);
   pointer-events: none;
+}
+
+/* Over the tint, not under it: a highlight that the body washes over is not a
+   highlight. */
+.glassShine {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  box-shadow: var(--chrome-shine);
+  pointer-events: none;
+}
+
+/* Everything the panel shows sits above the glass. */
+.top,
+.bottom {
+  position: relative;
+  z-index: 3;
 }
 
 .top {
