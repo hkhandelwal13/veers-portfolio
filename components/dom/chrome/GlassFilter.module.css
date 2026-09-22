@@ -1,0 +1,11 @@
+/* Present in the document but never painted: the filter is referenced by id
+   from CSS, not rendered here. display:none would be enough in every engine
+   that matters, but a zero box with absolute positioning cannot affect layout
+   even where it is not. */
+.hidden {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}

@@ -41,6 +41,11 @@ export function Nav() {
         className={`${styles.nav} ${scrolled ? styles.scrolled : ''}`}
         aria-label="Primary"
       >
+        {/* The three glass layers, under everything the bar shows. */}
+        <span className={styles.glassEffect} aria-hidden="true" />
+        <span className={styles.glassTint} aria-hidden="true" />
+        <span className={styles.glassShine} aria-hidden="true" />
+
         <ul className={styles.links}>
           {NAV_LINKS.map((link) => (
             <li key={link.href}>

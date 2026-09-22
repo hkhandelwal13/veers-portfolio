@@ -27,59 +27,54 @@
   padding-inline: var(--s5);
   border-radius: var(--chrome-radius-bar);
   border: 1px solid var(--chrome-edge);
-  background: var(--chrome-glass);
   box-shadow: var(--chrome-lift);
-  /* The drawn edges below are positioned against this box and clipped by its
+  /* The glass layers below are positioned against this box and clipped by its
      radius. The bar is position:fixed, which is already a containing block. */
   overflow: hidden;
-  /* Unprefixed only. Hand-writing the -webkit- twin alongside it made the
-     build's minifier collapse the pair down to the prefixed one and drop the
-     standard property — which is no blur at all in Chrome and Firefox. The
-     toolchain adds the prefix from browserslist on its own; writing it twice
-     is what broke it. */
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+/* ---------------------------------------------------------------------------
+   Liquid glass, the bar. Three stacked layers under the content — see the
+   token block in globals for why it cannot be one element.
+   ------------------------------------------------------------------------ */
+
+/* The backdrop, blurred and then bent. Both filters live here and nowhere
+   else, so the bar's own content is never displaced. */
+.glassEffect {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   backdrop-filter: var(--chrome-blur);
-  transition:
-    background-color var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out);
-}
-
-/* The lit top edge. */
-.nav::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: var(--chrome-edge-top);
+  filter: url(#liquid-glass);
   pointer-events: none;
 }
 
-/* And the lit left edge. */
-.nav::after {
-  content: '';
+.glassTint {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 1px;
-  height: 100%;
-  background: var(--chrome-edge-left);
+  inset: 0;
+  z-index: 1;
+  background: var(--chrome-tint-wash);
+  transition: background-color var(--dur-fast) var(--ease-out);
   pointer-events: none;
 }
 
-/*
- * Scrolled: the same pane, a little more of it.
- *
- * It used to lose 16px of height here, which is a move that belongs to a bar
- * spanning the full width — the edge it shrinks toward is the top of the
- * screen. A pill has no such edge, and shrinking it also pulled it out from
- * under the wordmark the HUD paints at its left end. So the state change is
- * carried by the glass: denser tint and a firmer edge once there is page
- * behind it, which is what you are being told.
- */
-.scrolled {
-  background: var(--chrome-glass-strong);
-  border-color: color-mix(in srgb, var(--chrome-ink) 24%, transparent);
+/* Over the tint, not under it: a highlight that the body washes over is not a
+   highlight. */
+.glassShine {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  box-shadow: var(--chrome-shine);
+  pointer-events: none;
+}
+
+/* Everything the bar actually shows sits above the glass. */
+.links,
+.soundSlot,
+.menuButton {
+  position: relative;
+  z-index: 3;
 }
 
 .links {

@@ -141,7 +141,7 @@
 .meridians {
   transform-box: fill-box;
   transform-origin: center;
-  animation: turn 14s linear infinite;
+  animation: turn 5s linear infinite;
 }
 
 @keyframes turn {
