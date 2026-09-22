@@ -194,34 +194,44 @@ function PointerCoords() {
 }
 
 /**
- * A turning globe.
+ * A turning globe — the supplied mark, redrawn as geometry.
  *
- * The meridians are a group scaled on X from 1 to -1 and back, which is what a
- * sphere's lines of longitude actually do as it turns: they flatten to nothing
- * at the limb, then open again on the far side. Passing through -1 rather than
- * bouncing off 0 is what makes it one continuous rotation instead of a wobble.
+ * Traced off the artwork rather than embedded as a file, so it takes
+ * currentColor, stays a hairline at any size, and — the reason that matters —
+ * can be taken apart: the limb and the latitudes have to stay still while the
+ * meridians move, and a flat image cannot do that.
  *
- * Done this way rather than with a real 3D transform because at eighteen pixels
- * the perspective is invisible and the cost is not — and because the outline
- * and the latitudes, which do not move, stay perfectly crisp outside the
- * animated group.
+ * Its proportions are the artwork's own, measured: a 1.52:1 ellipse, meridians
+ * at 0.39 and 0.76 of the radius either side of a straight central one, a
+ * straight equator, and two latitudes that sit at 0.38 of the vertical radius
+ * and lift very slightly where they meet the rim.
+ *
+ * The turn is the meridian pair scaled on X from 1 through 0 to -1, which is
+ * what a sphere's lines of longitude actually do as it rotates. Done this way
+ * rather than with a real 3D transform because at this size the perspective is
+ * invisible and the cost is not, and because everything that does not move
+ * stays outside the animated group and therefore perfectly crisp.
  */
 function Globe() {
   return (
     <svg
       className={styles.globe}
-      viewBox="0 0 24 24"
+      viewBox="0 0 30 20"
       fill="none"
       stroke="currentColor"
       strokeWidth="1"
       aria-hidden="true"
     >
-      <circle cx="12" cy="12" r="9.5" />
-      {/* Latitudes: chords of the same circle, so they meet the rim exactly. */}
-      <path d="M 3.6 7.3 H 20.4 M 2.5 12 H 21.5 M 3.6 16.7 H 20.4" />
+      <ellipse cx="15" cy="10" rx="14" ry="9.2" />
+      {/* Equator straight and full width; the other two bow, as the artwork
+          has them, and end on the rim rather than short of it. */}
+      <path d="M 1 10 H 29 M 2.24 6.22 Q 15 6.78 27.76 6.22 M 2.24 13.78 Q 15 13.22 27.76 13.78" />
+      {/* The 0° meridian has no width to lose, so it sits outside the group
+          that sweeps and stays a clean vertical. */}
+      <path d="M 15 0.8 V 19.2" />
       <g className={styles.meridians}>
-        <ellipse cx="12" cy="12" rx="9.5" ry="9.5" />
-        <ellipse cx="12" cy="12" rx="4.6" ry="9.5" />
+        <ellipse cx="15" cy="10" rx="10.64" ry="9.2" />
+        <ellipse cx="15" cy="10" rx="5.46" ry="9.2" />
       </g>
     </svg>
   )

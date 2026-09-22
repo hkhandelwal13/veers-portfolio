@@ -29,6 +29,9 @@
   border: 1px solid var(--chrome-edge);
   background: var(--chrome-glass);
   box-shadow: var(--chrome-lift);
+  /* The drawn edges below are positioned against this box and clipped by its
+     radius. The bar is position:fixed, which is already a containing block. */
+  overflow: hidden;
   /* Unprefixed only. Hand-writing the -webkit- twin alongside it made the
      build's minifier collapse the pair down to the prefixed one and drop the
      standard property — which is no blur at all in Chrome and Firefox. The
@@ -38,6 +41,30 @@
   transition:
     background-color var(--dur-fast) var(--ease-out),
     border-color var(--dur-fast) var(--ease-out);
+}
+
+/* The lit top edge. */
+.nav::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--chrome-edge-top);
+  pointer-events: none;
+}
+
+/* And the lit left edge. */
+.nav::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 100%;
+  background: var(--chrome-edge-left);
+  pointer-events: none;
 }
 
 /*

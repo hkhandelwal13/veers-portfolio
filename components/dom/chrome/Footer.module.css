@@ -19,15 +19,40 @@
   z-index: var(--z-content);
   margin: var(--chrome-float) var(--margin) var(--chrome-float);
   border-radius: var(--chrome-radius-panel);
-  border: 1px solid color-mix(in srgb, var(--on-dark) 26%, transparent);
-  background: color-mix(in srgb, var(--dark-surface) 22%, transparent);
+  border: 1px solid var(--chrome-edge);
+  background: var(--chrome-glass);
   box-shadow: var(--chrome-lift);
   backdrop-filter: var(--chrome-blur);
+  /* Clips the drawn edges below to the panel's radius. */
+  overflow: hidden;
   color: var(--on-dark-muted);
   padding: var(--s8) var(--s7) var(--s7);
   display: flex;
   flex-direction: column;
   gap: var(--s7);
+}
+
+/* The lit top edge, and the lit left edge — the same pair the bar carries. */
+.footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--chrome-edge-top);
+  pointer-events: none;
+}
+
+.footer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 100%;
+  background: var(--chrome-edge-left);
+  pointer-events: none;
 }
 
 .top {
