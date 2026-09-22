@@ -54,7 +54,8 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: var(--chrome-tint-wash);
+  /* Grain over the body, not under it — see --chrome-grain. */
+  background: var(--chrome-grain), var(--chrome-tint-wash);
   transition: background-color var(--dur-fast) var(--ease-out);
   pointer-events: none;
 }

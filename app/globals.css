@@ -19,9 +19,31 @@
      ground the Beer-Lambert tint has no blue to carry and the word reads as
      grey plastic. Derived from Sky Blue #8EBFE8 (BRAND_TOKENS), tinted up. */
   --bg: #cbe2f5;         /* page background */
-  /* The light theme's ground is flat; the gradient below belongs to the dark
-     one, where the wash is part of the art direction. */
-  --bg-wash: none;
+
+  /*
+   * The ground's wash.
+   *
+   * The *construction* lives here and only the five colours are restated per
+   * theme, because the WebGL ground paints this same picture (see
+   * shaders/hero-field) from the same tokens. Defining the stops only under
+   * [data-theme='dark'] is exactly how the light theme ended up with the dark
+   * theme's ground: the shader found no tokens to read and kept the dark
+   * defaults compiled into it, while the DOM behind it painted nothing at all.
+   */
+  --wash-light: #f2f9ff;
+  --wash-light-2: #dcecfa;
+  --wash-core: #cbe2f5;
+  --wash-mid: #b8d6ef;
+  --wash-edge: #a2c5e4;
+  --bg-wash:
+    radial-gradient(86% 62% at 14% -2%, var(--wash-light) 0%, transparent 62%),
+    radial-gradient(70% 58% at 88% 98%, var(--wash-light-2) 0%, transparent 58%),
+    radial-gradient(
+      150% 110% at 50% 42%,
+      var(--wash-core) 0%,
+      var(--wash-mid) 58%,
+      var(--wash-edge) 100%
+    );
   --surface: #e4f0fa;    /* cards / panels */
   --surface-2: #b9d6ee;
   --surface-3: #c6dff3;  /* the hatch's lighter stripe */
@@ -164,6 +186,15 @@
    * nav links along with the page behind them.
    */
   --chrome-blur: blur(3px);
+  /*
+   * Grain, carried by the tint layer.
+   *
+   * The wash is dithered at source, but a pane's own `backdrop-filter: blur`
+   * averages that dither away again before it composites — which is why the
+   * footer banded while the ground either side of it did not. So the pane
+   * re-adds it, on top of its own blur, where nothing can smooth it out.
+   */
+  --chrome-grain: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");
   --chrome-tint-wash: rgba(255, 255, 255, 0.1);
   /* Scrolled — a little more body once there is page travelling underneath. */
   --chrome-tint-wash-strong: rgba(255, 255, 255, 0.16);
@@ -242,39 +273,20 @@
      something to lift, which is the state the reference art is in. */
   --bg: #07144a;
   /*
-   * The ground is a wash, not a flat fill.
+   * The dark ground, as five colours off the supplied scale. The construction
+   * they feed is in :root — see the note there.
    *
    * Three radials, no linear: the brief asks for these colours without the
    * banding a linear ramp gives a ground this large. #143AD6 is the light —
    * one source at the top left, where the hero's word sits — a weaker blue
    * answers it from the bottom right, and underneath them a wide radial falls
-   * from #07144A through to #020617 at the corners. Darker overall than the
-   * wash it replaces, which is what lets the bright blue register as light
-   * rather than as more ground.
-   *
-   * Fixed to the viewport on the body (see the rule there) rather than painted
-   * down ten screens of document — stretched over the whole page the stops are
-   * hundreds of pixels apart and the wash disappears entirely.
-   */
-  /*
-   * Named stops, because the WebGL ground paints this same wash (see
-   * shaders/hero-field) and the two cannot be allowed to drift. Everything
-   * below is one source of truth read from both sides.
+   * from #07144A through to #020617 at the corners.
    */
   --wash-light: #143ad6;
   --wash-light-2: #1330a8;
   --wash-core: #07144a;
   --wash-mid: #040c2e;
   --wash-edge: #020617;
-  --bg-wash:
-    radial-gradient(86% 62% at 14% -2%, var(--wash-light) 0%, transparent 62%),
-    radial-gradient(70% 58% at 88% 98%, var(--wash-light-2) 0%, transparent 58%),
-    radial-gradient(
-      150% 110% at 50% 42%,
-      var(--wash-core) 0%,
-      var(--wash-mid) 58%,
-      var(--wash-edge) 100%
-    );
   --surface: #0d1f7d;
   /* The hatch pair lifts clear of --dark-surface: the card's reveal state is
      that deeper panel, and poster and reveal have to stay legible against
@@ -381,15 +393,32 @@ body {
  * rAF has no room for. A fixed layer is composited once and never repainted.
  *
  * Behind everything: --z-canvas is 1 and the content is 2, so a negative index
- * here sits under both and over the body's own colour. Transparent in the light
- * theme, where --bg-wash is `none`.
+ * here sits under both and over the body's own colour. Both themes paint it —
+ * the stops differ, the construction does not.
  */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: var(--bg-wash);
+  /*
+   * Noise first, wash under it.
+   *
+   * A gradient this large is the classic 8-bit banding case: the bottom-right
+   * radial moves about thirty-five levels across six hundred pixels, which is
+   * one step every sixteen — wide enough to read as a band, and the glass
+   * panel over it steepens the ramp and makes them plainer still. Measured
+   * before this was added: plateaus of 14 to 22 pixels between each single
+   * level of change.
+   *
+   * A pinch of noise is the standard answer. It does not remove the steps, it
+   * moves each pixel's rounding decision independently, so the edge between
+   * two levels stops being a line. Four per cent of a tiled turbulence tile is
+   * under one level of amplitude — invisible as grain, fatal to a band.
+   */
+  background:
+    url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E"),
+    var(--bg-wash);
   pointer-events: none;
 }
 

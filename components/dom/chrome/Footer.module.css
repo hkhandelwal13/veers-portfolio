@@ -11,8 +11,12 @@
  * Glass works here for the same reason it works up there: the WebGL stage is a
  * fixed, full-screen canvas, so the closing screen's field and its sticker
  * fall are still being drawn behind this panel and the blur has something to
- * blur. It is not the flat --dark-bg any more; --dark-surface at the tint's
- * own opacity is what keeps the type on it as legible as it was.
+ * blur.
+ *
+ * Which is also why its ink is the --chrome-* family and not --on-dark. This
+ * was a dark panel once and could name its own ink; a transparent one shows
+ * whatever theme is behind it, and near-white type over a pale sky is type you
+ * cannot read. The nav solved this the same way, and for the same reason.
  */
 .footer {
   position: relative;
@@ -23,7 +27,7 @@
   box-shadow: var(--chrome-lift);
   /* Clips the glass layers below to the panel's radius. */
   overflow: hidden;
-  color: var(--on-dark-muted);
+  color: var(--chrome-muted);
   padding: var(--s8) var(--s7) var(--s7);
   display: flex;
   flex-direction: column;
@@ -50,7 +54,8 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: var(--chrome-tint-wash);
+  /* Grain over the body, not under it — see --chrome-grain. */
+  background: var(--chrome-grain), var(--chrome-tint-wash);
   transition: background-color var(--dur-fast) var(--ease-out);
   pointer-events: none;
 }
@@ -90,7 +95,7 @@
   font-size: var(--fs-label);
   letter-spacing: var(--hud-tracking);
   text-transform: uppercase;
-  color: var(--on-dark-muted);
+  color: var(--chrome-muted);
 }
 
 .calloutTitle {
@@ -98,7 +103,7 @@
   font-size: var(--fs-h1);
   line-height: var(--lh-snug);
   letter-spacing: var(--tracking-display);
-  color: var(--on-dark);
+  color: var(--chrome-ink);
   max-width: 14ch;
 }
 
@@ -126,7 +131,7 @@
 }
 
 .column a {
-  color: var(--on-dark-muted);
+  color: var(--chrome-muted);
 }
 
 .column a:hover {
@@ -138,7 +143,7 @@
   justify-content: space-between;
   align-items: center;
   gap: var(--s5);
-  border-top: 1px solid var(--dark-line);
+  border-top: 1px solid var(--chrome-edge);
   padding-top: var(--s5);
   font-family: var(--font-mono);
   font-size: var(--fs-label-sm);
