@@ -119,8 +119,10 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* The mark is a wide ellipse, so it is sized by both axes at its own 1.52:1 —
+   a square box would letterbox it and leave the corner looking off-centre. */
 .globe {
-  width: 18px;
+  width: 27px;
   height: 18px;
   color: var(--chrome-muted);
   overflow: visible;
@@ -164,7 +166,7 @@
 
 @media (max-width: 640px) {
   .bottomRight .globe {
-    width: 14px;
+    width: 21px;
     height: 14px;
   }
 }

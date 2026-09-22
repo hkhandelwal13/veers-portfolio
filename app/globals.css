@@ -147,21 +147,46 @@
      drift apart. */
   --chrome-float: 12px;
   --chrome-bar-h: calc(var(--nav-h) - var(--chrome-float) * 2);
-  --chrome-blur: blur(40px) saturate(2.2);
-  --chrome-glass: color-mix(in srgb, var(--chrome-tint) 16%, transparent);
-  --chrome-glass-strong: color-mix(in srgb, var(--chrome-tint) 26%, transparent);
-  /* The tint is now light enough that the edge and the sheen are most of what
-     says there is a pane here at all, so both come up as the fill goes down. */
-  --chrome-edge: color-mix(in srgb, var(--chrome-ink) 28%, transparent);
-  --chrome-sheen: color-mix(in srgb, #ffffff 34%, transparent);
+  /*
+   * The supplied glassmorphism recipe, verbatim in its values: a 9px blur, a
+   * 13% white fill, a 30% white hairline, and an inner glow with a 5px spread
+   * that does most of the work — it is what gives the pane a lit thickness
+   * rather than a flat tint. White rather than the brand blue, which is the
+   * difference between frosted glass and a coloured panel.
+   *
+   * --chrome-tint is no longer in it, but stays defined: it is the per-surface
+   * value a future opaque chrome state would read.
+   */
+  --chrome-blur: blur(9px);
+  --chrome-glass: rgba(255, 255, 255, 0.13);
+  /* Scrolled — the one value not in the recipe, which describes a single
+     resting card. A touch more fill once there is page travelling underneath. */
+  --chrome-glass-strong: rgba(255, 255, 255, 0.18);
+  --chrome-edge: rgba(255, 255, 255, 0.3);
   /* Two inner lines, not one: a bright one along the top where a real pane
      catches the sky, and a dim one along the bottom where it catches the page.
      That pair is most of what separates glass from a tinted rectangle — the
      tint is now light enough that without them the panel has no thickness. */
   --chrome-lift:
-    inset 0 1px 0 var(--chrome-sheen),
-    inset 0 -1px 0 color-mix(in srgb, #ffffff 10%, transparent),
-    0 12px 36px rgba(4, 10, 44, 0.32);
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 10px 5px rgba(255, 255, 255, 0.5);
+  /* The two drawn edges from the recipe, as gradients a pseudo-element can
+     carry: a lit line along the top and down the left, which is where a pane
+     of glass catches a room. Tokens so the bar and the panel cannot drift. */
+  --chrome-edge-top: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.8),
+    transparent
+  );
+  --chrome-edge-left: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.8),
+    transparent,
+    rgba(255, 255, 255, 0.3)
+  );
   /* The bar: a curve on the corners, not a capsule. Roughly a third of the
      bar's own height — enough to read as softened, not enough to read as a
      pill. The footer panel keeps its larger radius, which suits a box that
