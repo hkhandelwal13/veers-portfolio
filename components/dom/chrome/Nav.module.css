@@ -25,7 +25,7 @@
   /* The wordmark is the HUD's, drawn over this bar's left end — see Hud.module.
      This padding is what it aligns to, so the two have to stay in step. */
   padding-inline: var(--s5);
-  border-radius: 2rem;
+  border-radius: var(--chrome-radius);
   border: 1px solid var(--chrome-edge);
   box-shadow: var(--chrome-lift);
   /* The glass layers below are positioned against this box and clipped by its
@@ -40,15 +40,22 @@
    token block in globals for why it cannot be one element.
    ------------------------------------------------------------------------ */
 
-/* Clip the frosted backdrop to the pane. SVG displacement of a live WebGL
-   backdrop creates torn edges, so refraction is not applied to page pixels. */
+/* Refract only the perimeter: the centre keeps the original smooth gradient.
+   Sample 24px beyond the pane before filtering, then mask and clip the result.
+   This exceeds the 8px maximum displacement plus the 3px blur kernel. */
 .glassEffect {
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
+  inset: -24px;
   z-index: 0;
+  padding: 38px;
+  border-radius: calc(var(--chrome-radius) + 24px);
   backdrop-filter: var(--chrome-blur);
   -webkit-backdrop-filter: var(--chrome-blur);
+  filter: url(#liquid-glass);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
   pointer-events: none;
 }
 
@@ -183,11 +190,19 @@
 @media (hover: hover) and (pointer: fine) {
   .nav:hover {
     padding: 0.8rem;
-    border-radius: 2.5rem;
+    --chrome-radius: 2.5rem;
+    border-radius: var(--chrome-radius);
   }
   .nav:hover > div { border-radius: 2.5rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .nav { transition: none; }
+}
+
+/* The supplied mono specimen: navigation and control labels. */
+.link, .soundSlot, .themeSlot, .menuButton {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
 }

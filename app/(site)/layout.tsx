@@ -1,3 +1,4 @@
+import { GlassFilter } from '@/components/dom/chrome/GlassFilter'
 import { Nav } from '@/components/dom/chrome/Nav'
 import { Footer } from '@/components/dom/chrome/Footer'
 import { Loader } from '@/components/dom/chrome/Loader'
@@ -21,6 +22,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         Skip to content
       </a>
       <StageDressing />
+      <GlassFilter />
       <SiteAudio />
       <Loader />
       <RouteTransition />
