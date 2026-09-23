@@ -57,6 +57,7 @@ export function GlassFilter() {
           yChannelSelector="G"
         />
       </filter>
+
     </svg>
   )
 }

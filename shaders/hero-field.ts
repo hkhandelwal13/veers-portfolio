@@ -133,5 +133,17 @@ void main() {
   gl_FragColor = vec4(color, 1.0);
 
   #include <colorspace_fragment>
+
+  /*
+   * One least-significant bit of noise, after the colour space conversion so
+   * the amplitude means what it says.
+   *
+   * Same reason as the CSS layer's tile: the wash ramps slowly enough that
+   * eight bits puts a visible step every dozen or so pixels, and a panel of
+   * glass over it makes them plainer. Dither does not add levels, it scatters
+   * which side of the boundary each pixel lands on, which turns a hard edge
+   * into a gradient the eye reads as continuous.
+   */
+  gl_FragColor.rgb += (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) / 255.0;
 }
 `
