@@ -1,8 +1,8 @@
 import styles from './GlassFilter.module.css'
 
-/** Shared refraction map. CSS limits it to the glass rim, leaving the central
- * gradient and foreground text intact. Overscan in CSS and an expanded SVG
- * region keep the displacement from sampling transparent pane boundaries. */
+/** Shared displacement map for the captured backdrop. Soft, broad refraction
+ * preserves smooth gradients; CSS overscan and a single outer clip prevent
+ * transparent seams. sRGB avoids changing the page's colour space. */
 export function GlassFilter() {
   return (
     <svg className={styles.hidden} aria-hidden="true" focusable="false">
@@ -12,7 +12,11 @@ export function GlassFilter() {
           <feTurbulence type="fractalNoise" baseFrequency="0.01 0.01"
             numOctaves="1" seed="5" result="turbulence" />
           <feGaussianBlur in="turbulence" stdDeviation="3" result="softMap" />
-          <feDisplacementMap in="SourceGraphic" in2="softMap" scale="16"
+          <feComponentTransfer in="softMap" result="lensMap">
+            <feFuncR type="linear" slope="2" intercept="-0.5" />
+            <feFuncG type="linear" slope="2" intercept="-0.5" />
+          </feComponentTransfer>
+          <feDisplacementMap in="SourceGraphic" in2="lensMap" scale="48"
             xChannelSelector="R" yChannelSelector="G" />
         </filter>
       </defs>

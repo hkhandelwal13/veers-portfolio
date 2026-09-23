@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { SITE } from '@/lib/placeholder-content'
 import { getLenis } from '@/lib/lenis'
 import { NAV_LINKS } from './Nav'
+import { LiquidGlass } from './LiquidGlass'
 import styles from './Footer.module.css'
 
 /** Dark footer — wireframe 1i. */
@@ -17,10 +18,7 @@ export function Footer() {
 
   return (
     <footer className={styles.footer}>
-      {/* The three glass layers, under everything the panel shows. */}
-      <span className={styles.glassEffect} aria-hidden="true" />
-      <span className={styles.glassTint} aria-hidden="true" />
-      <span className={styles.glassShine} aria-hidden="true" />
+      <LiquidGlass />
 
       <div className={styles.content}>
         <div className={styles.top}>

@@ -23,13 +23,11 @@
   z-index: var(--z-content);
   margin: var(--chrome-float) var(--margin) var(--chrome-float);
   border-radius: var(--chrome-radius);
-  border: 1px solid var(--chrome-edge);
-  box-shadow: var(--chrome-lift);
-  /* Clips the glass layers below to the panel's radius. */
-  overflow: hidden;
+  border: 1px solid transparent;
+  /* The decorative surface owns clipping and expands without reflow. */
+  overflow: visible;
   color: var(--chrome-muted);
   padding: 0.4rem;
-  transition: padding 240ms var(--ease-out), border-radius 240ms var(--ease-out);
 }
 
 .content {
@@ -40,51 +38,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--s7);
-}
-
-/* ---------------------------------------------------------------------------
-   Liquid glass, the panel. Three stacked layers under the content — see the
-   token block in globals for why it cannot be one element.
-   ------------------------------------------------------------------------ */
-
-/* Refract only the perimeter: the centre keeps the original smooth gradient.
-   Sample 24px beyond the pane before filtering, then mask and clip the result.
-   This exceeds the 8px maximum displacement plus the 3px blur kernel. */
-.glassEffect {
-  position: absolute;
-  inset: -24px;
-  z-index: 0;
-  padding: 38px;
-  border-radius: calc(var(--chrome-radius) + 24px);
-  backdrop-filter: var(--chrome-blur);
-  -webkit-backdrop-filter: var(--chrome-blur);
-  filter: url(#liquid-glass);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  pointer-events: none;
-}
-
-.glassTint {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  z-index: 1;
-  background: var(--chrome-tint-wash);
-  transition: background-color var(--dur-fast) var(--ease-out);
-  pointer-events: none;
-}
-
-/* Over the tint, not under it: a highlight that the body washes over is not a
-   highlight. */
-.glassShine {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  z-index: 2;
-  box-shadow: var(--chrome-shine);
-  pointer-events: none;
 }
 
 /* Everything the panel shows sits above the glass. */
@@ -219,18 +172,4 @@
        on top of it and leave the column twice as tall as it reads. */
     gap: 0;
   }
-}
-
-/* Hover-capable devices only: avoid sticky expanded panes after a tap. */
-@media (hover: hover) and (pointer: fine) {
-  .footer:hover {
-    padding: 0.8rem;
-    --chrome-radius: 2.5rem;
-    border-radius: var(--chrome-radius);
-  }
-  .footer:hover > div { border-radius: 2.5rem; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .footer { transition: none; }
 }
