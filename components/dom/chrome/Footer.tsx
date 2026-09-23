@@ -22,40 +22,42 @@ export function Footer() {
       <span className={styles.glassTint} aria-hidden="true" />
       <span className={styles.glassShine} aria-hidden="true" />
 
-      <div className={styles.top}>
-        <div className={styles.callout}>
-          <span className={styles.calloutLabel}>Let&rsquo;s cut something good</span>
-          <p className={styles.calloutTitle}>
-            <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
-          </p>
-        </div>
+      <div className={styles.content}>
+        <div className={styles.top}>
+          <div className={styles.callout}>
+            <span className={styles.calloutLabel}>Let&rsquo;s cut something good</span>
+            <p className={styles.calloutTitle}>
+              <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
+            </p>
+          </div>
 
-        <div className={styles.columns}>
-          <nav className={styles.column} aria-label="Footer">
-            <span className={styles.columnTitle}>Site</span>
-            {NAV_LINKS.map((link) => (
-              <Link key={link.href} href={link.href}>
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+          <div className={styles.columns}>
+            <nav className={styles.column} aria-label="Footer">
+              <span className={styles.columnTitle}>Site</span>
+              {NAV_LINKS.map((link) => (
+                <Link key={link.href} href={link.href}>
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
 
-          <div className={styles.column}>
-            <span className={styles.columnTitle}>Elsewhere</span>
-            {SITE.socials.map((s) => (
-              <a key={s.label} href={s.url} target="_blank" rel="noreferrer noopener">
-                {s.label} ↗<span className="visually-hidden"> (opens in a new tab)</span>
-              </a>
-            ))}
+            <div className={styles.column}>
+              <span className={styles.columnTitle}>Elsewhere</span>
+              {SITE.socials.map((s) => (
+                <a key={s.label} href={s.url} target="_blank" rel="noreferrer noopener">
+                  {s.label} ↗<span className="visually-hidden"> (opens in a new tab)</span>
+                </a>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className={styles.bottom}>
-        <span>Veerlabs © {new Date().getFullYear()} — All rights reserved</span>
-        <button type="button" className={styles.toTop} onClick={toTop}>
-          Back to top ↑
-        </button>
+        <div className={styles.bottom}>
+          <span>Veerlabs © {new Date().getFullYear()} — All rights reserved</span>
+          <button type="button" className={styles.toTop} onClick={toTop}>
+            Back to top ↑
+          </button>
+        </div>
       </div>
     </footer>
   )

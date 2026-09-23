@@ -119,7 +119,7 @@ function ensureElement(): HTMLAudioElement | null {
   return element
 }
 
-/** Ramps to a target and, at zero, pauses at the end of the ramp. */
+/** Fade in where volume control is supported; mute always pauses directly. */
 function rampTo(target: number) {
   const audio = element
   if (!audio) return
@@ -128,26 +128,16 @@ function rampTo(target: number) {
     fade = null
   }
 
-  const STEP_MS = 40
-  const step = (STEP_MS / 1000 / FADE_SECONDS) * Math.max(VOLUME, 0.01)
-
+  const startedAt = Date.now()
+  const from = audio.volume
   fade = window.setInterval(() => {
-    const next =
-      audio.volume < target
-        ? Math.min(target, audio.volume + step)
-        : Math.max(target, audio.volume - step)
-    audio.volume = next
-
-    if (Math.abs(next - target) > 1e-3) return
-    if (fade !== null) {
-      clearInterval(fade)
-      fade = null
-    }
-    if (target === 0 && !audio.paused) {
-      audio.pause()
-      publish()
-    }
-  }, STEP_MS)
+    // Finish by elapsed time even on platforms that ignore volume setters.
+    const progress = Math.min(1, (Date.now() - startedAt) / (FADE_SECONDS * 1000))
+    audio.volume = from + (target - from) * progress
+    if (progress < 1) return
+    if (fade !== null) clearInterval(fade)
+    fade = null
+  }, 40)
 }
 
 /**
@@ -160,12 +150,15 @@ function waitForGesture() {
   if (gestureCleanup) return
   waitingForGesture = true
 
-  const start = () => {
+  const start = (event: Event) => {
+    // The button owns its gesture. Do not start playback before its click
+    // handler has decided whether the visitor is turning sound off.
+    if (event.target instanceof Element && event.target.closest('[data-sound-toggle]')) return
     gestureCleanup?.()
     reconcile()
   }
   const events: Array<keyof WindowEventMap> = ['pointerdown', 'keydown', 'touchend']
-  for (const name of events) window.addEventListener(name, start, { once: true, passive: true })
+  for (const name of events) window.addEventListener(name, start, { passive: true })
 
   gestureCleanup = () => {
     for (const name of events) window.removeEventListener(name, start)
@@ -184,11 +177,17 @@ function reconcile() {
 
   if (!wanted) {
     gestureCleanup?.()
-    if (!audio.paused) rampTo(0)
+    // iOS may ignore programmatic volume changes. A mute must pause directly,
+    // including while a play() promise is pending, and cancel any old fade.
+    if (fade !== null) clearInterval(fade)
+    fade = null
+    audio.muted = true
+    audio.pause()
     publish()
     return
   }
 
+  audio.muted = false
   if (!audio.paused) {
     rampTo(VOLUME)
     publish()
@@ -333,6 +332,7 @@ export function attachAudioShortcut() {
 
 /** Test seam. */
 export function resetSiteAudio() {
+  ++generation
   gestureCleanup?.()
   if (fade !== null) clearInterval(fade)
   fade = null

@@ -13,9 +13,11 @@ import './globals.css'
  * not loaded — it was annotation ink in the wireframes.
  */
 const tiktokSans = localFont({
-  src: '../public/fonts/TikTokSans-Variable.woff2',
+  src: [
+    { path: '../public/fonts/TikTokSans-Variable.woff2', weight: '400', style: 'normal' },
+    { path: '../public/fonts/TikTokSans-Variable.woff2', weight: '700', style: 'normal' },
+  ],
   variable: '--font-tiktok-sans',
-  weight: '300 900',
   display: 'swap',
   fallback: ['ui-sans-serif', 'system-ui', 'sans-serif'],
 })
@@ -23,7 +25,6 @@ const tiktokSans = localFont({
 const spaceMono = localFont({
   src: [
     { path: '../public/fonts/SpaceMono-Regular.woff2', weight: '400', style: 'normal' },
-    { path: '../public/fonts/SpaceMono-Bold.woff2', weight: '700', style: 'normal' },
   ],
   variable: '--font-space-mono',
   display: 'swap',

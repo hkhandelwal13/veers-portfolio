@@ -518,7 +518,7 @@ html.lenis body {
   font-size: var(--fs-display);
   letter-spacing: var(--tracking-display);
   line-height: var(--lh-tight);
-  font-weight: 500;
+  font-weight: 400;
   text-wrap: balance;
 }
 

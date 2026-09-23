@@ -22,13 +22,21 @@
   position: relative;
   z-index: var(--z-content);
   margin: var(--chrome-float) var(--margin) var(--chrome-float);
-  border-radius: var(--chrome-radius-panel);
+  border-radius: 2rem;
   border: 1px solid var(--chrome-edge);
   box-shadow: var(--chrome-lift);
   /* Clips the glass layers below to the panel's radius. */
   overflow: hidden;
   color: var(--chrome-muted);
-  padding: var(--s8) var(--s7) var(--s7);
+  padding: 0.4rem;
+  transition: padding 240ms var(--ease-out), border-radius 240ms var(--ease-out);
+}
+
+.content {
+  border-radius: inherit;
+  position: relative;
+  z-index: 3;
+  padding: calc(var(--s8) - 0.4rem) calc(var(--s7) - 0.4rem) calc(var(--s7) - 0.4rem);
   display: flex;
   flex-direction: column;
   gap: var(--s7);
@@ -39,23 +47,24 @@
    token block in globals for why it cannot be one element.
    ------------------------------------------------------------------------ */
 
-/* The backdrop, blurred and then bent. Both filters live here and nowhere
-   else, so the panel's own content is never displaced. */
+/* Clip the frosted backdrop to the pane. SVG displacement of a live WebGL
+   backdrop creates torn edges, so refraction is not applied to page pixels. */
 .glassEffect {
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   z-index: 0;
   backdrop-filter: var(--chrome-blur);
-  filter: url(#liquid-glass);
+  -webkit-backdrop-filter: var(--chrome-blur);
   pointer-events: none;
 }
 
 .glassTint {
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   z-index: 1;
-  /* Grain over the body, not under it — see --chrome-grain. */
-  background: var(--chrome-grain), var(--chrome-tint-wash);
+  background: var(--chrome-tint-wash);
   transition: background-color var(--dur-fast) var(--ease-out);
   pointer-events: none;
 }
@@ -65,6 +74,7 @@
 .glassShine {
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   z-index: 2;
   box-shadow: var(--chrome-shine);
   pointer-events: none;
@@ -169,8 +179,8 @@
 @media (max-width: 640px) {
   /* The margin is already doing what the page margin used to; keeping both
      leaves the columns in a channel half the width of the screen. */
-  .footer {
-    padding-inline: var(--s5);
+  .content {
+    padding-inline: calc(var(--s5) - 0.4rem);
   }
 
   .bottom {
@@ -202,4 +212,17 @@
        on top of it and leave the column twice as tall as it reads. */
     gap: 0;
   }
+}
+
+/* Hover-capable devices only: avoid sticky expanded panes after a tap. */
+@media (hover: hover) and (pointer: fine) {
+  .footer:hover {
+    padding: 0.8rem;
+    border-radius: 2.5rem;
+  }
+  .footer:hover > div { border-radius: 2.5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .footer { transition: none; }
 }

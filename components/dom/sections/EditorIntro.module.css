@@ -91,7 +91,7 @@
   font-size: var(--fs-h1);
   line-height: var(--lh-snug);
   letter-spacing: var(--tracking-display);
-  font-weight: 500;
+  font-weight: 400;
   max-width: 22ch;
   text-wrap: balance;
 }

@@ -9,19 +9,7 @@ import {
 } from '@/lib/site-audio'
 import styles from './SoundToggle.module.css'
 
-/**
- * Sound on/off, in the nav bar.
- *
- * Sits outside the link list rather than in it, so it survives the collapse
- * into the menu button: a control the visitor may want the moment the music
- * starts cannot be two taps deep behind a hamburger. Below the desktop
- * breakpoint the word goes and the bars stay.
- *
- * The bars are the state, and they are honest about all three of it: they move
- * while it is playing, stand still while a video has it ducked, and drop to a
- * flat line when it is off. Like ThemeToggle, it carries no colour of its own —
- * it inherits the row it renders in.
- */
+/** One accessible sound control on desktop and mobile. */
 export function SoundToggle() {
   const audio = useSyncExternalStore(subscribeToAudio, getAudioState, getServerAudioState)
 
@@ -31,6 +19,7 @@ export function SoundToggle() {
   return (
     <button
       type="button"
+      data-sound-toggle
       className={styles.toggle}
       onClick={toggleAudio}
       aria-pressed={audio.enabled}
@@ -39,17 +28,17 @@ export function SoundToggle() {
       <span className={styles.label} aria-hidden="true">
         Sound[S]
       </span>
-      <span
-        className={styles.bars}
-        data-on={audio.enabled || undefined}
-        data-live={audio.playing || undefined}
-        aria-hidden="true"
-      >
-        <span />
-        <span />
-        <span />
-        <span />
-      </span>
+      <svg className={styles.icon} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"
+        strokeLinejoin="round" aria-hidden="true">
+        <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+        {audio.enabled ? (
+          <>
+            <path d="M15 8a6 6 0 0 1 0 8" />
+            <path d="M18 5a10 10 0 0 1 0 14" />
+          </>
+        ) : <path d="m16 9 5 6m0-6-5 6" />}
+      </svg>
     </button>
   )
 }
