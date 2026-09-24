@@ -58,6 +58,11 @@ function damp(from: number, to: number, lambda: number, dt: number) {
 }
 
 function setTargetFromEvent(event: PointerEvent) {
+  // A scrolling finger is not a hover pointer. Never feed it into model tilt.
+  if (event.pointerType === 'touch') {
+    settleToCenter()
+    return
+  }
   const { innerWidth, innerHeight } = window
   if (innerWidth === 0 || innerHeight === 0) return
   target.x = event.clientX / innerWidth

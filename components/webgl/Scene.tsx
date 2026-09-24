@@ -1,6 +1,7 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useSyncExternalStore } from 'react'
+import { getCapabilities, getServerCapabilities, subscribeToCapabilities } from '@/lib/capabilities'
 import { Canvas } from '@react-three/fiber'
 import { AdaptiveDpr, Environment, Lightformer, Preload } from '@react-three/drei'
 import { getHeroProgress } from '@/lib/hero-progress'
@@ -48,10 +49,15 @@ const FLAT_WIPE: [number, number] = [1, 1]
 const STAGE_WIPE: [number, number] = [1.45, 1.1]
 
 export default function Scene() {
+  const mobileBudget = useSyncExternalStore(
+    subscribeToCapabilities,
+    () => getCapabilities().stacked || !getCapabilities().hoverCapable,
+    () => getServerCapabilities().stacked || !getServerCapabilities().hoverCapable,
+  )
   return (
     <Canvas
       frameloop="always"
-      dpr={[1, 2]}
+      dpr={mobileBudget ? [1, 1.25] : [1, 2]}
       camera={{ position: [0, 0, 6], fov: 35, near: 0.1, far: 100 }}
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
       // The stage is pointer-events:none so the DOM above stays clickable.
@@ -61,12 +67,12 @@ export default function Scene() {
     >
       {/* Order matters: the driver advances scroll and the buses, the sampler
           then refreshes rects at priority -3, and only then do the meshes read
-          them at the default priority. */}
+          them at priority -2.5. */}
       <FrameDriver />
       <RectSampler />
       <DebugSignals />
       {/* Renders the offscreen targets the glass and the flare read. Sits at
-          useFrame priority -2, after the rect sampler and before the meshes. */}
+          useFrame priority -2, after the meshes have updated for this frame. */}
       <RefractionPass />
 
       <ambientLight intensity={0.6} />
@@ -76,13 +82,13 @@ export default function Scene() {
       {/* Mirrors need no assets, so they render outside Suspense and are not
           held up by the model download. */}
       <CardMirrors />
+      <EditorFace />
 
       <Suspense fallback={null}>
         {/* Behind the glass and on the content layer, so the refraction pass
             captures them — that is what gives the dispersion something to bend.
             The field is also the first hero reader each frame, so it advances
             the pointer wake the other two sample. */}
-        <EditorFace />
         {/* The bias is nearly flat and never reaches 1, which is what stops the
             ground going black.
             
@@ -144,7 +150,7 @@ export default function Scene() {
         <Preload all />
       </Suspense>
 
-      <AdaptiveDpr pixelated />
+      <AdaptiveDpr />
     </Canvas>
   )
 }

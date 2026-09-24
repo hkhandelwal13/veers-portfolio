@@ -22,7 +22,6 @@ import {
 import { pointer } from '@/lib/pointer-bus'
 import { getTargetRect } from '@/lib/rect-sampler'
 import { createRingLight } from '@/lib/ring-light'
-import { getScrollSnapshot } from '@/lib/scroll-bus'
 import { isSurfaceDark } from '@/lib/surface'
 import {
   portalArrowFragmentShader,
@@ -170,8 +169,8 @@ export function FinaleArrow() {
     if (!group || !mesh || model.size.y === 0) return
 
     const rect = getTargetRect(FINALE_ARROW_ID)
-    const { viewportHeight } = getScrollSnapshot()
-    const height = viewportHeight || state.size.height
+    // Projection must use the canvas size, including while mobile chrome resizes.
+    const height = state.size.height
 
     const t = getFinaleProgress()
 
@@ -225,7 +224,7 @@ export function FinaleArrow() {
     // faded out over the first part of the growth rather than switched off, so
     // the hand-off from "an object on the page" to "something you are
     // travelling toward" has no seam in it.
-    const calm = caps.reducedMotion ? 0 : 1 - Math.min(getGrowth(t) / 0.22, 1)
+    const calm = caps.reducedMotion || !caps.hoverCapable ? 0 : 1 - Math.min(getGrowth(t) / 0.22, 1)
     const float = Math.sin(state.clock.elapsedTime * 0.6) * boxHeight * IDLE_HEIGHT * FLOAT_AMPLITUDE
     group.position.set(seat.x, seat.y + float * calm, 0)
 
@@ -236,7 +235,7 @@ export function FinaleArrow() {
     tiltQuat.current.setFromEuler(tiltEuler.current)
     spinQuat.current.setFromAxisAngle(attitude.spinAxis, getArrowSpin(t))
     group.quaternion.copy(tiltQuat.current).multiply(spinQuat.current)
-  })
+  }, -2.5)
 
   return (
     <group ref={outer} visible={false}>

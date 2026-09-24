@@ -3,8 +3,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
-import { getTargetRect } from '@/lib/rect-sampler'
-import { getScrollSnapshot } from '@/lib/scroll-bus'
+import { getTargetRect, setTargetMirrorReady } from '@/lib/rect-sampler'
 import { getHoverIntent } from '@/lib/hover-bus'
 import {
   canAnimateCardReveal,
@@ -90,7 +89,7 @@ function createUniforms() {
  *                   but snaps; develop and curl are skipped outright
  *   small screen    bounded curl and develop remain enabled
  */
-export function CardMirror({ targetId }: { targetId: string }) {
+export function CardMirror({ targetId, posterUrl }: { targetId: string; posterUrl?: string }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const progress = useRef(0)
   const develop = useRef(0)
@@ -101,7 +100,10 @@ export function CardMirror({ targetId }: { targetId: string }) {
 
   // Whatever this card was holding open, let go of on unmount — otherwise a
   // route change away from the grid leaves a clip playing to nobody.
-  useEffect(() => () => releaseCardClips(targetId), [targetId])
+  useEffect(() => () => {
+    releaseCardClips(targetId)
+    setTargetMirrorReady(targetId, false)
+  }, [targetId])
 
   useFrame((state, delta) => {
     const mesh = meshRef.current
@@ -111,8 +113,8 @@ export function CardMirror({ targetId }: { targetId: string }) {
     const uniforms = material.uniforms
 
     const rect = getTargetRect(targetId)
-    const { viewportHeight } = getScrollSnapshot()
-    const height = viewportHeight || state.size.height
+    // Projection must use the canvas size, including while mobile chrome resizes.
+    const height = state.size.height
 
     // Hide when the texture isn't ready, the rect is invalid, or the card is
     // far offscreen — a fullscreen quad is too expensive to draw for nothing.
@@ -145,13 +147,20 @@ export function CardMirror({ targetId }: { targetId: string }) {
     // The poster replaces the placeholder hatch the moment it has decoded, and
     // not before: swapping to a texture with no image in it would blank the
     // card for the length of the download.
-    let posterReady = !assets
-    if (assets) {
-      const poster = getPosterTexture(assets.poster)
+    const source = posterUrl ?? assets?.poster
+    let posterReady = !source
+    if (source) {
+      const poster = getPosterTexture(source)
       if (poster) {
         uniforms.uMap.value = poster
         posterReady = true
       }
+    }
+
+    if (posterUrl) {
+      mesh.visible = posterReady
+      uniforms.uMapReveal.value = uniforms.uMap.value
+      setTargetMirrorReady(targetId, posterReady)
     }
 
     // Two ways to be the chosen card, and a device only ever offers one of
@@ -159,9 +168,9 @@ export function CardMirror({ targetId }: { targetId: string }) {
     // pushes onto the same bus). Without one it is having been scrolled to the
     // middle of the screen — see canPlayCardPreviewInView.
     let target = 0
-    if (canAnimateCardReveal(caps)) {
+    if (!posterUrl && canAnimateCardReveal(caps)) {
       target = getHoverIntent(targetId)
-    } else if (canPlayCardPreviewInView(caps)) {
+    } else if (!posterUrl && canPlayCardPreviewInView(caps)) {
       const centre = rect.y + rect.height / 2
       target = Math.abs(centre - height / 2) < height * IN_VIEW_BAND ? 1 : 0
     }
@@ -215,7 +224,7 @@ export function CardMirror({ targetId }: { targetId: string }) {
 
     // --- Scroll-velocity curl -----------------------------------------------
     uniforms.uCurlStrength.value = canCurlOnScroll(caps) ? CURL_MAX * getScrollActivity() : 0
-  })
+  }, -2.5)
 
   return (
     <mesh

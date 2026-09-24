@@ -574,3 +574,12 @@ html.lenis body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Browser toolbar expansion must not resize/reallocate the canvas mid-flick.
+   Keep a stable largest-viewport drawing surface; the browser clips its foot. */
+@media (hover: none) and (pointer: coarse) {
+  .webgl-stage {
+    bottom: auto;
+    height: 100lvh;
+  }
+}

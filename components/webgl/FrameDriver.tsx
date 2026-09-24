@@ -14,7 +14,8 @@ import { claimFrameLoop, releaseFrameLoop, runFrame } from '@/lib/frame-loop'
  *
  *   addEffect (here)        lenis.raf → ScrollBus → PointerBus
  *   useFrame(-3)            DomTargetRectSampler reads fresh rects
- *   useFrame(0)             meshes consume those rects
+ *   useFrame(-2.5)          meshes consume those rects
+ *   useFrame(-2)            refraction captures the updated scene
  *   gl.render               the frame is drawn
  *
  * which is why WebGL can never be a frame behind the DOM.
@@ -42,3 +43,4 @@ export function FrameDriver() {
 
   return null
 }
+

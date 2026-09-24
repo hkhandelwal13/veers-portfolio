@@ -16,9 +16,9 @@ import styles from './EditorIntro.module.css'
  * The hero's WebGL ground travels toward --section-ground as it dissolves, so
  * by the time this scrolls up the handover has already happened underneath.
  *
- * The portrait is a real photograph, and the WebGL layer draws a 2.5D version
- * of it over the top — same image, displaced by an offline depth map so it
- * parallaxes with the pointer. The <img> is the fallback, not a placeholder:
+ * The portrait is a real photograph, and the WebGL layer draws a mirrored version
+ * of it using the same develop and scroll-curl shader as the project grid.
+ * The <img> remains the accessible fallback until the texture is ready:
  * where the canvas never mounts it is simply the portrait.
  *
  * Copy is still placeholder, pending the real introduction.

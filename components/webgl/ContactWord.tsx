@@ -7,7 +7,6 @@ import { useGLTF } from '@react-three/drei'
 import { getCapabilities } from '@/lib/capabilities'
 import { pointer } from '@/lib/pointer-bus'
 import { getTargetRect } from '@/lib/rect-sampler'
-import { getScrollSnapshot } from '@/lib/scroll-bus'
 import { createRingLight } from '@/lib/ring-light'
 import { isSurfaceDark } from '@/lib/surface'
 import { glassFragmentShader, glassVertexShader } from '@/shaders/glass'
@@ -58,6 +57,7 @@ const ENTRANCE_TRAVEL = 0.22
 export function ContactWord() {
   const outer = useRef<THREE.Group>(null)
   const meshRef = useRef<THREE.Mesh>(null)
+  const pointerTiltX = useRef(0)
   const ringLight = useRef<ReturnType<typeof createRingLight> | null>(null)
 
   const camera = useThree((state) => state.camera)
@@ -79,8 +79,8 @@ export function ContactWord() {
     if (!group || !mesh || measured.size.x === 0) return
 
     const rect = getTargetRect(CONTACT_TARGET_ID)
-    const { viewportHeight } = getScrollSnapshot()
-    const height = viewportHeight || state.size.height
+    // Projection must use the canvas size, including while mobile chrome resizes.
+    const height = state.size.height
 
     if (!rect || !isRectVisible(rect, height, 400)) {
       group.visible = false
@@ -153,15 +153,14 @@ export function ContactWord() {
       }
     }
 
-    const float = Math.sin(state.clock.elapsedTime * 0.6) * boxHeight * FLOAT_AMPLITUDE
+    const float = caps.hoverCapable ? Math.sin(state.clock.elapsedTime * 0.6) * boxHeight * FLOAT_AMPLITUDE : 0
     group.position.set(seat.x, seat.y + float, 0)
     group.rotation.y = THREE.MathUtils.damp(group.rotation.y, pointer.cx * TILT_Y, 5, delta)
     // The pointer tilt is damped — the pointer jumps, and easing toward it is
     // the effect. The entrance is added on top undamped, for the reason above.
-    group.rotation.x =
-      THREE.MathUtils.damp(group.rotation.x - LAID_FLAT * laid, pointer.cy * TILT_X, 5, delta) +
-      LAID_FLAT * laid
-  })
+    pointerTiltX.current = THREE.MathUtils.damp(pointerTiltX.current, pointer.cy * TILT_X, 5, delta)
+    group.rotation.x = pointerTiltX.current + LAID_FLAT * laid
+  }, -2.5)
 
 
   return (

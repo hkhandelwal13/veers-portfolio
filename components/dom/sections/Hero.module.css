@@ -64,7 +64,7 @@
   z-index: 2;
   max-width: 24ch;
   color: var(--ink);
-  font-weight: 400;
+  font-weight: 700;
   margin-top: calc(-1 * clamp(40px, 7svh, 80px));
 }
 

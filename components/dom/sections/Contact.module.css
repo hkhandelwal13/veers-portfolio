@@ -57,7 +57,7 @@
   grid-row: 2;
   z-index: 2;
   max-width: 22ch;
-  font-weight: 400;
+  font-weight: 700;
   margin-top: calc(-1 * clamp(24px, 4svh, 48px));
 }
 .frame > [data-webgl='wordmark'] {
@@ -74,7 +74,7 @@
 @media (max-width: 1024px) {
   .section {
     min-height: 0;
-    padding-bottom: calc(var(--hud-inset) + var(--s8));
+    padding-bottom: var(--s5);
   }
   .frame > [data-webgl='wordmark'] {
     width: 100%;

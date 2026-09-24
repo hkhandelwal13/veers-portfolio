@@ -5,7 +5,6 @@ import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import { getTargetRect } from '@/lib/rect-sampler'
-import { getScrollSnapshot } from '@/lib/scroll-bus'
 import { pointer } from '@/lib/pointer-bus'
 import { getCapabilities } from '@/lib/capabilities'
 import { getHeroObjectDissolve, getHeroProgress } from '@/lib/hero-progress'
@@ -142,8 +141,8 @@ export function HeroHello() {
     if (!group || !mesh || measured.size.x === 0) return
 
     const rect = getTargetRect(HERO_TARGET_ID)
-    const { viewportHeight } = getScrollSnapshot()
-    const height = viewportHeight || state.size.height
+    // Projection must use the canvas size, including while mobile chrome resizes.
+    const height = state.size.height
 
     if (!rect || !isRectVisible(rect, height, 400)) {
       group.visible = false
@@ -199,7 +198,7 @@ export function HeroHello() {
       if (ring) uniforms.uLightDirection.value.set(ring.x, ring.y, 0.6)
     }
 
-    if (caps.reducedMotion) {
+    if (caps.reducedMotion || !caps.hoverCapable) {
       group.position.set(seat.x, seat.y, 0)
       group.rotation.set(EXIT_TUMBLE_X * progress, EXIT_TUMBLE_Y * progress, 0)
       return
@@ -215,7 +214,7 @@ export function HeroHello() {
     const targetX = pointer.cy * TILT_X + EXIT_TUMBLE_X * progress
     group.rotation.y = THREE.MathUtils.damp(group.rotation.y, targetY, 5, delta)
     group.rotation.x = THREE.MathUtils.damp(group.rotation.x, targetX, 5, delta)
-  })
+  }, -2.5)
 
   return (
     <group ref={outer} visible={false}>

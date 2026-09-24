@@ -183,7 +183,7 @@ export function SectionField({
     material.uniforms.uProgress.value = value
     material.uniforms.uWipeBias.value.set(wipeBias[0], wipeBias[1])
     material.uniforms.uTopFade.value = topFade
-  })
+  }, -2.5)
 
   return (
     <mesh ref={meshRef} visible={false} frustumCulled={false}>
@@ -197,3 +197,4 @@ export function SectionField({
     </mesh>
   )
 }
+
