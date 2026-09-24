@@ -35,6 +35,7 @@ const REVEAL_SECONDS = 0.45
 const DEVELOP_SECONDS = 0.8
 /** Curl at full scroll speed. Small on purpose — it should read as give, not warp. */
 const CURL_MAX = 0.06
+const CURL_MAX_RESPONSIVE = 0.12
 /**
  * How near the middle of the screen a card must be for its clip to roll, with
  * no pointer to say so. A share of the viewport's height, either side of
@@ -60,6 +61,7 @@ function createUniforms() {
     uViewportPx: { value: new THREE.Vector2(1, 1) },
     uPolarity: { value: 1 },
     uCurlStrength: { value: 0 },
+    uLocalCurl: { value: 0 },
   }
 }
 
@@ -223,7 +225,14 @@ export function CardMirror({ targetId, posterUrl }: { targetId: string; posterUr
     uniforms.uPolarity.value = develop.current
 
     // --- Scroll-velocity curl -----------------------------------------------
-    uniforms.uCurlStrength.value = canCurlOnScroll(caps) ? CURL_MAX * getScrollActivity() : 0
+    const responsiveCurl = caps.stacked || !caps.hoverCapable
+    uniforms.uLocalCurl.value = responsiveCurl ? 1 : 0
+    const activity = getScrollActivity()
+    uniforms.uCurlStrength.value = canCurlOnScroll(caps)
+      ? responsiveCurl
+        ? CURL_MAX_RESPONSIVE * Math.pow(activity, 0.7)
+        : CURL_MAX * activity
+      : 0
   }, -2.5)
 
   return (

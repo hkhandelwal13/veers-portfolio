@@ -113,13 +113,16 @@
   justify-self: center;
 }
 
-@media (max-width: 1024px) {
-  .hero { min-height: 0; }
+@media (max-width: 1024px), (hover: none) and (pointer: coarse) {
+  .hero {
+    min-height: 0;
+    padding-top: calc(var(--nav-h) + clamp(24px, 5svh, 64px));
+  }
   .top { flex-direction: column; gap: var(--s5); }
   .taglineBlock, .intro { max-width: none; }
   .hero > [data-webgl='hero-hello'] {
     grid-row: 1;
-    width: 100%;
+    width: min(100%, 900px);
     height: auto;
     aspect-ratio: 16 / 7;
     margin-top: var(--s5);

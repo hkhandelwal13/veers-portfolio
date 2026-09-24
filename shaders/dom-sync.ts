@@ -40,6 +40,7 @@ uniform float uCellPx;          // dot-matrix cell size, CSS px
 uniform vec2 uViewportPx;       // viewport size, CSS px
 uniform float uPolarity;        // 0 = negative, 1 = original colour
 uniform float uCurlStrength;    // 0 = flat, higher = more flex
+uniform float uLocalCurl;       // responsive cards bend around their own centre
 
 varying vec2 vScreenUv;
 
@@ -50,8 +51,18 @@ varying vec2 vScreenUv;
 vec2 applyCurl(vec2 screenUv) {
   float centered = 2.0 * screenUv.y - 1.0;
   float profile = 1.0 - sqrt(max(0.0, 1.0 - centered * centered));
-  float uvScale = 1.0 - profile * clamp(uCurlStrength, 0.0, 0.06);
-  return vec2((screenUv.x - 0.5) * uvScale + 0.5, screenUv.y);
+  float strength = clamp(uCurlStrength, 0.0, 0.12);
+  float desktopX = (screenUv.x - 0.5) * (1.0 - profile * strength) + 0.5;
+
+  // Short phone/tablet cards barely sample the screen-wide curve. Bend around
+  // each image instead so its top and bottom visibly flex even at screen centre.
+  // Compress the silhouette inward to stay inside narrow mobile page margins.
+  float localY = clamp((screenUv.y - uRect.y) / max(uRect.w, 1e-5), 0.0, 1.0);
+  float localCentered = 2.0 * localY - 1.0;
+  float localProfile = 1.0 - sqrt(max(0.0, 1.0 - localCentered * localCentered));
+  float centreX = uRect.x + uRect.z * 0.5;
+  float responsiveX = (screenUv.x - centreX) * (1.0 + localProfile * strength) + centreX;
+  return vec2(mix(desktopX, responsiveX, uLocalCurl), screenUv.y);
 }
 
 /** Develop-on-enter: blend from the negative back to the original colour. */
@@ -126,3 +137,4 @@ void main() {
   #include <colorspace_fragment>
 }
 `
+

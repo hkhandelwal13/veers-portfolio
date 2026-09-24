@@ -33,8 +33,8 @@ import { isRectVisible, rectToWorld } from './rect-space'
 
 export const CONTACT_TARGET_ID = 'wordmark'
 
-/** Grows past its reserved rect, as the hero's word does. */
-const FILL = 1.08
+/** Slightly inset on desktop to give the closing composition more space. */
+const FILL = 0.96
 /**
  * The same overfill once the layout stacks, where the slot IS the column.
  *
@@ -52,7 +52,8 @@ const TILT_Y = 0.16
 const LAID_FLAT = -Math.PI / 2
 
 /** Screens of scroll the stand-up is spread over, ending at the centre. */
-const ENTRANCE_TRAVEL = 0.22
+const ENTRANCE_TRAVEL = 0.48
+const ENTRANCE_TRAVEL_COMPACT = 0.36
 
 export function ContactWord() {
   const outer = useRef<THREE.Group>(null)
@@ -138,10 +139,14 @@ export function ContactWord() {
     // scroll; smoothing what is derived from it only adds delay.
     const centre = rect.y + rect.height / 2
     const laid = THREE.MathUtils.clamp(
-      (centre - height * 0.5) / (height * ENTRANCE_TRAVEL),
+      (centre - height * 0.5) / (height * (caps.stacked ? ENTRANCE_TRAVEL_COMPACT : ENTRANCE_TRAVEL)),
       0,
       1,
     )
+
+    // Ease the angle at both ends over a longer scroll distance. Position
+    // stays locked to the DOM; no time-based chase is added to scrolling.
+    const easedLaid = THREE.MathUtils.smoothstep(laid, 0, 1)
 
     // Dev-only readout: where the scroll puts it, sampled mid-scroll, which is
     // the only time a lag would exist. Stripped from production by the
@@ -159,7 +164,7 @@ export function ContactWord() {
     // The pointer tilt is damped — the pointer jumps, and easing toward it is
     // the effect. The entrance is added on top undamped, for the reason above.
     pointerTiltX.current = THREE.MathUtils.damp(pointerTiltX.current, pointer.cy * TILT_X, 5, delta)
-    group.rotation.x = pointerTiltX.current + LAID_FLAT * laid
+    group.rotation.x = pointerTiltX.current + LAID_FLAT * easedLaid
   }, -2.5)
 
 

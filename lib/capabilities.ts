@@ -28,7 +28,7 @@ const QUERIES = {
   hoverCapable: '(hover: hover) and (pointer: fine)',
   compact: '(max-width: 640px)',
   // The same line the CSS stacks at — see Hero.module.css.
-  stacked: '(max-width: 1024px)',
+  stacked: '(max-width: 1024px), (hover: none) and (pointer: coarse)',
 } as const
 
 const SERVER: Capabilities = {
