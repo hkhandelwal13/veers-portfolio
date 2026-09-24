@@ -32,6 +32,8 @@
 
 :global(html[data-webgl='live']) .poster {
   background: none;
+  /* A straight DOM border would obscure the curved WebGL silhouette. */
+  border-color: transparent;
 }
 
 /* The poster as a real image, for the page without a canvas.

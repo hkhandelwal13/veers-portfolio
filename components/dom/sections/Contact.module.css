@@ -48,35 +48,37 @@
 }
 
 .frame {
-  min-height: calc(100svh - var(--nav-h) - var(--hud-inset) - var(--s9));
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  padding-top: clamp(32px, 5svh, 64px);
 }
-
 .heading {
   position: relative;
+  grid-row: 2;
   z-index: 2;
-  padding-top: var(--s9);
-  max-width: 18ch;
+  max-width: 22ch;
+  font-weight: 400;
+  margin-top: calc(-1 * clamp(24px, 4svh, 48px));
 }
-
+.frame > [data-webgl='wordmark'] {
+  position: relative;
+  grid-row: 1;
+  justify-self: center;
+  left: auto;
+  top: auto;
+  width: min(78%, 1000px);
+  /* Match the uploaded model so its slot does not add hidden vertical gaps. */
+  height: auto;
+  aspect-ratio: 2.053054;
+}
 @media (max-width: 1024px) {
-  /* Same as the hero: the section becomes a flow container so the in-flow
-     reserved slot lands between the heading and the contact details. */
   .section {
     min-height: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--s6);
     padding-bottom: calc(var(--hud-inset) + var(--s8));
   }
-
-  .frame {
-    gap: var(--s7);
+  .frame > [data-webgl='wordmark'] {
+    width: 100%;
+    height: auto;
   }
-
-  .heading {
-    padding-top: var(--s7);
-  }
-
+  .heading { margin-top: calc(-1 * clamp(18px, 3svh, 28px)); }
 }

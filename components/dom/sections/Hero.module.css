@@ -57,13 +57,15 @@
   color: var(--muted);
 }
 
-/* The headline follows the model instead of overlapping it. */
+/* Keep only a shallow overlap with the model's lower edge. */
 .headline {
   position: relative;
   grid-row: 3;
   z-index: 2;
   max-width: 24ch;
   color: var(--ink);
+  font-weight: 400;
+  margin-top: calc(-1 * clamp(40px, 7svh, 80px));
 }
 
 /* Scroll cue */
@@ -118,10 +120,15 @@
   .hero > [data-webgl='hero-hello'] {
     grid-row: 1;
     width: 100%;
-    height: clamp(200px, 34svh, 360px);
+    height: auto;
+    aspect-ratio: 16 / 7;
     margin-top: var(--s5);
   }
-  .headline { grid-row: 2; max-width: 24ch; }
+  .headline {
+    grid-row: 2;
+    max-width: 24ch;
+    margin-top: calc(-1 * clamp(40px, 7svh, 64px));
+  }
   .top { grid-row: 3; padding-top: 0; }
   .cue { display: none; }
 }

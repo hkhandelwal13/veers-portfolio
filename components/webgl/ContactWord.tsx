@@ -35,7 +35,7 @@ import { isRectVisible, rectToWorld } from './rect-space'
 export const CONTACT_TARGET_ID = 'wordmark'
 
 /** Grows past its reserved rect, as the hero's word does. */
-const FILL = 1.46
+const FILL = 1.08
 /**
  * The same overfill once the layout stacks, where the slot IS the column.
  *
@@ -44,7 +44,7 @@ const FILL = 1.46
  * line against both edges — the word became unreadable exactly where reading
  * it is the point.
  */
-const FILL_COMPACT = 1.06
+const FILL_COMPACT = 1.0
 const FLOAT_AMPLITUDE = 0.02
 const TILT_X = 0.1
 const TILT_Y = 0.16
@@ -61,7 +61,7 @@ export function ContactWord() {
   const ringLight = useRef<ReturnType<typeof createRingLight> | null>(null)
 
   const camera = useThree((state) => state.camera)
-  const { scene } = useGLTF('/models/contact.glb')
+  const { scene } = useGLTF('/models/contact.glb?v=45f4dad7')
 
   const initialUniforms = useMemo(() => createGlassUniforms(), [])
 
@@ -180,4 +180,4 @@ export function ContactWord() {
   )
 }
 
-useGLTF.preload('/models/contact.glb')
+useGLTF.preload('/models/contact.glb?v=45f4dad7')
