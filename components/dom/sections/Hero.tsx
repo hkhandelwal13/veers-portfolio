@@ -4,13 +4,7 @@ import { SITE } from '@/lib/placeholder-content'
 import styles from './Hero.module.css'
 import { Scramble } from '@/components/dom/Scramble'
 
-/**
- * Home / hero — wireframe 1b.
- *
- * The wireframe's rule is that the wordmark, nav, tagline and intro all sit
- * OUTSIDE the reserved 3D rect and never overlap it; only the display headline
- * crosses it, and does so above it in z-order.
- */
+/** The responsive grid reserves separate rows for the model and headline. */
 export function Hero() {
   return (
     <section className={styles.hero} aria-labelledby="hero-heading">

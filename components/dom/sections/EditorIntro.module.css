@@ -41,7 +41,7 @@
 .portraitFrame {
   position: relative;
   /* The source photo's own ratio, so nothing of the composition is cropped. */
-  aspect-ratio: 976 / 1098;
+  aspect-ratio: 1;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--section-ink) 22%, transparent);
 }

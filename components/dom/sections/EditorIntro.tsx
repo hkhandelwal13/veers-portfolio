@@ -31,10 +31,10 @@ export function EditorIntro() {
           <WebGLTarget targetId="editor-face" className={styles.portraitFrame}>
             <Image
               className={styles.portraitImage}
-              src="/face-color2.png"
+              src="/editor-portrait.jpg"
               alt="Portrait of the editor"
-              width={976}
-              height={1098}
+              width={1024}
+              height={1024}
               sizes="(max-width: 1024px) 90vw, 40vw"
               priority={false}
             />

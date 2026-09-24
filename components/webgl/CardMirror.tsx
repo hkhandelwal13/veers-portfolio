@@ -88,7 +88,7 @@ function createUniforms() {
  *                   link, not start an animation
  *   reduced motion  the reveal still happens — the second image is content —
  *                   but snaps; develop and curl are skipped outright
- *   small screen    curl is off; flinging a touch list makes it read as wobble
+ *   small screen    bounded curl and develop remain enabled
  */
 export function CardMirror({ targetId }: { targetId: string }) {
   const meshRef = useRef<THREE.Mesh>(null)
@@ -145,9 +145,13 @@ export function CardMirror({ targetId }: { targetId: string }) {
     // The poster replaces the placeholder hatch the moment it has decoded, and
     // not before: swapping to a texture with no image in it would blank the
     // card for the length of the download.
+    let posterReady = !assets
     if (assets) {
       const poster = getPosterTexture(assets.poster)
-      if (poster) uniforms.uMap.value = poster
+      if (poster) {
+        uniforms.uMap.value = poster
+        posterReady = true
+      }
     }
 
     // Two ways to be the chosen card, and a device only ever offers one of
@@ -196,15 +200,16 @@ export function CardMirror({ targetId }: { targetId: string }) {
     // "entered" is tested separately and strictly: the card has to be actually
     // on screen before it starts developing.
     const onScreen = rect.y < height && rect.y + rect.height > 0
+      && rect.x < state.size.width && rect.x + rect.width > 0
 
     if (!canDevelopOnEnter(caps)) {
       develop.current = 1
-    } else if (!onScreen) {
+    } else if (!onScreen || !posterReady) {
       // Snap back rather than easing down — the point is to be reset and ready,
       // not to play the transition in reverse on the way out.
       develop.current = 0
     } else {
-      develop.current = Math.min(develop.current + delta / DEVELOP_SECONDS, 1)
+      develop.current = Math.min(develop.current + Math.min(Math.max(delta, 0), 0.1) / DEVELOP_SECONDS, 1)
     }
     uniforms.uPolarity.value = develop.current
 
