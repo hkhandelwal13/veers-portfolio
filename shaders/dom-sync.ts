@@ -44,23 +44,14 @@ uniform float uCurlStrength;    // 0 = flat, higher = more flex
 varying vec2 vScreenUv;
 
 /**
- * Scroll-velocity curl.
- *
- * A semicircular profile across the card's height: zero at the middle, rising
- * toward the top and bottom edges. Compressing the sampled X there magnifies
- * the image at the extremes while the centre barely moves, so the card appears
- * to flex as the page moves.
- *
- * Applied in card-local space, not screen space, so every card flexes about
- * its own centre by the same amount — the article describes the middle of the
- * *image* holding still — and so the flex cannot drag the card's edges off the
- * DOM rect they are mirroring.
+ * Bend screen coordinates before mapping to card-local UVs. The image and
+ * alpha boundary then curve together rather than zooming inside a rigid box.
  */
-vec2 applyCurl(vec2 localUv) {
-  float centered = 2.0 * localUv.y - 1.0;
+vec2 applyCurl(vec2 screenUv) {
+  float centered = 2.0 * screenUv.y - 1.0;
   float profile = 1.0 - sqrt(max(0.0, 1.0 - centered * centered));
-  float scale = 1.0 - profile * uCurlStrength;
-  return vec2((localUv.x - 0.5) * scale + 0.5, localUv.y);
+  float uvScale = 1.0 - profile * clamp(uCurlStrength, 0.0, 0.06);
+  return vec2((screenUv.x - 0.5) * uvScale + 0.5, screenUv.y);
 }
 
 /** Develop-on-enter: blend from the negative back to the original colour. */
@@ -70,15 +61,15 @@ vec3 applyPolarity(vec3 rgb) {
 
 void main() {
   vec2 size = max(uRect.zw, vec2(1e-5));
-  vec2 localUv = (vScreenUv - uRect.xy) / size;
+  vec2 curledScreenUv = applyCurl(vScreenUv);
+  vec2 localUv = (curledScreenUv - uRect.xy) / size;
 
   // Distance to the nearest edge on each axis; negative means outside.
   vec2 edge = min(localUv, 1.0 - localUv);
   float inside = step(0.0, edge.x) * step(0.0, edge.y);
 
-  // The mask stays on the undistorted UV: the curl flexes the picture inside
-  // the card, it must not move the card's own boundary.
-  vec2 sampleUv = clamp(applyCurl(localUv), 0.0, 1.0);
+  // Image and alpha mask share the bend; DOM metadata remains steady.
+  vec2 sampleUv = clamp(localUv, 0.0, 1.0);
 
   vec4 base = texture2D(uMap, sampleUv);
 

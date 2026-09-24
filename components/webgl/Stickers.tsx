@@ -13,7 +13,6 @@ import {
 } from '@/lib/sticker-atlas'
 import { getTargetRect } from '@/lib/rect-sampler'
 import { getHeroObjectDissolve, getHeroProgress } from '@/lib/hero-progress'
-import { getScrollSnapshot } from '@/lib/scroll-bus'
 import { stickerFragmentShader, stickerVertexShader } from '@/shaders/stickers'
 import { FIELD_TARGET_ID } from './HeroField'
 import { HERO_TARGET_ID } from './HeroHello'
@@ -216,8 +215,8 @@ export function Stickers({
     // half the screen.
     const rect = getTargetRect(fieldId)
     const slot = getTargetRect(slotId)
-    const { viewportHeight } = getScrollSnapshot()
-    const height = viewportHeight || state.size.height
+    // Projection must use the canvas size, including while mobile chrome resizes.
+    const height = state.size.height
     // Bound to the section, not just to a valid rect: a field measured for a
     // section still below the fold would otherwise be drawn over whatever
     // happens to be on screen — the finale, in the closing screen's case.
@@ -338,7 +337,7 @@ export function Stickers({
         veil: +hidden.toFixed(2),
       }
     }
-  })
+  }, -2.5)
 
   return (
     <instancedMesh

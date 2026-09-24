@@ -13,7 +13,6 @@ import styles from './Nav.module.css'
 export const NAV_LINKS = [
   { href: '/work', label: 'Work' },
   { href: '/about', label: 'About' },
-  { href: '/services', label: 'Services' },
   { href: '/contact', label: 'Contact' },
 ]
 
@@ -74,11 +73,14 @@ export function Nav() {
           type="button"
           className={styles.menuButton}
           onClick={() => setMenuOpen(true)}
+          aria-label="Open menu"
           aria-expanded={menuOpen}
           aria-haspopup="dialog"
           aria-controls="mobile-menu"
         >
-          Menu ☰
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
         </button>
       </nav>
 

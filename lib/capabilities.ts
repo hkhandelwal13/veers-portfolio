@@ -202,7 +202,7 @@ export function canRenderStickers(caps: Capabilities = current): boolean {
  * everything but name.
  */
 export function canRenderStarFlare(caps: Capabilities = current): boolean {
-  return canRenderGlass() && !caps.reducedMotion
+  return canRenderGlass() && !caps.reducedMotion && !caps.stacked && caps.hoverCapable
 }
 
 /**

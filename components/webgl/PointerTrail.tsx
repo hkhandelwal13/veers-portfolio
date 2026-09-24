@@ -158,7 +158,7 @@ export function PointerTrail() {
     const ageAttribute = mesh.geometry.getAttribute('aAge')
     if (ageAttribute) ageAttribute.needsUpdate = true
     ;(mesh.material as THREE.ShaderMaterial).uniforms.uStrength.value = strength
-  })
+  }, -2.5)
 
   return (
     <instancedMesh
@@ -180,3 +180,4 @@ export function PointerTrail() {
     </instancedMesh>
   )
 }
+

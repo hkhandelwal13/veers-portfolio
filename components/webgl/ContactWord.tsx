@@ -7,7 +7,6 @@ import { useGLTF } from '@react-three/drei'
 import { getCapabilities } from '@/lib/capabilities'
 import { pointer } from '@/lib/pointer-bus'
 import { getTargetRect } from '@/lib/rect-sampler'
-import { getScrollSnapshot } from '@/lib/scroll-bus'
 import { createRingLight } from '@/lib/ring-light'
 import { isSurfaceDark } from '@/lib/surface'
 import { glassFragmentShader, glassVertexShader } from '@/shaders/glass'
@@ -35,7 +34,7 @@ import { isRectVisible, rectToWorld } from './rect-space'
 export const CONTACT_TARGET_ID = 'wordmark'
 
 /** Grows past its reserved rect, as the hero's word does. */
-const FILL = 1.46
+const FILL = 1.08
 /**
  * The same overfill once the layout stacks, where the slot IS the column.
  *
@@ -44,7 +43,7 @@ const FILL = 1.46
  * line against both edges — the word became unreadable exactly where reading
  * it is the point.
  */
-const FILL_COMPACT = 1.06
+const FILL_COMPACT = 1.0
 const FLOAT_AMPLITUDE = 0.02
 const TILT_X = 0.1
 const TILT_Y = 0.16
@@ -58,10 +57,11 @@ const ENTRANCE_TRAVEL = 0.22
 export function ContactWord() {
   const outer = useRef<THREE.Group>(null)
   const meshRef = useRef<THREE.Mesh>(null)
+  const pointerTiltX = useRef(0)
   const ringLight = useRef<ReturnType<typeof createRingLight> | null>(null)
 
   const camera = useThree((state) => state.camera)
-  const { scene } = useGLTF('/models/contact.glb')
+  const { scene } = useGLTF('/models/contact.glb?v=45f4dad7')
 
   const initialUniforms = useMemo(() => createGlassUniforms(), [])
 
@@ -79,8 +79,8 @@ export function ContactWord() {
     if (!group || !mesh || measured.size.x === 0) return
 
     const rect = getTargetRect(CONTACT_TARGET_ID)
-    const { viewportHeight } = getScrollSnapshot()
-    const height = viewportHeight || state.size.height
+    // Projection must use the canvas size, including while mobile chrome resizes.
+    const height = state.size.height
 
     if (!rect || !isRectVisible(rect, height, 400)) {
       group.visible = false
@@ -153,15 +153,14 @@ export function ContactWord() {
       }
     }
 
-    const float = Math.sin(state.clock.elapsedTime * 0.6) * boxHeight * FLOAT_AMPLITUDE
+    const float = caps.hoverCapable ? Math.sin(state.clock.elapsedTime * 0.6) * boxHeight * FLOAT_AMPLITUDE : 0
     group.position.set(seat.x, seat.y + float, 0)
     group.rotation.y = THREE.MathUtils.damp(group.rotation.y, pointer.cx * TILT_Y, 5, delta)
     // The pointer tilt is damped — the pointer jumps, and easing toward it is
     // the effect. The entrance is added on top undamped, for the reason above.
-    group.rotation.x =
-      THREE.MathUtils.damp(group.rotation.x - LAID_FLAT * laid, pointer.cy * TILT_X, 5, delta) +
-      LAID_FLAT * laid
-  })
+    pointerTiltX.current = THREE.MathUtils.damp(pointerTiltX.current, pointer.cy * TILT_X, 5, delta)
+    group.rotation.x = pointerTiltX.current + LAID_FLAT * laid
+  }, -2.5)
 
 
   return (
@@ -180,4 +179,4 @@ export function ContactWord() {
   )
 }
 
-useGLTF.preload('/models/contact.glb')
+useGLTF.preload('/models/contact.glb?v=45f4dad7')

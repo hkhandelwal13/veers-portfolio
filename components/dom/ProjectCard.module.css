@@ -21,7 +21,7 @@
 .poster {
   position: relative;
   aspect-ratio: var(--card-ratio);
-  border: 1px solid var(--ink);
+  border: 0;
   overflow: hidden;
   background: repeating-linear-gradient(
     45deg,
@@ -32,6 +32,7 @@
 
 :global(html[data-webgl='live']) .poster {
   background: none;
+
 }
 
 /* The poster as a real image, for the page without a canvas.

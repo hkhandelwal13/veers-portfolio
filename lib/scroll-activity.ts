@@ -29,11 +29,13 @@ const MIN_DT = 1 / 240
 const MAX_DT = 0.1
 
 let activity = 0
+let previousScrollY: number | null = null
 
 /** Called once per frame by the frame loop. Returns the smoothed 0..1 value. */
 export function updateScrollActivity(scroll: ScrollSnapshot, deltaSeconds: number): number {
   const dt = Math.min(Math.max(deltaSeconds, MIN_DT), MAX_DT)
-  const speed = Math.abs(scroll.delta) / dt
+  const speed = previousScrollY === null ? 0 : Math.abs(scroll.scrollTop - previousScrollY) / dt
+  previousScrollY = scroll.scrollTop
   const target = Math.min(speed / FULL_SPEED, 1)
 
   const tau = target > activity ? TAU_ATTACK : TAU_RELEASE
@@ -53,4 +55,5 @@ export function getScrollActivity(): number {
 /** Test seam. */
 export function resetScrollActivity() {
   activity = 0
+  previousScrollY = null
 }

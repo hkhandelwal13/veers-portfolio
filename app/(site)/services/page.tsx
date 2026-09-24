@@ -1,14 +1,6 @@
-import type { Metadata } from 'next'
-import { Hud } from '@/components/dom/chrome/Hud'
-import { Services } from '@/components/dom/sections/Services'
+import { redirect } from 'next/navigation'
 
-export const metadata: Metadata = { title: 'Services' }
-
+// Retired section: preserve old links without exposing a second services page.
 export default function ServicesPage() {
-  return (
-    <main>
-      <Hud />
-      <Services />
-    </main>
-  )
+  redirect('/contact')
 }

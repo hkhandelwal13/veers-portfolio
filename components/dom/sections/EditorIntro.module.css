@@ -43,7 +43,7 @@
   /* The source photo's own ratio, so nothing of the composition is cropped. */
   aspect-ratio: 1;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--section-ink) 22%, transparent);
+  border: 0;
 }
 
 .portraitImage {
@@ -149,4 +149,9 @@
     left: -3%;
     width: clamp(200px, 58vw, 300px);
   }
+}
+
+/* Keep the accessible photo until its WebGL texture has actually decoded. */
+:global(html[data-webgl='live']) .portraitFrame[data-mirror-ready='true'] .portraitImage {
+  visibility: hidden;
 }

@@ -84,6 +84,17 @@ export function getTargetRect(id: string): TargetRect | null {
   return targets.get(id)?.rect ?? null
 }
 
+/** Mark the DOM fallback ready only after its mirror has a decoded texture. */
+export function setTargetMirrorReady(id: string, ready: boolean) {
+  const element = targets.get(id)?.element
+  if (!element) return
+  if (ready) {
+    if (element.dataset.mirrorReady !== 'true') element.dataset.mirrorReady = 'true'
+  } else {
+    delete element.dataset.mirrorReady
+  }
+}
+
 export function getTargetIds(): string[] {
   return [...targets.keys()]
 }

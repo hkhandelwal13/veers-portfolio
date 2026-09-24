@@ -99,7 +99,7 @@ export function MobileMenu({
 
       <div className={styles.panel}>
         <div className={styles.bar}>
-          <span className={styles.wordmark}>Veerlabs</span>
+          <Link href="/" className={styles.wordmark} onClick={onClose}>Veerlabs</Link>
           <button type="button" ref={closeRef} className={styles.close} onClick={onClose}>
             Close ✕
           </button>

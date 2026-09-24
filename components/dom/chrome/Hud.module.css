@@ -187,3 +187,7 @@
     justify-content: flex-start;
   }
 }
+
+@media (max-width: 1024px) {
+  .bottomLeft { display: none; }
+}

@@ -15,7 +15,7 @@
   position: absolute;
   /* Overscan exceeds the maximum displacement and blur, so the visible clip
      never samples a transparent edge. Do not mask out the glass centre. */
-  inset: -32px;
+  inset: -48px;
   -webkit-backdrop-filter: blur(3px) saturate(1.2);
   backdrop-filter: blur(3px) saturate(1.2);
   /* Filter the captured backdrop itself, not an empty transparent span.
@@ -53,4 +53,26 @@
 
 @media (prefers-reduced-motion: reduce) {
   .surface { transition: none; }
+}
+
+/* Mobile engines do not consistently implement SVG backdrop-filter URLs.
+   Capture with native backdrop blur, then refract that layer with an SVG
+   element filter. Overscan and the shared clip keep distortion off the page. */
+@media (max-width: 1024px), (hover: none) {
+  .refraction {
+    -webkit-backdrop-filter: blur(4px) saturate(1.35);
+    backdrop-filter: blur(4px) saturate(1.35);
+    filter: url(#liquid-glass);
+  }
+
+  .tint {
+    background: linear-gradient(135deg, rgba(255,255,255,0.22),
+      rgba(255,255,255,0.04) 42%, rgba(255,255,255,0.13));
+  }
+
+  .shine {
+    border-color: rgba(255,255,255,0.4);
+    box-shadow: inset 2px 2px 2px rgba(255,255,255,0.65),
+      inset -1px -2px 3px rgba(255,255,255,0.35);
+  }
 }

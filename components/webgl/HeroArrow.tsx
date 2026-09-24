@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
-import { canRenderGlass } from '@/lib/capabilities'
+import { canRenderGlass, getCapabilities } from '@/lib/capabilities'
 import { applyFlatArrowDefinition, computeArrowAttitude } from './arrow-attitude'
 import { getHeroObjectDissolve, getHeroProgress } from '@/lib/hero-progress'
 import { pointer } from '@/lib/pointer-bus'
@@ -13,7 +13,7 @@ import { isSurfaceDark } from '@/lib/surface'
 import { glassFragmentShader, glassVertexShader } from '@/shaders/glass'
 import { glassPasses } from './glass-passes'
 import { FIELD_TARGET_ID } from './HeroField'
-import { createGlassUniforms } from './HeroHello'
+import { createGlassUniforms, HERO_TARGET_ID } from './HeroHello'
 import { LAYER_GLASS } from './layers'
 import { flattenModel } from './model-geometry'
 import { rectToWorld } from './rect-space'
@@ -82,7 +82,8 @@ export function HeroArrow() {
     const mesh = meshRef.current
     if (!group || !mesh || model.size.y === 0) return
 
-    const rect = getTargetRect(FIELD_TARGET_ID)
+    const caps = getCapabilities()
+    const rect = getTargetRect(caps.stacked ? HERO_TARGET_ID : FIELD_TARGET_ID)
     const progress = getHeroProgress()
     if (!rect || !rect.valid || !canRenderGlass() || progress >= 1) {
       group.visible = false
@@ -95,13 +96,13 @@ export function HeroArrow() {
     const sectionHeight = rect.height * seat.unitsPerPixel
     const sectionWidth = rect.width * seat.unitsPerPixel
 
-    const fit = (sectionHeight * RELATIVE_HEIGHT) / model.size.y
+    const fit = (sectionHeight * (caps.stacked ? 0.32 : RELATIVE_HEIGHT)) / model.size.y
     group.scale.setScalar(fit * (1 - 0.5 * progress))
 
-    const float = Math.sin(state.clock.elapsedTime * 0.7) * sectionHeight * 0.012
+    const float = caps.reducedMotion || !caps.hoverCapable ? 0 : Math.sin(state.clock.elapsedTime * 0.7) * sectionHeight * 0.012
     group.position.set(
-      seat.x + (ANCHOR_X - 0.5) * sectionWidth,
-      seat.y - (ANCHOR_Y - 0.5) * sectionHeight + float,
+      seat.x + ((caps.stacked ? 0.86 : ANCHOR_X) - 0.5) * sectionWidth,
+      seat.y - ((caps.stacked ? 0.88 : ANCHOR_Y) - 0.5) * sectionHeight + float,
       0,
     )
 
@@ -134,7 +135,7 @@ export function HeroArrow() {
     material.uniforms.uDark.value = isSurfaceDark() ? 1 : 0
     material.uniforms.uPixelRatio.value = state.viewport.dpr
     material.uniforms.uDissolve.value = getHeroObjectDissolve()
-  })
+  }, -2.5)
 
   return (
     <group ref={outer} visible={false}>

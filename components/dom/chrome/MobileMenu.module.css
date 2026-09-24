@@ -81,7 +81,8 @@
 }
 
 .link {
-  font-family: var(--font-display);
+  font-family: var(--font-tronica-mono), monospace;
+  font-weight: 400;
   font-size: 28px;
   letter-spacing: 0.02em;
   line-height: 1.1;
