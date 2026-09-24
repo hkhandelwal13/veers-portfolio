@@ -21,9 +21,9 @@ export function ProjectDetail({
   const meta = [
     { key: 'Client', value: project.client },
     { key: 'Role', value: project.role },
-    { key: 'Year', value: String(project.year) },
+    { key: 'Year', value: project.year == null ? '' : String(project.year) },
     { key: 'Runtime', value: project.runtime },
-  ]
+  ].filter((row) => row.value)
 
   return (
     <article className={styles.page}>
@@ -47,7 +47,7 @@ export function ProjectDetail({
       <VideoPlayer src={project.video} poster={project.poster} title={project.title} />
 
       <div className={styles.body}>
-        <section aria-labelledby="about-edit">
+        {project.description.length > 0 && <section aria-labelledby="about-edit">
           <h2 id="about-edit" className={`label ${styles.copyTitle}`}>
             About the edit
           </h2>
@@ -56,7 +56,7 @@ export function ProjectDetail({
               <p key={p}>{p}</p>
             ))}
           </div>
-        </section>
+        </section>}
 
         <section aria-labelledby="meta-heading">
           <h2 id="meta-heading" className={`label ${styles.metaTitle}`}>
@@ -71,7 +71,7 @@ export function ProjectDetail({
             ))}
           </dl>
 
-          <h3 className={`label ${styles.creditsTitle}`}>Credits</h3>
+          {project.credits.length > 0 && <h3 className={`label ${styles.creditsTitle}`}>Credits</h3>}
           <dl className={styles.metaList}>
             {project.credits.map((credit) => (
               <div key={credit.role} className={styles.metaRow}>
@@ -83,14 +83,6 @@ export function ProjectDetail({
         </section>
       </div>
 
-      <ul className={styles.stills}>
-        {['Still 01', 'Still 02', 'Still 03'].map((s) => (
-          <li key={s} className={styles.still}>
-            {s}
-          </li>
-        ))}
-      </ul>
-
       <nav className={styles.next} aria-label="Next project">
         <Link href={`/work/${next.slug}`} className={styles.nextLeft}>
           <Scramble className="label" text="Next project" />
@@ -101,3 +93,4 @@ export function ProjectDetail({
     </article>
   )
 }
+

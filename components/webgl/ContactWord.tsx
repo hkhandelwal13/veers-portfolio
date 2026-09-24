@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import { getCapabilities } from '@/lib/capabilities'
+import { pointer } from '@/lib/pointer-bus'
 import { getTargetRect } from '@/lib/rect-sampler'
 import { createRingLight } from '@/lib/ring-light'
 import { isSurfaceDark } from '@/lib/surface'
@@ -105,7 +106,11 @@ export function ContactWord() {
       uniforms.uDark.value = isSurfaceDark() ? 1 : 0
       uniforms.uPixelRatio.value = state.viewport.dpr
 
-      const ring = ringLight.current?.update(0, 0, false, delta)
+      // Follow only the pointer angle around a fixed-radius ring. This changes
+      // the highlight, never the model's scroll-driven orientation.
+      const ring = caps.reducedMotion || !caps.hoverCapable
+        ? ringLight.current?.update(0, 0, false, delta)
+        : ringLight.current?.update(pointer.cx, pointer.cy, pointer.inside, delta)
       if (ring) uniforms.uLightDirection.value.set(ring.x, ring.y, 0.6)
     }
 
