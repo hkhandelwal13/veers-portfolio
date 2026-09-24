@@ -25,49 +25,10 @@
   /* The wordmark is the HUD's, drawn over this bar's left end — see Hud.module.
      This padding is what it aligns to, so the two have to stay in step. */
   padding-inline: var(--s5);
-  border-radius: var(--chrome-radius-bar);
-  border: 1px solid var(--chrome-edge);
-  box-shadow: var(--chrome-lift);
-  /* The glass layers below are positioned against this box and clipped by its
-     radius. The bar is position:fixed, which is already a containing block. */
-  overflow: hidden;
-  transition: border-color var(--dur-fast) var(--ease-out);
-}
-
-/* ---------------------------------------------------------------------------
-   Liquid glass, the bar. Three stacked layers under the content — see the
-   token block in globals for why it cannot be one element.
-   ------------------------------------------------------------------------ */
-
-/* The backdrop, blurred and then bent. Both filters live here and nowhere
-   else, so the bar's own content is never displaced. */
-.glassEffect {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  backdrop-filter: var(--chrome-blur);
-  filter: url(#liquid-glass);
-  pointer-events: none;
-}
-
-.glassTint {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  /* Grain over the body, not under it — see --chrome-grain. */
-  background: var(--chrome-grain), var(--chrome-tint-wash);
-  transition: background-color var(--dur-fast) var(--ease-out);
-  pointer-events: none;
-}
-
-/* Over the tint, not under it: a highlight that the body washes over is not a
-   highlight. */
-.glassShine {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  box-shadow: var(--chrome-shine);
-  pointer-events: none;
+  border-radius: var(--chrome-radius);
+  border: 1px solid transparent;
+  /* The decorative surface owns clipping and can expand past this box. */
+  overflow: visible;
 }
 
 /* Everything the bar actually shows sits above the glass. */
@@ -168,4 +129,17 @@
     min-width: 44px;
     justify-content: flex-end;
   }
+}
+
+@media (max-width: 1024px) {
+  .nav { gap: 0.25rem; }
+  .soundSlot { flex: none; }
+}
+
+
+/* The supplied mono specimen: navigation and control labels. */
+.link, .soundSlot, .themeSlot, .menuButton {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
 }

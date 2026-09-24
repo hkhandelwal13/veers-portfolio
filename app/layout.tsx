@@ -6,16 +6,15 @@ import { WebGLCanvas } from '@/components/webgl/WebGLCanvas'
 import { DEFAULT_THEME, themeBootstrapScript } from '@/lib/theme'
 import './globals.css'
 
-/**
- * Type pairing per PHASE2_KICKOFF.md: TikTok Sans for display/headings/body,
- * Space Mono for HUD, labels, meta and nav. Both self-hosted (latin subset) so
- * nothing is fetched from Google at build or runtime. Caveat is deliberately
- * not loaded — it was annotation ink in the wireframes.
- */
+/** Self-hosted TikTok Sans 400/700 for body/display and the supplied
+ * Tronica Mono 400 for navigation and HUD labels. Space Mono stays available
+ * as the original mono family and fallback. */
 const tiktokSans = localFont({
-  src: '../public/fonts/TikTokSans-Variable.woff2',
+  src: [
+    { path: '../public/fonts/TikTokSans-Variable.woff2', weight: '400', style: 'normal' },
+    { path: '../public/fonts/TikTokSans-Variable.woff2', weight: '700', style: 'normal' },
+  ],
   variable: '--font-tiktok-sans',
-  weight: '300 900',
   display: 'swap',
   fallback: ['ui-sans-serif', 'system-ui', 'sans-serif'],
 })
@@ -23,9 +22,17 @@ const tiktokSans = localFont({
 const spaceMono = localFont({
   src: [
     { path: '../public/fonts/SpaceMono-Regular.woff2', weight: '400', style: 'normal' },
-    { path: '../public/fonts/SpaceMono-Bold.woff2', weight: '700', style: 'normal' },
   ],
   variable: '--font-space-mono',
+  display: 'swap',
+  fallback: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+})
+
+const tronicaMono = localFont({
+  src: '../public/fonts/TronicaMono-Regular.ttf',
+  variable: '--font-tronica-mono',
+  weight: '400',
+  style: 'normal',
   display: 'swap',
   fallback: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
 })
@@ -50,7 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // React hydrates, which is exactly the mismatch this suppresses.
     <html
       lang="en"
-      className={`${tiktokSans.variable} ${spaceMono.variable}`}
+      className={`${tiktokSans.variable} ${spaceMono.variable} ${tronicaMono.variable}`}
       suppressHydrationWarning
     >
       <body>

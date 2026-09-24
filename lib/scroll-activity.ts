@@ -19,7 +19,7 @@
 import type { ScrollSnapshot } from './scroll-bus'
 
 /** px/s that counts as "full speed". */
-const FULL_SPEED = 900
+const FULL_SPEED = 800
 /** Seconds. Rising toward a faster scroll. */
 const TAU_ATTACK = 0.025
 /** Seconds. Falling back to rest — deliberately slower. */

@@ -9,7 +9,9 @@
      opt back in. */
   pointer-events: none;
   font-family: var(--font-mono);
-  font-size: var(--hud-size);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
   letter-spacing: var(--hud-tracking);
   text-transform: uppercase;
   color: var(--chrome-muted);
@@ -72,7 +74,7 @@
   align-items: center;
   gap: var(--s3);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.1em;
   color: var(--chrome-ink);
 }

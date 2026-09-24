@@ -22,52 +22,22 @@
   position: relative;
   z-index: var(--z-content);
   margin: var(--chrome-float) var(--margin) var(--chrome-float);
-  border-radius: var(--chrome-radius-panel);
-  border: 1px solid var(--chrome-edge);
-  box-shadow: var(--chrome-lift);
-  /* Clips the glass layers below to the panel's radius. */
-  overflow: hidden;
+  border-radius: var(--chrome-radius);
+  border: 1px solid transparent;
+  /* The decorative surface owns clipping and expands without reflow. */
+  overflow: visible;
   color: var(--chrome-muted);
-  padding: var(--s8) var(--s7) var(--s7);
+  padding: 0.4rem;
+}
+
+.content {
+  border-radius: inherit;
+  position: relative;
+  z-index: 3;
+  padding: calc(var(--s8) - 0.4rem) calc(var(--s7) - 0.4rem) calc(var(--s7) - 0.4rem);
   display: flex;
   flex-direction: column;
   gap: var(--s7);
-}
-
-/* ---------------------------------------------------------------------------
-   Liquid glass, the panel. Three stacked layers under the content — see the
-   token block in globals for why it cannot be one element.
-   ------------------------------------------------------------------------ */
-
-/* The backdrop, blurred and then bent. Both filters live here and nowhere
-   else, so the panel's own content is never displaced. */
-.glassEffect {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  backdrop-filter: var(--chrome-blur);
-  filter: url(#liquid-glass);
-  pointer-events: none;
-}
-
-.glassTint {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  /* Grain over the body, not under it — see --chrome-grain. */
-  background: var(--chrome-grain), var(--chrome-tint-wash);
-  transition: background-color var(--dur-fast) var(--ease-out);
-  pointer-events: none;
-}
-
-/* Over the tint, not under it: a highlight that the body washes over is not a
-   highlight. */
-.glassShine {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  box-shadow: var(--chrome-shine);
-  pointer-events: none;
 }
 
 /* Everything the panel shows sits above the glass. */
@@ -169,8 +139,8 @@
 @media (max-width: 640px) {
   /* The margin is already doing what the page margin used to; keeping both
      leaves the columns in a channel half the width of the screen. */
-  .footer {
-    padding-inline: var(--s5);
+  .content {
+    padding-inline: calc(var(--s5) - 0.4rem);
   }
 
   .bottom {

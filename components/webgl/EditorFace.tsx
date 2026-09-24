@@ -44,7 +44,7 @@ export const FACE_TARGET_ID = 'editor-face'
  * beside the colour image, and name it here. Nothing else changes.
  */
 const PORTRAIT: { color: string; depth: string | null } = {
-  color: '/face-color2.png',
+  color: '/editor-portrait.jpg',
   depth: null,
 }
 

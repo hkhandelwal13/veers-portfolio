@@ -7,6 +7,7 @@ import { useScrollFlag } from '@/lib/use-scroll'
 import { MobileMenu } from './MobileMenu'
 import { SoundToggle } from './SoundToggle'
 import { ThemeToggle } from './ThemeToggle'
+import { LiquidGlass } from './LiquidGlass'
 import styles from './Nav.module.css'
 
 export const NAV_LINKS = [
@@ -41,10 +42,7 @@ export function Nav() {
         className={`${styles.nav} ${scrolled ? styles.scrolled : ''}`}
         aria-label="Primary"
       >
-        {/* The three glass layers, under everything the bar shows. */}
-        <span className={styles.glassEffect} aria-hidden="true" />
-        <span className={styles.glassTint} aria-hidden="true" />
-        <span className={styles.glassShine} aria-hidden="true" />
+        <LiquidGlass />
 
         <ul className={styles.links}>
           {NAV_LINKS.map((link) => (

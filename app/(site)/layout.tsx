@@ -1,3 +1,4 @@
+import { GlassFilter } from '@/components/dom/chrome/GlassFilter'
 import { Nav } from '@/components/dom/chrome/Nav'
 import { Footer } from '@/components/dom/chrome/Footer'
 import { Loader } from '@/components/dom/chrome/Loader'
@@ -5,7 +6,6 @@ import { RouteTransition } from '@/components/dom/chrome/RouteTransition'
 import { StageDressing } from '@/components/dom/chrome/StageDressing'
 import { Cursor } from '@/components/dom/chrome/Cursor'
 import { SiteAudio } from '@/components/dom/chrome/SiteAudio'
-import { GlassFilter } from '@/components/dom/chrome/GlassFilter'
 import { WebGLDebug } from '@/components/dom/WebGLDebug'
 
 /**
@@ -22,8 +22,6 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         Skip to content
       </a>
       <StageDressing />
-      {/* Referenced by id from the nav and footer's glass layers, so it is
-          mounted once rather than per pane. */}
       <GlassFilter />
       <SiteAudio />
       <Loader />
