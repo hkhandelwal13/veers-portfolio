@@ -5,7 +5,6 @@ import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import { getCapabilities } from '@/lib/capabilities'
-import { pointer } from '@/lib/pointer-bus'
 import { getTargetRect } from '@/lib/rect-sampler'
 import { createRingLight } from '@/lib/ring-light'
 import { isSurfaceDark } from '@/lib/surface'
@@ -44,9 +43,6 @@ const FILL = 0.96
  * it is the point.
  */
 const FILL_COMPACT = 1.0
-const FLOAT_AMPLITUDE = 0.02
-const TILT_X = 0.1
-const TILT_Y = 0.16
 
 /** Lying flat, face to the ceiling — where the word starts before it stands. */
 const LAID_FLAT = -Math.PI / 2
@@ -58,7 +54,6 @@ const ENTRANCE_TRAVEL_COMPACT = 0.36
 export function ContactWord() {
   const outer = useRef<THREE.Group>(null)
   const meshRef = useRef<THREE.Mesh>(null)
-  const pointerTiltX = useRef(0)
   const ringLight = useRef<ReturnType<typeof createRingLight> | null>(null)
 
   const camera = useThree((state) => state.camera)
@@ -110,9 +105,7 @@ export function ContactWord() {
       uniforms.uDark.value = isSurfaceDark() ? 1 : 0
       uniforms.uPixelRatio.value = state.viewport.dpr
 
-      const ring = caps.reducedMotion
-        ? ringLight.current?.update(0, 0, false, delta)
-        : ringLight.current?.update(pointer.cx, pointer.cy, pointer.inside, delta)
+      const ring = ringLight.current?.update(0, 0, false, delta)
       if (ring) uniforms.uLightDirection.value.set(ring.x, ring.y, 0.6)
     }
 
@@ -158,13 +151,10 @@ export function ContactWord() {
       }
     }
 
-    const float = caps.hoverCapable ? Math.sin(state.clock.elapsedTime * 0.6) * boxHeight * FLOAT_AMPLITUDE : 0
-    group.position.set(seat.x, seat.y + float, 0)
-    group.rotation.y = THREE.MathUtils.damp(group.rotation.y, pointer.cx * TILT_Y, 5, delta)
-    // The pointer tilt is damped — the pointer jumps, and easing toward it is
-    // the effect. The entrance is added on top undamped, for the reason above.
-    pointerTiltX.current = THREE.MathUtils.damp(pointerTiltX.current, pointer.cy * TILT_X, 5, delta)
-    group.rotation.x = pointerTiltX.current + LAID_FLAT * easedLaid
+    // One hinge axis only: fully horizontal at -PI/2, upright at zero.
+    // Cursor position must not add yaw, pitch, roll or idle drift.
+    group.position.set(seat.x, seat.y, 0)
+    group.rotation.set(LAID_FLAT * easedLaid, 0, 0)
   }, -2.5)
 
 

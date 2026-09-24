@@ -46,11 +46,8 @@ export function Hero() {
           Story first. Everything else is finishing.
         </h1>
 
-        <div className={styles.cue} aria-hidden="true">
-          <span className={styles.cueLine} />
-          <Scramble className="label" text="Scroll" />
-        </div>
       </div>
     </section>
   )
 }
+

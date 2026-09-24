@@ -106,34 +106,6 @@ export function getServerCapabilities(): Capabilities {
  * ----------------------------------------------------------------------- */
 
 /**
- * Dot-matrix hover reveal on the project cards.
- *
- * Off without a hovering pointer: on a touchscreen the reveal would either
- * never fire or fire once on tap and stick, and the card is a link, so a tap
- * should navigate rather than animate. Reduced motion keeps the reveal — the
- * second image is content — but snaps to it instead of animating (see
- * CardMirror).
- */
-export function canAnimateCardReveal(caps: Capabilities = current): boolean {
-  return caps.hoverCapable
-}
-
-/**
- * Card previews play when the card reaches the middle of the screen.
- *
- * The touch counterpart to the hover reveal, not an addition to it: without a
- * pointer there is no hover to start the clip, and a tap has to follow the
- * link rather than animate. Scroll position is the only intent a touchscreen
- * offers, so the card you have brought to the middle of the screen is the one
- * treated as chosen.
- *
- * Off under reduced motion, where the poster is the whole of the card.
- */
-export function canPlayCardPreviewInView(caps: Capabilities = current): boolean {
-  return !caps.hoverCapable && !caps.reducedMotion
-}
-
-/**
  * Develop-on-enter: cards fade up from a negative as they come into view.
  *
  * Skipped entirely under reduced motion — unlike the hover reveal, nothing is

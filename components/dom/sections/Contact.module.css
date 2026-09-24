@@ -80,10 +80,15 @@
     width: min(100%, 900px);
     height: auto;
   }
+  /* Keep the section heading available to assistive technology, not on screen. */
   .heading {
-    font-size: clamp(1.875rem, 4.5vw + 0.5rem, 3.25rem);
-    line-height: 1.08;
-    max-width: 24ch;
-    margin-top: calc(-1 * clamp(10px, 1.5svh, 18px));
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }

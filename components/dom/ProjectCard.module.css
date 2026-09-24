@@ -172,3 +172,16 @@
     display: none;
   }
 }
+
+.touchHint {
+  position: absolute;
+  right: var(--s3);
+  bottom: var(--s3);
+  z-index: 1;
+  padding: 6px 10px;
+  color: white;
+  background: rgb(0 0 0 / 0.65);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  pointer-events: none;
+}

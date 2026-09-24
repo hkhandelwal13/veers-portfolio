@@ -40,7 +40,6 @@ uniform float uCellPx;          // dot-matrix cell size, CSS px
 uniform vec2 uViewportPx;       // viewport size, CSS px
 uniform float uPolarity;        // 0 = negative, 1 = original colour
 uniform float uCurlStrength;    // 0 = flat, higher = more flex
-uniform float uLocalCurl;       // responsive cards bend around their own centre
 
 varying vec2 vScreenUv;
 
@@ -51,18 +50,9 @@ varying vec2 vScreenUv;
 vec2 applyCurl(vec2 screenUv) {
   float centered = 2.0 * screenUv.y - 1.0;
   float profile = 1.0 - sqrt(max(0.0, 1.0 - centered * centered));
-  float strength = clamp(uCurlStrength, 0.0, 0.12);
-  float desktopX = (screenUv.x - 0.5) * (1.0 - profile * strength) + 0.5;
-
-  // Short phone/tablet cards barely sample the screen-wide curve. Bend around
-  // each image instead so its top and bottom visibly flex even at screen centre.
-  // Compress the silhouette inward to stay inside narrow mobile page margins.
-  float localY = clamp((screenUv.y - uRect.y) / max(uRect.w, 1e-5), 0.0, 1.0);
-  float localCentered = 2.0 * localY - 1.0;
-  float localProfile = 1.0 - sqrt(max(0.0, 1.0 - localCentered * localCentered));
-  float centreX = uRect.x + uRect.z * 0.5;
-  float responsiveX = (screenUv.x - centreX) * (1.0 + localProfile * strength) + centreX;
-  return vec2(mix(desktopX, responsiveX, uLocalCurl), screenUv.y);
+  float strength = clamp(uCurlStrength, 0.0, 0.075);
+  float uvScale = 1.0 - profile * strength;
+  return vec2((screenUv.x - 0.5) * uvScale + 0.5, screenUv.y);
 }
 
 /** Develop-on-enter: blend from the negative back to the original colour. */
@@ -77,7 +67,11 @@ void main() {
 
   // Distance to the nearest edge on each axis; negative means outside.
   vec2 edge = min(localUv, 1.0 - localUv);
-  float inside = step(0.0, edge.x) * step(0.0, edge.y);
+  // A one-pixel feather prevents hard mask edges flickering as DOM positions
+  // move through fractional pixels during touch inertia.
+  vec2 edgeAa = max(fwidth(localUv), vec2(1e-5));
+  vec2 coverage = smoothstep(vec2(0.0), edgeAa, edge);
+  float inside = coverage.x * coverage.y;
 
   // Image and alpha mask share the bend; DOM metadata remains steady.
   vec2 sampleUv = clamp(localUv, 0.0, 1.0);
