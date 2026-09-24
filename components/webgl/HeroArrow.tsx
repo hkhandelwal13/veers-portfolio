@@ -96,13 +96,13 @@ export function HeroArrow() {
     const sectionHeight = rect.height * seat.unitsPerPixel
     const sectionWidth = rect.width * seat.unitsPerPixel
 
-    const fit = (sectionHeight * (caps.stacked ? 0.32 : RELATIVE_HEIGHT)) / model.size.y
+    const fit = (sectionHeight * (caps.stacked ? 0.26 : RELATIVE_HEIGHT)) / model.size.y
     group.scale.setScalar(fit * (1 - 0.5 * progress))
 
     const float = caps.reducedMotion || !caps.hoverCapable ? 0 : Math.sin(state.clock.elapsedTime * 0.7) * sectionHeight * 0.012
     group.position.set(
       seat.x + ((caps.stacked ? 0.86 : ANCHOR_X) - 0.5) * sectionWidth,
-      seat.y - ((caps.stacked ? 0.88 : ANCHOR_Y) - 0.5) * sectionHeight + float,
+      seat.y - ((caps.stacked ? 1.16 : ANCHOR_Y) - 0.5) * sectionHeight + float,
       0,
     )
 

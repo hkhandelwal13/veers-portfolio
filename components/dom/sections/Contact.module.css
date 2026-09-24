@@ -71,14 +71,19 @@
   height: auto;
   aspect-ratio: 2.053054;
 }
-@media (max-width: 1024px) {
+@media (max-width: 1024px), (hover: none) and (pointer: coarse) {
   .section {
     min-height: 0;
-    padding-bottom: var(--s5);
+    padding-bottom: clamp(48px, 7svh, 88px);
   }
   .frame > [data-webgl='wordmark'] {
-    width: 100%;
+    width: min(100%, 900px);
     height: auto;
   }
-  .heading { margin-top: calc(-1 * clamp(18px, 3svh, 28px)); }
+  .heading {
+    font-size: clamp(1.875rem, 4.5vw + 0.5rem, 3.25rem);
+    line-height: 1.08;
+    max-width: 24ch;
+    margin-top: calc(-1 * clamp(10px, 1.5svh, 18px));
+  }
 }
