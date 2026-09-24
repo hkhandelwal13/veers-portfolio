@@ -68,25 +68,6 @@
   margin-top: calc(-1 * clamp(40px, 7svh, 80px));
 }
 
-/* Scroll cue */
-.cue {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--s2);
-}
-
-.cueLine {
-  width: 1px;
-  height: 34px;
-  background: var(--muted);
-}
-
 /* Separate rows reserve model space even when text wraps on short screens. */
 .hero {
   display: grid;
@@ -104,14 +85,7 @@
   width: 70%;
   height: clamp(240px, 38svh, 420px);
 }
-.cue {
-  position: relative;
-  grid-row: 4;
-  bottom: auto;
-  left: auto;
-  transform: none;
-  justify-self: center;
-}
+
 
 @media (max-width: 1024px), (hover: none) and (pointer: coarse) {
   .hero {
@@ -133,5 +107,4 @@
     margin-top: calc(-1 * clamp(40px, 7svh, 64px));
   }
   .top { grid-row: 3; padding-top: 0; }
-  .cue { display: none; }
 }

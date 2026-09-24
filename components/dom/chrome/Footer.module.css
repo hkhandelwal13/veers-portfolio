@@ -21,7 +21,7 @@
 .footer {
   position: relative;
   z-index: var(--z-content);
-  margin: var(--chrome-float) var(--margin) var(--chrome-float);
+  margin: var(--chrome-float) var(--margin) calc(var(--chrome-float) + clamp(16px, 2.5svh, 32px) + env(safe-area-inset-bottom, 0px));
   border-radius: var(--chrome-radius);
   border: 1px solid transparent;
   /* The decorative surface owns clipping and expands without reflow. */
@@ -173,3 +173,4 @@
     gap: 0;
   }
 }
+

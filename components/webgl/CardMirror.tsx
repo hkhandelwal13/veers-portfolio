@@ -6,10 +6,8 @@ import { useFrame } from '@react-three/fiber'
 import { getTargetRect, setTargetMirrorReady } from '@/lib/rect-sampler'
 import { getHoverIntent } from '@/lib/hover-bus'
 import {
-  canAnimateCardReveal,
   canCurlOnScroll,
   canDevelopOnEnter,
-  canPlayCardPreviewInView,
   getCapabilities,
 } from '@/lib/capabilities'
 import { getCardAssets } from '@/lib/card-assets'
@@ -35,21 +33,7 @@ const REVEAL_SECONDS = 0.45
 const DEVELOP_SECONDS = 0.8
 /** Curl at full scroll speed. Small on purpose — it should read as give, not warp. */
 const CURL_MAX = 0.06
-const CURL_MAX_RESPONSIVE = 0.12
-/**
- * How near the middle of the screen a card must be for its clip to roll, with
- * no pointer to say so. A share of the viewport's height, either side of
- * centre.
- *
- * Narrow enough that ONE card is chosen, which is the whole point — at 0.3 a
- * phone had two cards inside the band at once, because a card there is about
- * a quarter of the screen tall and the band was more than half of it. Two
- * cards playing at once is not a preview, it is a wall. Still wide enough
- * that the chosen card stays chosen while you read its title rather than
- * flickering off the moment the page drifts.
- */
-const IN_VIEW_BAND = 0.17
-
+const CURL_MAX_RESPONSIVE = 0.075
 function createUniforms() {
   return {
     uMap: { value: getPlaceholderPosterTexture() },
@@ -61,7 +45,6 @@ function createUniforms() {
     uViewportPx: { value: new THREE.Vector2(1, 1) },
     uPolarity: { value: 1 },
     uCurlStrength: { value: 0 },
-    uLocalCurl: { value: 0 },
   }
 }
 
@@ -85,8 +68,7 @@ function createUniforms() {
  * Shutoffs, all present from the start:
  *   offscreen       the mesh is hidden and both progresses reset, so a card
  *                   that scrolls away and comes back replays from the start
- *   no hover        touch devices hold the poster; a tap should follow the
- *                   link, not start an animation
+ *   touch           first poster tap previews; a second tap opens the project
  *   reduced motion  the reveal still happens — the second image is content —
  *                   but snaps; develop and curl are skipped outright
  *   small screen    bounded curl and develop remain enabled
@@ -165,22 +147,14 @@ export function CardMirror({ targetId, posterUrl }: { targetId: string; posterUr
       setTargetMirrorReady(targetId, posterReady)
     }
 
-    // Two ways to be the chosen card, and a device only ever offers one of
-    // them. With a pointer it is hover (and keyboard focus, which the DOM side
-    // pushes onto the same bus). Without one it is having been scrolled to the
-    // middle of the screen — see canPlayCardPreviewInView.
-    let target = 0
-    if (!posterUrl && canAnimateCardReveal(caps)) {
-      target = getHoverIntent(targetId)
-    } else if (!posterUrl && canPlayCardPreviewInView(caps)) {
-      const centre = rect.y + rect.height / 2
-      target = Math.abs(centre - height / 2) < height * IN_VIEW_BAND ? 1 : 0
-    }
+    // Only explicit hover, keyboard focus or a deliberate poster tap reveals.
+    // Scrolling into view never starts a preview or its video decoder.
+    const target = posterUrl ? 0 : getHoverIntent(targetId)
 
     // The clip rolls while the card is chosen *or* still closing over it, so
     // the picture under a retreating reveal is live rather than a frozen frame.
     if (assets?.preview) {
-      const wanted = target > 0 || progress.current > 0
+      const wanted = !caps.reducedMotion && (target > 0 || progress.current > 0)
       holding.current = wanted
       const clip = wantCardClip(assets.preview, targetId, wanted)
       // Until the clip has a frame, reveal the poster — which is to say,
@@ -226,11 +200,10 @@ export function CardMirror({ targetId, posterUrl }: { targetId: string; posterUr
 
     // --- Scroll-velocity curl -----------------------------------------------
     const responsiveCurl = caps.stacked || !caps.hoverCapable
-    uniforms.uLocalCurl.value = responsiveCurl ? 1 : 0
     const activity = getScrollActivity()
     uniforms.uCurlStrength.value = canCurlOnScroll(caps)
       ? responsiveCurl
-        ? CURL_MAX_RESPONSIVE * Math.pow(activity, 0.7)
+        ? CURL_MAX_RESPONSIVE * activity
         : CURL_MAX * activity
       : 0
   }, -2.5)

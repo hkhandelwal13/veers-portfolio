@@ -183,6 +183,17 @@ export function RefractionPass() {
     const star = glassPasses.star
     if (!refraction || !glassOnly || !star) return
 
+    // Work cards do not need a second full-scene render when no glass model
+    // is visible. Their positions/materials have already updated at -2.5.
+    let needsRefraction = false
+    scene.traverseVisible((object) => {
+      const mesh = object as THREE.Mesh
+      if (!mesh.isMesh || !(mesh.layers.mask & (1 << LAYER_GLASS))) return
+      const material = mesh.material as THREE.ShaderMaterial
+      if ((material.uniforms?.uDissolve?.value ?? 0) < 0.999) needsRefraction = true
+    })
+    if (!needsRefraction) return
+
     frame.current += 1
 
     const previousMask = camera.layers.mask
@@ -249,3 +260,4 @@ export function RefractionPass() {
 
   return null
 }
+

@@ -36,8 +36,13 @@ export function lenisOptions(reducedMotion: boolean): ConstructorParameters<type
     lerp: reducedMotion ? 1 : 0.1,
     smoothWheel: !reducedMotion,
     wheelMultiplier: 1,
-    touchMultiplier: 1.6,
-    // Touch devices keep native momentum; it feels better than emulated inertia.
-    syncTouch: false,
+    touchMultiplier: 1,
+    // Native compositor scrolling can run ahead of our fixed WebGL canvas.
+    // Apply touch movement through the same frame loop as DOM rect sampling.
+    // Direct dragging uses lerp=1 inside Lenis; only release inertia is eased.
+    syncTouch: !reducedMotion,
+    syncTouchLerp: 0.1,
+    touchInertiaExponent: 1.4,
   }
 }
+
