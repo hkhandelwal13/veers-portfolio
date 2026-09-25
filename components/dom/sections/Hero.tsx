@@ -37,7 +37,7 @@ export function Hero() {
           </div>
 
           <p className={styles.intro}>
-            <Scramble neon reveal text={`Based in ${SITE.basedIn}. Working with agencies, brands and independent creators since ${SITE.since}.`} />
+            <Scramble neon reveal text={`Hello I'm Veer Sonawane, Based in ${SITE.basedIn}. Working with agencies, brands and independent creators since ${SITE.since}.`} />
           </p>
         </div>
 
