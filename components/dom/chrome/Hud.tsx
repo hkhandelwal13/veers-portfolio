@@ -9,6 +9,7 @@ import { pointerRaw, subscribeToPointer } from '@/lib/pointer-bus'
 import { fetchTemperature } from '@/lib/weather'
 import { getTimeZone, getZonePlace, type ZonePlace } from '@/lib/zone-places'
 import { scrollToSection } from '@/lib/section-scroll'
+import { getScrollSnapshot, subscribeToScroll } from '@/lib/scroll-bus'
 
 /**
  * Four-corner HUD (PHASE2_KICKOFF "HUD motif") — built once, mounted in the
@@ -195,6 +196,94 @@ function PointerCoords() {
   )
 }
 
+/** Desktop-only scroll rail. It mirrors ScrollBus and fades when motion settles. */
+function DesktopScrollIndicator() {
+  const railRef = useRef<HTMLDivElement>(null)
+  const thumbRef = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    const rail = railRef.current
+    const thumb = thumbRef.current
+    if (!rail || !thumb) return
+
+    let hideTimer: ReturnType<typeof setTimeout> | null = null
+
+    const render = () => {
+      const scroll = getScrollSnapshot()
+      const progress = Math.min(1, Math.max(0, scroll.progress))
+      const trackHeight = rail.clientHeight
+      const documentHeight = Math.max(scroll.viewportHeight + scroll.limit, scroll.viewportHeight)
+      const viewportRatio = documentHeight > 0 ? scroll.viewportHeight / documentHeight : 1
+      const thumbHeight = Math.max(34, trackHeight * Math.min(1, viewportRatio))
+      const travel = Math.max(0, trackHeight - thumbHeight)
+
+      thumb.style.height = `${thumbHeight}px`
+      thumb.style.transform = `translate3d(0, ${travel * progress}px, 0)`
+
+      if (Math.abs(scroll.delta) > 0.1) {
+        rail.dataset.active = 'true'
+        if (hideTimer) clearTimeout(hideTimer)
+        hideTimer = setTimeout(() => {
+          delete rail.dataset.active
+          hideTimer = null
+        }, 720)
+      }
+    }
+
+    render()
+    const unsubscribe = subscribeToScroll(render)
+    return () => {
+      unsubscribe()
+      if (hideTimer) clearTimeout(hideTimer)
+    }
+  }, [])
+
+  return (
+    <div ref={railRef} className={styles.desktopScrollRail} aria-hidden="true">
+      <span className={`${styles.scrollCross} ${styles.scrollCrossTop}`} />
+      <span ref={thumbRef} className={styles.desktopScrollThumb} />
+      <span className={`${styles.scrollCross} ${styles.scrollCrossBottom}`} />
+    </div>
+  )
+}
+
+/** Mobile circular progress tube beside the globe. */
+function MobileScrollRing() {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const progressRef = useRef<SVGCircleElement>(null)
+
+  useEffect(() => {
+    const wrap = wrapRef.current
+    const progressCircle = progressRef.current
+    if (!wrap || !progressCircle) return
+
+    const render = () => {
+      const progress = Math.min(1, Math.max(0, getScrollSnapshot().progress))
+      progressCircle.style.strokeDashoffset = String(100 - progress * 100)
+      wrap.style.setProperty('--scroll-ring-scale', String(0.72 + progress * 0.28))
+    }
+
+    render()
+    return subscribeToScroll(render)
+  }, [])
+
+  return (
+    <div ref={wrapRef} className={styles.mobileScrollRing} aria-hidden="true">
+      <svg viewBox="0 0 36 36">
+        <circle className={styles.mobileScrollRingTrack} cx="18" cy="18" r="14" pathLength="100" />
+        <circle
+          ref={progressRef}
+          className={styles.mobileScrollRingProgress}
+          cx="18"
+          cy="18"
+          r="14"
+          pathLength="100"
+        />
+      </svg>
+    </div>
+  )
+}
+
 /**
  * A turning globe — the supplied mark, redrawn as geometry.
  *
@@ -310,7 +399,10 @@ export function Hud() {
         </Link>
       </div>
 
+      <DesktopScrollIndicator />
+
       <div className={`${styles.corner} ${styles.bottomRight} ${handoff}`}>
+        <MobileScrollRing />
         <Globe />
       </div>
     </div>
