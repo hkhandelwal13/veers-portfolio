@@ -12,36 +12,6 @@ function load(path, require = () => ({})) {
   return context.exports
 }
 
-test('touch poster previews on first tap and opens on second tap', () => {
-  const touch = load('lib/poster-touch.ts').createPosterTouchIntent()
-  touch.start(100, 200, 300)
-  assert.equal(touch.tap(300), 'preview')
-  touch.start(100, 200, 300)
-  assert.equal(touch.tap(300), 'open')
-})
-
-test('scrolling, dragging and cancelled gestures cannot reveal or open a poster', () => {
-  const touch = load('lib/poster-touch.ts').createPosterTouchIntent()
-  assert.equal(touch.tap(300), 'ignore')
-  touch.start(100, 200, 300)
-  touch.move(100, 225)
-  assert.equal(touch.tap(300), 'ignore')
-  touch.start(100, 200, 300)
-  assert.equal(touch.tap(320), 'ignore')
-  touch.start(100, 200, 300)
-  touch.cancel()
-  assert.equal(touch.tap(300), 'ignore')
-})
-
-test('scroll or outside-touch dismissal requires a new first tap', () => {
-  const touch = load('lib/poster-touch.ts').createPosterTouchIntent()
-  touch.start(100, 200, 300)
-  assert.equal(touch.tap(300), 'preview')
-  touch.reset()
-  touch.start(100, 200, 400)
-  assert.equal(touch.tap(400), 'preview')
-})
-
 test('touch uses the shared frame loop, with native reduced-motion fallback', () => {
   const api = load('lib/lenis.ts')
   assert.equal(api.lenisOptions(false).autoRaf, false)

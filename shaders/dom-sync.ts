@@ -50,7 +50,7 @@ varying vec2 vScreenUv;
 vec2 applyCurl(vec2 screenUv) {
   float centered = 2.0 * screenUv.y - 1.0;
   float profile = 1.0 - sqrt(max(0.0, 1.0 - centered * centered));
-  float strength = clamp(uCurlStrength, 0.0, 0.075);
+  float strength = clamp(uCurlStrength, 0.0, 0.12);
   float uvScale = 1.0 - profile * strength;
   return vec2((screenUv.x - 0.5) * uvScale + 0.5, screenUv.y);
 }

@@ -2,7 +2,7 @@ import { WebGLSlot } from '@/components/dom/WebGLSlot'
 import { WebGLTarget } from '@/components/dom/WebGLTarget'
 import { SITE } from '@/lib/placeholder-content'
 import styles from './Hero.module.css'
-import { Scramble } from '@/components/dom/Scramble'
+import { Typewriter } from '@/components/dom/Typewriter'
 
 /** The responsive grid reserves separate rows for the model and headline. */
 export function Hero() {
@@ -26,24 +26,22 @@ export function Hero() {
       <div className={styles.frame}>
         <div className={styles.top}>
           <div className={styles.taglineBlock}>
-            <Scramble
+            <Typewriter
               className={`label ${styles.eyebrow}`}
               text="Video editor — Color — Motion"
             />
             <p className={styles.tagline}>
-              Cutting commercials, music videos and documentary from assembly to
-              delivery.
+              <Typewriter text="Cutting commercials, music videos and documentary from assembly to delivery." />
             </p>
           </div>
 
           <p className={styles.intro}>
-            Based in {SITE.basedIn}. Working with agencies, labels and independent
-            producers since {SITE.since} — colour and finishing handled in-house.
+            <Typewriter text={`Based in ${SITE.basedIn}. Working with agencies, labels and independent producers since ${SITE.since} — colour and finishing handled in-house.`} />
           </p>
         </div>
 
         <h1 id="hero-heading" className={`display ${styles.headline}`}>
-          Story first. Everything else is finishing.
+          <Typewriter text="Story first. Everything else is finishing." />
         </h1>
 
       </div>

@@ -11,6 +11,7 @@ import {
   getCapabilities,
 } from '@/lib/capabilities'
 import { getCardAssets } from '@/lib/card-assets'
+import { advanceCardDevelop, cardEntryProgress, mobilePreviewTarget } from '@/lib/card-entry'
 import { getScrollActivity } from '@/lib/scroll-activity'
 import { domSyncFragmentShader, domSyncVertexShader } from '@/shaders/dom-sync'
 import { getPosterTexture, releaseCardClips, wantCardClip } from './card-media'
@@ -29,11 +30,9 @@ const CELL_PX = 14
  * metadata scrim land together.
  */
 const REVEAL_SECONDS = 0.45
-/** Seconds for a card to develop from negative to full colour on entry. */
-const DEVELOP_SECONDS = 0.8
 /** Curl at full scroll speed. Small on purpose — it should read as give, not warp. */
 const CURL_MAX = 0.06
-const CURL_MAX_RESPONSIVE = 0.075
+const CURL_MAX_RESPONSIVE = 0.12
 function createUniforms() {
   return {
     uMap: { value: getPlaceholderPosterTexture() },
@@ -68,7 +67,7 @@ function createUniforms() {
  * Shutoffs, all present from the start:
  *   offscreen       the mesh is hidden and both progresses reset, so a card
  *                   that scrolls away and comes back replays from the start
- *   touch           first poster tap previews; a second tap opens the project
+ *   touch           the centered card reveals and plays; tapping opens the project
  *   reduced motion  the reveal still happens — the second image is content —
  *                   but snaps; develop and curl are skipped outright
  *   small screen    bounded curl and develop remain enabled
@@ -100,6 +99,12 @@ export function CardMirror({ targetId, posterUrl }: { targetId: string; posterUr
     // Projection must use the canvas size, including while mobile chrome resizes.
     const height = state.size.height
 
+    // Request the poster a viewport ahead, before its entry animation begins.
+    const assets = getCardAssets(targetId)
+    const source = posterUrl ?? assets?.poster
+    const poster = source && rect && isRectVisible(rect, height, height)
+      ? getPosterTexture(source) : null
+
     // Hide when the texture isn't ready, the rect is invalid, or the card is
     // far offscreen — a fullscreen quad is too expensive to draw for nothing.
     if (!uniforms.uMap.value || !rect || !isRectVisible(rect, height)) {
@@ -125,21 +130,12 @@ export function CardMirror({ targetId, posterUrl }: { targetId: string; posterUr
     uniforms.uViewportPx.value.set(state.size.width, height)
 
     const caps = getCapabilities()
-    const assets = getCardAssets(targetId)
-
     // --- What the card is showing ------------------------------------------
     // The poster replaces the placeholder hatch the moment it has decoded, and
     // not before: swapping to a texture with no image in it would blank the
     // card for the length of the download.
-    const source = posterUrl ?? assets?.poster
-    let posterReady = !source
-    if (source) {
-      const poster = getPosterTexture(source)
-      if (poster) {
-        uniforms.uMap.value = poster
-        posterReady = true
-      }
-    }
+    const posterReady = !source || !!poster
+    if (poster) uniforms.uMap.value = poster
 
     if (posterUrl) {
       mesh.visible = posterReady
@@ -147,9 +143,11 @@ export function CardMirror({ targetId, posterUrl }: { targetId: string; posterUr
       setTargetMirrorReady(targetId, posterReady)
     }
 
-    // Only explicit hover, keyboard focus or a deliberate poster tap reveals.
-    // Scrolling into view never starts a preview or its video decoder.
-    const target = posterUrl ? 0 : getHoverIntent(targetId)
+    // Restore the mobile in-view shutter. Desktop keeps pointer/focus intent.
+    const entry = cardEntryProgress(rect.y, rect.height, height)
+    let target = posterUrl || !posterReady ? 0 : caps.hoverCapable
+      ? getHoverIntent(targetId)
+      : !caps.reducedMotion && develop.current >= 1 && mobilePreviewTarget(rect.y, rect.height, height) ? 1 : 0
 
     // The clip rolls while the card is chosen *or* still closing over it, so
     // the picture under a retreating reveal is live rather than a frozen frame.
@@ -164,6 +162,9 @@ export function CardMirror({ targetId, posterUrl }: { targetId: string; posterUr
       // the same image is the honest empty state: the dot grid still runs, and
       // the picture changes the moment there is a picture to change to.
       uniforms.uMapReveal.value = clip ?? uniforms.uMap.value
+      // Wait for an actual video frame so the shutter cannot finish over an
+      // identical poster while a cold mobile video request is still loading.
+      if (!clip) target = 0
     }
 
     if (caps.reducedMotion) {
@@ -180,22 +181,9 @@ export function CardMirror({ targetId, posterUrl }: { targetId: string; posterUr
 
     uniforms.uRevealProgress.value = progress.current
 
-    // --- Develop on enter ---------------------------------------------------
-    // The cull margin above keeps a card alive slightly beyond the viewport, so
-    // "entered" is tested separately and strictly: the card has to be actually
-    // on screen before it starts developing.
-    const onScreen = rect.y < height && rect.y + rect.height > 0
-      && rect.x < state.size.width && rect.x + rect.width > 0
-
-    if (!canDevelopOnEnter(caps)) {
-      develop.current = 1
-    } else if (!onScreen || !posterReady) {
-      // Snap back rather than easing down — the point is to be reset and ready,
-      // not to play the transition in reverse on the way out.
-      develop.current = 0
-    } else {
-      develop.current = Math.min(develop.current + Math.min(Math.max(delta, 0), 0.1) / DEVELOP_SECONDS, 1)
-    }
+    // Develop as the poster enters from either edge. Retain the completed
+    // image while it leaves, and re-arm only after it is entirely offscreen.
+    develop.current = advanceCardDevelop(develop.current, entry, posterReady, !canDevelopOnEnter(caps), delta)
     uniforms.uPolarity.value = develop.current
 
     // --- Scroll-velocity curl -----------------------------------------------

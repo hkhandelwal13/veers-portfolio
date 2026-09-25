@@ -1,9 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
-import { createPosterTouchIntent } from '@/lib/poster-touch'
-import { getScrollSnapshot, subscribeToScroll } from '@/lib/scroll-bus'
+import { useEffect } from 'react'
 import type { PlaceholderProject } from '@/lib/placeholder-content'
 import { CARD_TARGET_PREFIX } from '@/components/webgl/card-target-id'
 import { registerCardAssets } from '@/lib/card-assets'
@@ -27,10 +25,6 @@ import styles from './ProjectCard.module.css'
  * reason — see lib/card-assets.
  */
 export function ProjectCard({ project }: { project: PlaceholderProject }) {
-  const linkRef = useRef<HTMLAnchorElement>(null)
-  const touch = useRef(createPosterTouchIntent())
-  const touchClick = useRef(false)
-  const [previewing, setPreviewing] = useState(false)
   const targetId = `${CARD_TARGET_PREFIX}${project.slug}`
 
   useEffect(() => clearHoverIntent.bind(null, targetId), [targetId])
@@ -40,66 +34,16 @@ export function ProjectCard({ project }: { project: PlaceholderProject }) {
     [targetId, project.poster, project.preview],
   )
 
-  useEffect(() => {
-    if (!previewing) return
-    const startScroll = getScrollSnapshot().scrollTop
-    const stop = () => {
-      touch.current.reset()
-      setHoverIntent(targetId, false)
-      setPreviewing(false)
-    }
-    const unsubscribe = subscribeToScroll(() => {
-      if (Math.abs(getScrollSnapshot().scrollTop - startScroll) > 8) stop()
-    })
-    const outside = (event: PointerEvent) => {
-      if (!linkRef.current?.contains(event.target as Node)) stop()
-    }
-    document.addEventListener('pointerdown', outside, { passive: true })
-    return () => {
-      unsubscribe()
-      document.removeEventListener('pointerdown', outside)
-    }
-  }, [previewing, targetId])
-
   const open = () => setHoverIntent(targetId, true)
-  const close = () => {
-    setHoverIntent(targetId, false)
-    setPreviewing(false)
-    touch.current.reset()
-  }
+  const close = () => setHoverIntent(targetId, false)
 
   return (
     <article className={styles.card}>
       <Link
-        ref={linkRef}
         href={`/work/${project.slug}`}
         className={styles.link}
         onPointerEnter={(event) => { if (event.pointerType === 'mouse') open() }}
         onPointerLeave={(event) => { if (event.pointerType === 'mouse') close() }}
-        onPointerDown={(event) => {
-          const onPoster = (event.target as Element).closest('[data-webgl]')?.getAttribute('data-webgl') === targetId
-          touchClick.current = event.pointerType !== 'mouse' && onPoster
-          if (touchClick.current) touch.current.start(event.clientX, event.clientY, getScrollSnapshot().scrollTop)
-        }}
-        onPointerMove={(event) => {
-          if (touchClick.current && touch.current.move(event.clientX, event.clientY)) {
-            setHoverIntent(targetId, false)
-            setPreviewing(false)
-          }
-        }}
-        onPointerCancel={() => {
-          touch.current.cancel()
-          setHoverIntent(targetId, false)
-          setPreviewing(false)
-        }}
-        onClick={(event) => {
-          if (!touchClick.current || event.detail === 0) return
-          touchClick.current = false
-          const action = touch.current.tap(getScrollSnapshot().scrollTop)
-          if (action === 'open') { close(); return }
-          event.preventDefault()
-          if (action === 'preview') { open(); setPreviewing(true) }
-        }}
         onFocus={(event) => { if (event.currentTarget.matches(':focus-visible')) open() }}
         onBlur={close}
       >
@@ -110,8 +54,6 @@ export function ProjectCard({ project }: { project: PlaceholderProject }) {
               live, where the mirrored plane supplies the same image. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={project.poster} alt="" className={styles.posterImage} loading="lazy" />
-
-          {previewing && <span className={styles.touchHint}>Tap again to open</span>}
 
           {/* Metadata only. The imagery underneath it is the WebGL reveal, so
               this layer must not paint over the card — just a scrim strong

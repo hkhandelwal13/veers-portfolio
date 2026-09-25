@@ -14,7 +14,7 @@
   font-weight: 400;
   letter-spacing: var(--hud-tracking);
   text-transform: uppercase;
-  color: var(--chrome-muted);
+  color: #fff;
   transition: opacity var(--dur-fast) var(--ease-out);
 }
 
@@ -126,7 +126,7 @@
 .globe {
   width: 27px;
   height: 18px;
-  color: var(--chrome-muted);
+  color: #fff;
   overflow: visible;
 }
 
