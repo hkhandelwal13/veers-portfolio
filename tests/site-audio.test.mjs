@@ -86,3 +86,34 @@ test('video ducking pauses immediately and releasing it respects the sound prefe
   assert.equal(env.element.paused, true)
   env.api.resetSiteAudio()
 })
+
+
+test('first wheel intent retries audio immediately and only once', async () => {
+  const env = setup({ blocked: true })
+  const detach = env.api.attachFirstScrollAudioAttempt()
+
+  // Mount attempt is blocked and parks the normal gesture fallback.
+  env.api.startAudio()
+  await flush()
+  assert.equal(env.api.getAudioState().waitingForGesture, true)
+
+  // Simulate a browser/origin state where the raw wheel attempt is accepted.
+  env.allow()
+  const wheel = new Event('wheel')
+  Object.defineProperties(wheel, {
+    ctrlKey: { value: false },
+    deltaX: { value: 0 },
+    deltaY: { value: 120 },
+    deltaZ: { value: 0 },
+  })
+  env.window.dispatchEvent(wheel)
+  assert.equal(env.element.paused, false)
+
+  // The listener is one-shot; later wheel ticks do not create another play.
+  const pendingAfterFirst = env.pending.length
+  env.window.dispatchEvent(wheel)
+  assert.equal(env.pending.length, pendingAfterFirst)
+
+  detach()
+  env.api.resetSiteAudio()
+})

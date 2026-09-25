@@ -4,7 +4,8 @@
  * Module-level rather than React state, for the same reason the scroll, pointer
  * and card-clip buses are: the things that command it are scattered across the
  * tree and none of them should have to re-render to be heard. The nav's toggle
- * writes it, the scroll bus arms it, and the project page's player ducks it.
+ * writes it, the first raw scroll intent gets an immediate start attempt, and
+ * the project page's player ducks it.
  *
  * Two gates, both of which must be open before a note plays:
  *
@@ -15,11 +16,13 @@
  * default, which is what "reset on refresh" means: turning it off is a
  * decision about this visit, not a setting.
  *
- * What no amount of wanting can change is that every browser refuses `play()`
- * on an unmuted element until the page has had a real user gesture. So a
- * refusal is not an error here: it parks the track and starts it at the next
- * genuine click, key or tap. The toggle is itself a gesture, so turning it on
- * by hand always works.
+ * What no amount of wanting can change is that browsers may refuse `play()`
+ * on an unmuted element until the page has had a qualifying user activation.
+ * A wheel/trackpad gesture is still worth attempting synchronously — some
+ * browser/engagement states allow it — but the platform does not guarantee
+ * that wheel itself unlocks audible media. A refusal is therefore not an error:
+ * the next click, key, tap or touch-end retries it. The toggle is itself a
+ * gesture, so turning it on by hand always works.
  */
 
 export type AudioState = Readonly<{
@@ -141,7 +144,7 @@ function rampTo(target: number) {
 }
 
 /**
- * Starts the track at the next click, key or tap.
+ * Starts the track at the next qualifying click, key, tap or touch-end.
  *
  * Installed only once a `play()` has actually been refused, so a browser that
  * lets the page open with sound never pays for these listeners at all.
@@ -244,6 +247,37 @@ export function toggleAudio() {
  */
 export function startAudio() {
   reconcile()
+}
+
+/**
+ * Make the earliest possible attempt from the user's first wheel/trackpad
+ * scroll intent, before Lenis has converted that input into animated scroll.
+ *
+ * This is intentionally one-shot. If the browser does not count wheel as
+ * sufficient activation, repeating play() on every wheel tick cannot change
+ * the policy and only creates noisy rejected promises. The normal parked
+ * gesture listeners remain in place for click/tap/key/touch-end fallback.
+ */
+export function attachFirstScrollAudioAttempt() {
+  if (typeof window === 'undefined') return () => {}
+
+  let done = false
+  const onWheel = (event: WheelEvent) => {
+    // Ctrl+wheel is browser zoom on desktop, not navigation intent.
+    if (done || event.ctrlKey) return
+    if (event.deltaX === 0 && event.deltaY === 0 && event.deltaZ === 0) return
+
+    done = true
+    window.removeEventListener('wheel', onWheel)
+    if (!isAudioPlaying()) startAudio()
+  }
+
+  window.addEventListener('wheel', onWheel, { passive: true })
+
+  return () => {
+    done = true
+    window.removeEventListener('wheel', onWheel)
+  }
 }
 
 export function isAudioPlaying(): boolean {
