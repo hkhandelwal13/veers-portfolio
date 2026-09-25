@@ -26,7 +26,7 @@ export const CATEGORIES = ['Showreel'] as const
 export const PROJECTS: PlaceholderProject[] = [
   {
     slug: 'showreel-1',
-    title: 'Ad Concept',
+    title: 'Ad Concept for Planta',
     client: '',
     role: '',
     runtime: '00:10',
@@ -39,7 +39,7 @@ export const PROJECTS: PlaceholderProject[] = [
   },
   {
     slug: 'showreel-2',
-    title: 'Ad Concept Humane',
+    title: 'Ad Concept Humain Fabric',
     client: '',
     role: '',
     runtime: '01:46',
