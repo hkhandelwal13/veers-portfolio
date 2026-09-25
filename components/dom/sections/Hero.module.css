@@ -36,7 +36,7 @@
 .eyebrow {
   display: block;
   margin-bottom: var(--s4);
-  font-family: var(--font-mono);
+  font-family: var(--font-space-mono), "Space Mono", monospace;
   font-size: 16px;
   line-height: 24px;
   font-style: normal;
@@ -60,7 +60,7 @@
 
 .intro {
   max-width: 320px;
-  font-family: var(--font-mono);
+  font-family: var(--font-space-mono), "Space Mono", monospace;
   font-size: 16px;
   line-height: 24px;
   font-style: normal;

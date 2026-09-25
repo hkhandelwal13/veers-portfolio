@@ -26,7 +26,7 @@ import styles from './EditorIntro.module.css'
 export function EditorIntro() {
   return (
     <section id="about" className={styles.section} aria-labelledby="editor-heading">
-      <div className={styles.inner}>
+      <div className={styles.inner} data-scroll-focus="center">
         <figure className={styles.portrait}>
           <WebGLTarget targetId="editor-face" className={styles.portraitFrame}>
             <Image

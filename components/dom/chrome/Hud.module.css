@@ -121,6 +121,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+.homeJump {
+  pointer-events: auto;
+  color: inherit;
+  cursor: pointer;
+}
+
 /* The mark is a wide ellipse, so it is sized by both axes at its own 1.52:1 —
    a square box would letterbox it and leave the corner looking off-centre. */
 .globe {
