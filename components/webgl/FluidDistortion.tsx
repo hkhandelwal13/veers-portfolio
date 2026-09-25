@@ -16,8 +16,7 @@ import { ALL_LAYERS_MASK } from './layers'
 const VERT = [
   'varying vec2 vUv;',
   'void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}',
-].join('
-')
+].join('\\n')
 
 const ADVECT = [
   'precision highp float;',
@@ -25,8 +24,7 @@ const ADVECT = [
   'uniform float uDt; uniform float uDissipation; varying vec2 vUv;',
   'void main(){vec2 v=texture2D(uVelocity,vUv).xy; vec2 p=clamp(vUv-v*uDt,0.001,0.999);',
   'float d=pow(clamp(uDissipation,0.0,1.0),uDt*60.0); gl_FragColor=texture2D(uSource,p)*d;}',
-].join('
-')
+].join('\\n')
 
 const SPLAT = [
   'precision highp float;',
@@ -34,8 +32,7 @@ const SPLAT = [
   'uniform float uRadius; uniform float uAspect; varying vec2 vUv;',
   'void main(){vec2 d=vUv-uPoint; d.x*=uAspect; float w=exp(-dot(d,d)/max(uRadius,0.000001));',
   'gl_FragColor=texture2D(uTarget,vUv)+uValue*w;}',
-].join('
-')
+].join('\\n')
 
 const CURL = [
   'precision highp float; uniform sampler2D uVelocity; uniform vec2 uTexel; varying vec2 vUv;',
@@ -44,8 +41,7 @@ const CURL = [
   'float b=texture2D(uVelocity,vUv-vec2(0.0,uTexel.y)).x;',
   'float t=texture2D(uVelocity,vUv+vec2(0.0,uTexel.y)).x;',
   'gl_FragColor=vec4(0.5*(r-l-t+b),0.0,0.0,1.0);}',
-].join('
-')
+].join('\\n')
 
 const VORTICITY = [
   'precision highp float; uniform sampler2D uVelocity; uniform sampler2D uCurl;',
@@ -57,8 +53,7 @@ const VORTICITY = [
   'float c=texture2D(uCurl,vUv).x; vec2 f=0.5*vec2(t-b,r-l);',
   'f/=max(length(f),0.0001); f*=uStrength*c; f.y*=-1.0;',
   'gl_FragColor=vec4(texture2D(uVelocity,vUv).xy+f*uDt,0.0,1.0);}',
-].join('
-')
+].join('\\n')
 
 const DIVERGENCE = [
   'precision highp float; uniform sampler2D uVelocity; uniform vec2 uTexel; varying vec2 vUv;',
@@ -67,14 +62,12 @@ const DIVERGENCE = [
   'float b=texture2D(uVelocity,vUv-vec2(0.0,uTexel.y)).y;',
   'float t=texture2D(uVelocity,vUv+vec2(0.0,uTexel.y)).y;',
   'gl_FragColor=vec4(0.5*(r-l+t-b),0.0,0.0,1.0);}',
-].join('
-')
+].join('\\n')
 
 const CLEAR = [
   'precision highp float; uniform sampler2D uTexture; uniform float uValue; varying vec2 vUv;',
   'void main(){gl_FragColor=texture2D(uTexture,vUv)*uValue;}',
-].join('
-')
+].join('\\n')
 
 const PRESSURE = [
   'precision highp float; uniform sampler2D uPressure; uniform sampler2D uDivergence;',
@@ -84,8 +77,7 @@ const PRESSURE = [
   'float b=texture2D(uPressure,vUv-vec2(0.0,uTexel.y)).x;',
   'float t=texture2D(uPressure,vUv+vec2(0.0,uTexel.y)).x;',
   'float d=texture2D(uDivergence,vUv).x; gl_FragColor=vec4((l+r+b+t-d)*0.25,0.0,0.0,1.0);}',
-].join('
-')
+].join('\\n')
 
 const GRADIENT = [
   'precision highp float; uniform sampler2D uVelocity; uniform sampler2D uPressure;',
@@ -95,8 +87,7 @@ const GRADIENT = [
   'float b=texture2D(uPressure,vUv-vec2(0.0,uTexel.y)).x;',
   'float t=texture2D(uPressure,vUv+vec2(0.0,uTexel.y)).x;',
   'vec2 v=texture2D(uVelocity,vUv).xy-0.5*vec2(r-l,t-b); gl_FragColor=vec4(v,0.0,1.0);}',
-].join('
-')
+].join('\\n')
 
 const COMPOSITE = [
   'precision highp float;',
@@ -120,8 +111,7 @@ const COMPOSITE = [
   '#include <tonemapping_fragment>',
   '#include <colorspace_fragment>',
   '}',
-].join('
-')
+].join('\\n')
 
 const TUNING = {
   velocityDissipation: 0.985,
