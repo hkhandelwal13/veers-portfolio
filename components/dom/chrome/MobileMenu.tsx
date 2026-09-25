@@ -168,7 +168,6 @@ export function MobileMenu({
 
         <div className={styles.meta}>
           <ThemeToggle />
-          <span>GMT+5:30</span>
         </div>
       </div>
     </div>
