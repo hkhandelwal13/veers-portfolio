@@ -2,11 +2,13 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { usePathname } from 'next/navigation'
+import { useEffect, useRef, useState, useSyncExternalStore, type MouseEvent } from 'react'
 import styles from './Hud.module.css'
 import { pointerRaw, subscribeToPointer } from '@/lib/pointer-bus'
 import { fetchTemperature } from '@/lib/weather'
 import { getTimeZone, getZonePlace, type ZonePlace } from '@/lib/zone-places'
+import { scrollToSection } from '@/lib/section-scroll'
 
 /**
  * Four-corner HUD (PHASE2_KICKOFF "HUD motif") — built once, mounted in the
@@ -238,6 +240,7 @@ function Globe() {
 }
 
 export function Hud() {
+  const pathname = usePathname()
   const time = useLocalClock()
   const { cc, temperature } = useLocalPlace()
   const zone = useSyncExternalStore(NEVER_CHANGES, readZone, noZone)
@@ -246,10 +249,22 @@ export function Hud() {
   // home link and stays visible on every screen.
   const handoff = footerInView ? styles.handedOff : ''
 
+  const goHome = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (pathname !== '/') return
+    event.preventDefault()
+    scrollToSection('hero')
+  }
+
   return (
     <div className={styles.hud}>
       <div className={`${styles.corner} ${styles.topLeft}`}>
-        <Link href="/" className={styles.wordmark} aria-label="Veerlabs — home">
+        <Link
+          href="/#hero"
+          scroll={false}
+          className={styles.wordmark}
+          aria-label="Veerlabs — back to hero"
+          onClick={goHome}
+        >
           {/* priority: it is the first thing above the fold on every route, and
               a logo that pops in after the bar has drawn reads as a fault.
               alt is empty because the link already carries the name — a
@@ -284,7 +299,15 @@ export function Hud() {
       </div>
 
       <div className={`${styles.corner} ${styles.bottomCenter} ${handoff}`}>
-        <PointerCoords />
+        <Link
+          href="/#hero"
+          scroll={false}
+          className={styles.homeJump}
+          aria-label="Back to hero"
+          onClick={goHome}
+        >
+          <PointerCoords />
+        </Link>
       </div>
 
       <div className={`${styles.corner} ${styles.bottomRight} ${handoff}`}>

@@ -7,7 +7,7 @@ import { Scramble } from '@/components/dom/Scramble'
 /** The responsive grid reserves separate rows for the model and headline. */
 export function Hero() {
   return (
-    <section className={styles.hero} aria-labelledby="hero-heading">
+    <section id="hero" className={styles.hero} aria-labelledby="hero-heading">
       <link rel="preload" href="/models/hello.glb" as="fetch" crossOrigin="anonymous" />
       {/* The WebGL ground is seated on this, not on the viewport, so it scrolls
           away with the section instead of covering whatever comes next. */}
@@ -28,7 +28,7 @@ export function Hero() {
         <div className={styles.top}>
           <div className={styles.taglineBlock}>
             <Scramble neon reveal
-              className={`label ${styles.eyebrow}`}
+              className={styles.eyebrow}
               text="Creative Director — Motion Designer — Video Editor"
             />
             <p className={styles.tagline}>

@@ -115,7 +115,14 @@ export function MobileMenu({
 
       <div className={styles.panel}>
         <div className={styles.bar}>
-          <Link href="/" className={styles.wordmark} onClick={onClose}>Veerlabs</Link>
+          <Link
+            href="/#hero"
+            scroll={false}
+            className={styles.wordmark}
+            onClick={(event) => goToSection(event, 'hero')}
+          >
+            Veerlabs
+          </Link>
           <button type="button" ref={closeRef} className={styles.close} onClick={onClose}>
             Close ✕
           </button>
