@@ -39,7 +39,7 @@ const tronicaMono = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Veerlabs — Video Editor',
+    default: 'Veerlabs',
     template: '%s — Veerlabs',
   },
   description: 'Editing, colour and motion graphics. Selected work by Veerlabs.',
