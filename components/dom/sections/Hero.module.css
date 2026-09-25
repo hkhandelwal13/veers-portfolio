@@ -57,6 +57,10 @@
   color: var(--muted);
 }
 
+.mobileTelemetry {
+  display: none;
+}
+
 /* Keep only a shallow overlap with the model's lower edge. */
 .headline {
   position: relative;
@@ -107,4 +111,68 @@
     margin-top: calc(-1 * clamp(40px, 7svh, 64px));
   }
   .top { grid-row: 3; padding-top: 0; }
+}
+
+
+@media (max-width: 640px) {
+  .hero {
+    min-height: 100svh;
+    padding-top: calc(var(--nav-h) + clamp(18px, 3svh, 28px));
+    padding-bottom: calc(var(--hud-inset) + 76px);
+    row-gap: clamp(12px, 2.5svh, 22px);
+    align-content: start;
+  }
+
+  .headline {
+    grid-row: 1;
+    margin-top: 0;
+    max-width: 15ch;
+    align-self: start;
+  }
+
+  .hero > [data-webgl='hero-hello'] {
+    grid-row: 2;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 8;
+    margin-top: 0;
+    align-self: center;
+    justify-self: center;
+  }
+
+  .top {
+    grid-row: 3;
+    display: block;
+    padding-top: 0;
+  }
+
+  .taglineBlock {
+    display: none;
+  }
+
+  .intro {
+    max-width: 30ch;
+    font-family: var(--font-mono);
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 400;
+    color: #fff;
+  }
+
+  .mobileTelemetry {
+    position: absolute;
+    left: var(--margin);
+    bottom: var(--hud-inset);
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: var(--s3);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 400;
+    letter-spacing: var(--hud-tracking);
+    text-transform: uppercase;
+    color: #fff;
+  }
 }

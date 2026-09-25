@@ -72,6 +72,11 @@
   background: var(--dark-surface);
 }
 
+.videoStage {
+  position: absolute;
+  inset: 0;
+}
+
 .video {
   position: absolute;
   inset: 0;
@@ -376,9 +381,55 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* On phones the transport chrome owns its own row below the image instead
+     of floating over it. That keeps the centre play target physically
+     separate from the seek target and leaves both easy to hit. */
+  .player {
+    aspect-ratio: auto;
+  }
+
+  .videoStage {
+    position: relative;
+    inset: auto;
+    aspect-ratio: var(--card-ratio);
+    background: var(--dark-surface);
+  }
+
+  .controls {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    padding: 0 var(--s3) var(--s3);
+    gap: 0;
+    background: var(--dark-surface);
+    border-top: 1px solid var(--dark-line);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* A dedicated 44px seek lane: the visible rule stays 3px high, while the
+     transparent input gets the full thumb-sized row. */
+  .scrubber {
+    box-sizing: content-box;
+    height: 3px;
+    padding-block: 20.5px;
+    background-clip: content-box;
+  }
+
+  .seek {
+    inset: 0;
+    height: 100%;
+  }
+
+  .controlRow {
+    min-height: 44px;
+    gap: var(--s3);
+  }
+
   .playButton {
-    width: 56px;
-    height: 56px;
+    width: 64px;
+    height: 64px;
   }
 
   .playGlyph {
@@ -416,6 +467,11 @@
    font so nothing about the type changes.
    ------------------------------------------------------------------------ */
 @media (pointer: coarse) {
+  .controls[data-hidden] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   .back,
   .controlRight button,
   .transport {
@@ -435,5 +491,15 @@
   .seek {
     inset: -21px 0;
     height: calc(100% + 42px);
+  }
+}
+
+
+@media (max-width: 640px) and (pointer: coarse) {
+  /* The phone layout already provides a full 44px seek row; do not expand its
+     invisible hitbox back upward into the video. */
+  .seek {
+    inset: 0;
+    height: 100%;
   }
 }

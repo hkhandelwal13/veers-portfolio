@@ -26,7 +26,7 @@ export const CATEGORIES = ['Showreel'] as const
 export const PROJECTS: PlaceholderProject[] = [
   {
     slug: 'showreel-1',
-    title: 'Showreel 1',
+    title: 'Ad Concept for Planta',
     client: '',
     role: '',
     runtime: '00:10',
@@ -39,7 +39,7 @@ export const PROJECTS: PlaceholderProject[] = [
   },
   {
     slug: 'showreel-2',
-    title: 'Showreel 2',
+    title: 'Ad Concept Humain Fabric',
     client: '',
     role: '',
     runtime: '01:46',
@@ -52,7 +52,7 @@ export const PROJECTS: PlaceholderProject[] = [
   },
   {
     slug: 'showreel-3',
-    title: 'Showreel 3',
+    title: 'SAAS Product Explainer for Codex',
     client: '',
     role: '',
     runtime: '00:36',
@@ -65,7 +65,7 @@ export const PROJECTS: PlaceholderProject[] = [
   },
   {
     slug: 'showreel-4',
-    title: 'Showreel 4',
+    title: '2D Motion Design Concept',
     client: '',
     role: '',
     runtime: '00:19',
@@ -78,7 +78,7 @@ export const PROJECTS: PlaceholderProject[] = [
   },
   {
     slug: 'showreel-5',
-    title: 'Showreel 5',
+    title: 'Design Guidelines Explainer Concept for OpenAI',
     client: '',
     role: '',
     runtime: '00:45',
@@ -91,7 +91,7 @@ export const PROJECTS: PlaceholderProject[] = [
   },
   {
     slug: 'showreel-6',
-    title: 'Showreel 6',
+    title: 'Ad Concept for Chat-GPT',
     client: '',
     role: '',
     runtime: '00:26',
@@ -105,21 +105,21 @@ export const PROJECTS: PlaceholderProject[] = [
 ]
 
 export const SITE = {
-  email: 'hello@veerlabs.studio',
-  basedIn: 'Mumbai, IN',
-  since: '2016',
-  toolkit: 'Resolve · Premiere · AE',
+  email: 'workwithveer@gmail.com',
+  basedIn: 'Pune, IN',
+  since: '2020',
+  toolkit: 'After Effects · Premiere Pro',
   showreelRuntime: '02:14',
   totalProjects: PROJECTS.length,
   bio: [
-    'Veerlabs is the studio practice of a video editor working across commercials, music videos and long-form documentary. The work starts in the assembly and stays there — structure first, polish after.',
-    'Ten years cutting for agencies, labels and independent producers, with colour and finishing handled in-house so the picture never changes hands.',
+    'Veerlabs is a virtual studio practice focused on motion, creative direction, and editing. Working across commercials, digital campaigns, and branded content, the studio shapes ideas through movement, composition, rhythm, and visual storytelling.',
+    'Six years of independent creative practice, working across motion, editing, and creative direction for brands, agencies, and independent projects.',
   ],
   socials: [
-    { label: 'Instagram', short: 'IG', url: 'https://instagram.com' },
+    { label: 'Instagram', short: 'IG', url: 'https://www.instagram.com/veerlabs?stkn=MTVqZXhrbGQ1NmE1bw%3D%3D&utm_source=qr' },
     { label: 'Vimeo', short: 'Vimeo', url: 'https://vimeo.com' },
     { label: 'YouTube', short: 'YT', url: 'https://youtube.com' },
-    { label: 'LinkedIn', short: 'IN', url: 'https://linkedin.com' },
+    { label: 'LinkedIn', short: 'IN', url: 'https://www.linkedin.com/in/veer-sonawane-200004198/' },
   ],
   services: [
     {

@@ -3,6 +3,7 @@ import { WebGLTarget } from '@/components/dom/WebGLTarget'
 import { SITE } from '@/lib/placeholder-content'
 import styles from './Hero.module.css'
 import { Scramble } from '@/components/dom/Scramble'
+import { HeroTelemetry } from './HeroTelemetry'
 
 /** The responsive grid reserves separate rows for the model and headline. */
 export function Hero() {
@@ -29,15 +30,15 @@ export function Hero() {
           <div className={styles.taglineBlock}>
             <Scramble neon reveal
               className={`label ${styles.eyebrow}`}
-              text="Video editor — Color — Motion"
+              text="Creative Director — Motion Designer — Video Editor"
             />
             <p className={styles.tagline}>
-              <Scramble neon reveal text="Cutting commercials, music videos and documentary from assembly to delivery." />
+              <Scramble neon reveal text="Creating visual worlds through storytelling, design, and motion." />
             </p>
           </div>
 
           <p className={styles.intro}>
-            <Scramble neon reveal text={`Based in ${SITE.basedIn}. Working with agencies, labels and independent producers since ${SITE.since} — colour and finishing handled in-house.`} />
+            <Scramble neon reveal text={`Hello I'm Veer Sonawane, Based in ${SITE.basedIn}. Working with agencies, brands and independent creators since ${SITE.since}.`} />
           </p>
         </div>
 
@@ -46,6 +47,8 @@ export function Hero() {
         </h1>
 
       </div>
+
+      <HeroTelemetry />
     </section>
   )
 }
