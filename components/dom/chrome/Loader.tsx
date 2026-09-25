@@ -33,10 +33,10 @@ export function Loader() {
   const effective = phase
   const done = effective === 'done'
 
-  // Keep text reveals queued until the shutter has fully uncovered the model.
+  // Start text decoding as the shutter opens onto the ready hello model.
   useEffect(() => {
-    setCurtain('loader', !done)
-  }, [done])
+    setCurtain('loader', effective === 'loading')
+  }, [effective])
   useEffect(() => () => setCurtain('loader', false), [])
 
   useEffect(() => {

@@ -92,13 +92,13 @@ export function Finale() {
           // Keyed by beat so the decode replays on each change: the component
           // starts its scramble on mount, and a new key is a new mount.
           <p key={beat} className={styles.headline}>
-            <Scramble neon text={HEADLINES[beat]} />
+            <Scramble text={HEADLINES[beat]} />
           </p>
         )}
 
         {beat === 4 && (
           <p key="closing" className={`${styles.headline} ${styles.closing}`}>
-            <Scramble neon text={CLOSING} />
+            <Scramble text={CLOSING} />
           </p>
         )}
 
