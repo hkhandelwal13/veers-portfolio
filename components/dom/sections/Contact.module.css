@@ -13,6 +13,12 @@
  * subtracts the same distance back off, so the dissolve still keys off where
  * the section is.
  */
+.distortionTarget {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 .fieldTarget {
   position: absolute;
   inset: -160svh 0 0 0;

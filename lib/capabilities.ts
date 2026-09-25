@@ -178,6 +178,16 @@ export function canRenderStarFlare(caps: Capabilities = current): boolean {
 }
 
 /**
+ * GPU fluid refraction in the hero and contact sections.
+ *
+ * It stays available on phones at a reduced simulation budget; only an
+ * explicit reduced-motion preference removes the moving distortion.
+ */
+export function canRenderFluidDistortion(caps: Capabilities = current): boolean {
+  return !caps.reducedMotion
+}
+
+/**
  * The custom cursor.
  *
  * Replaces the native pointer, so it needs a real one to replace: a touchscreen

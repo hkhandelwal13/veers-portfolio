@@ -38,7 +38,15 @@ export const pointer = { x: 0.5, y: 0.5, cx: 0, cy: 0, inside: false }
  * under the physical pointer.
  */
 export const pointerRaw = { x: 0.5, y: 0.5 }
-const target = pointerRaw
+
+/**
+ * Physical input for the GPU fluid simulation. Touch writes here without
+ * affecting the hover/parallax target, so dragging the page can make a fluid
+ * wake without tilting the glass models.
+ */
+export const fluidPointer = { x: 0.5, y: 0.5, active: false }
+
+const target = { x: 0.5, y: 0.5 }
 let targetInside = false
 
 const INITIAL: PointerSnapshot = Object.freeze({
@@ -57,23 +65,57 @@ function damp(from: number, to: number, lambda: number, dt: number) {
   return from + (to - from) * (1 - Math.exp(-lambda * dt))
 }
 
+function readUv(clientX: number, clientY: number) {
+  const { innerWidth, innerHeight } = window
+  if (innerWidth === 0 || innerHeight === 0) return null
+  return {
+    x: Math.min(1, Math.max(0, clientX / innerWidth)),
+    y: Math.min(1, Math.max(0, clientY / innerHeight)),
+  }
+}
+
+function setRaw(clientX: number, clientY: number) {
+  const uv = readUv(clientX, clientY)
+  if (!uv) return null
+  pointerRaw.x = uv.x
+  pointerRaw.y = uv.y
+  fluidPointer.x = uv.x
+  fluidPointer.y = uv.y
+  fluidPointer.active = true
+  return uv
+}
+
 function setTargetFromEvent(event: PointerEvent) {
-  // A scrolling finger is not a hover pointer. Never feed it into model tilt.
+  const uv = setRaw(event.clientX, event.clientY)
+  if (!uv) return
+
+  // A scrolling finger is not a hover pointer. It still feeds the fluid, but
+  // model tilt remains neutral.
   if (event.pointerType === 'touch') {
     settleToCenter()
     return
   }
-  const { innerWidth, innerHeight } = window
-  if (innerWidth === 0 || innerHeight === 0) return
-  target.x = event.clientX / innerWidth
-  target.y = event.clientY / innerHeight
+
+  target.x = uv.x
+  target.y = uv.y
   targetInside = true
+}
+
+function setTargetFromTouch(event: TouchEvent) {
+  const touch = event.touches[0]
+  if (!touch) return
+  setRaw(touch.clientX, touch.clientY)
+  settleToCenter()
 }
 
 function settleToCenter() {
   target.x = CENTER.x
   target.y = CENTER.y
   targetInside = false
+}
+
+function deactivateFluid() {
+  fluidPointer.active = false
 }
 
 let attached = false
@@ -84,26 +126,44 @@ export function attachPointerBus() {
   attached = true
 
   const onMove = (event: PointerEvent) => setTargetFromEvent(event)
-  const onLeave = () => settleToCenter()
-  const onBlur = () => settleToCenter()
-  const onVisibility = () => {
-    if (document.hidden) settleToCenter()
+  const onLeave = () => {
+    settleToCenter()
+    deactivateFluid()
   }
+  const onBlur = () => {
+    settleToCenter()
+    deactivateFluid()
+  }
+  const onVisibility = () => {
+    if (document.hidden) {
+      settleToCenter()
+      deactivateFluid()
+    }
+  }
+  const onTouch = (event: TouchEvent) => setTargetFromTouch(event)
+  const onTouchEnd = () => deactivateFluid()
 
-  // Passive: the bus only reads, and a non-passive move listener would make
-  // scrolling jankier for no reason.
+  // The bus only observes input. Touch listeners stay passive so they never
+  // compete with Lenis/native scrolling.
   window.addEventListener('pointermove', onMove, { passive: true })
-  // pointerout with no relatedTarget means it actually left the window, not
-  // just crossed into a child element.
+  window.addEventListener('touchstart', onTouch, { passive: true })
+  window.addEventListener('touchmove', onTouch, { passive: true })
+  window.addEventListener('touchend', onTouchEnd, { passive: true })
+  window.addEventListener('touchcancel', onTouchEnd, { passive: true })
   document.addEventListener('pointerleave', onLeave)
   window.addEventListener('blur', onBlur)
   document.addEventListener('visibilitychange', onVisibility)
 
   return () => {
     window.removeEventListener('pointermove', onMove)
+    window.removeEventListener('touchstart', onTouch)
+    window.removeEventListener('touchmove', onTouch)
+    window.removeEventListener('touchend', onTouchEnd)
+    window.removeEventListener('touchcancel', onTouchEnd)
     document.removeEventListener('pointerleave', onLeave)
     window.removeEventListener('blur', onBlur)
     document.removeEventListener('visibilitychange', onVisibility)
+    deactivateFluid()
     attached = false
   }
 }
