@@ -11,7 +11,7 @@ import {
   getCapabilities,
 } from '@/lib/capabilities'
 import { getCardAssets } from '@/lib/card-assets'
-import { advanceCardDevelop, cardEntryProgress, mobilePreviewTarget } from '@/lib/card-entry'
+import { createCardDevelop, cardEntryProgress, mobilePreviewTarget } from '@/lib/card-entry'
 import { getScrollActivity } from '@/lib/scroll-activity'
 import { domSyncFragmentShader, domSyncVertexShader } from '@/shaders/dom-sync'
 import { getPosterTexture, releaseCardClips, wantCardClip } from './card-media'
@@ -76,6 +76,7 @@ export function CardMirror({ targetId, posterUrl }: { targetId: string; posterUr
   const meshRef = useRef<THREE.Mesh>(null)
   const progress = useRef(0)
   const develop = useRef(0)
+  const development = useRef(createCardDevelop())
   /** Whether this card currently holds a claim on a clip. */
   const holding = useRef(false)
 
@@ -112,6 +113,7 @@ export function CardMirror({ targetId, posterUrl }: { targetId: string; posterUr
       // Reset offscreen so both effects replay on the card's next visit.
       progress.current = 0
       develop.current = 0
+      development.current.reset()
       uniforms.uRevealProgress.value = 0
       // And let go of the clip. This branch returns before the frame's normal
       // release, so without it a card that is scrolled away mid-reveal keeps
@@ -182,8 +184,8 @@ export function CardMirror({ targetId, posterUrl }: { targetId: string; posterUr
     uniforms.uRevealProgress.value = progress.current
 
     // Develop as the poster enters from either edge. Retain the completed
-    // image while it leaves, and re-arm only after it is entirely offscreen.
-    develop.current = advanceCardDevelop(develop.current, entry, posterReady, !canDevelopOnEnter(caps), delta)
+    // image while it leaves; re-arm on return even after a partial exit.
+    develop.current = development.current.update(entry, posterReady, !canDevelopOnEnter(caps), delta)
     uniforms.uPolarity.value = develop.current
 
     // --- Scroll-velocity curl -----------------------------------------------

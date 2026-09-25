@@ -1,4 +1,4 @@
-import { Typewriter } from '@/components/dom/Typewriter'
+import { Scramble } from '@/components/dom/Scramble'
 import { WebGLSlot } from '@/components/dom/WebGLSlot'
 import { WebGLTarget } from '@/components/dom/WebGLTarget'
 import styles from './Contact.module.css'
@@ -27,7 +27,7 @@ export function Contact({ standalone = true }: { standalone?: boolean }) {
       <WebGLTarget targetId="contact-field" className={styles.fieldTarget} aria-hidden="true" />
       <div className={styles.frame}>
         <Heading id="contact-heading" className={`display ${styles.heading}`}>
-          <Typewriter text="Got something that needs cutting?" />
+          <Scramble neon text="Got something that needs cutting?" />
         </Heading>
 
         {/* Reserved for the 3D wordmark / glass form — 720x300 @ 360,230 on the

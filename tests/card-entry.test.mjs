@@ -40,3 +40,17 @@ test('cold posters wait for decode, develop visibly, and reset for the return jo
   assert.equal(step(value, 0, true, false, 1 / 60), 0)
   assert.equal(step(0, 0.1, true, true, 1 / 60), 1)
 })
+
+
+test('portrait develops again after reversing a partial exit from either edge', () => {
+  for (const edge of ['top', 'bottom']) {
+    const effect = context.exports.createCardDevelop()
+    const entryAt = visible => cardEntryProgress(edge === 'top' ? visible - 240 : 800 - visible, 240, 800)
+    for (let i = 0; i < 60; i++) effect.update(1, true, false, 1 / 60)
+    assert.equal(effect.update(entryAt(100), true, false, 1 / 60), 1)
+    const returning = effect.update(entryAt(140), true, false, 1 / 60)
+    assert.ok(returning < 0.05)
+    for (let i = 0; i < 60; i++) effect.update(1, true, false, 1 / 60)
+    assert.equal(effect.update(1, true, false, 1 / 60), 1)
+  }
+})

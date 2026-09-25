@@ -1,6 +1,0 @@
-.text { color: #fff; }
-.word { display: inline-block; }
-.text[data-waiting='true'] [data-letter] { opacity: 0; }
-@media (prefers-reduced-motion: reduce) {
-  .text[data-waiting='true'] [data-letter] { opacity: 1; }
-}
