@@ -48,6 +48,7 @@ export function VideoPlayer({
   poster: string
   title: string
 }) {
+  const playerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [playing, setPlaying] = useState(false)
   const [muted, setMuted] = useState(false)
@@ -118,10 +119,48 @@ export function VideoPlayer({
 
   const fullscreen = () => {
     const video = videoRef.current
-    if (!video) return
-    const box = video.parentElement
-    if (document.fullscreenElement) void document.exitFullscreen()
-    else void box?.requestFullscreen?.().catch(() => {})
+    const player = playerRef.current
+    if (!video || !player) return
+
+    const webkitDocument = document as Document & {
+      webkitFullscreenElement?: Element | null
+      webkitExitFullscreen?: () => void
+    }
+    const webkitPlayer = player as HTMLDivElement & {
+      webkitRequestFullscreen?: () => void | Promise<void>
+    }
+    const webkitVideo = video as HTMLVideoElement & {
+      webkitEnterFullscreen?: () => void
+    }
+
+    if (document.fullscreenElement || webkitDocument.webkitFullscreenElement) {
+      if (document.exitFullscreen) void document.exitFullscreen()
+      else webkitDocument.webkitExitFullscreen?.()
+      return
+    }
+
+    if (player.requestFullscreen) {
+      void player.requestFullscreen().catch(() => {
+        // iPhone Safari does not fullscreen arbitrary containers. Its native
+        // video fullscreen API is the reliable fallback there.
+        webkitVideo.webkitEnterFullscreen?.()
+      })
+      return
+    }
+
+    if (webkitPlayer.webkitRequestFullscreen) {
+      try {
+        const request = webkitPlayer.webkitRequestFullscreen()
+        if (request instanceof Promise) {
+          void request.catch(() => webkitVideo.webkitEnterFullscreen?.())
+        }
+        return
+      } catch {
+        // Fall through to iOS' video-only fullscreen API.
+      }
+    }
+
+    webkitVideo.webkitEnterFullscreen?.()
   }
 
   const progress = duration > 0 ? (current / duration) * 1000 : 0
@@ -129,30 +168,33 @@ export function VideoPlayer({
 
   return (
     <div
+      ref={playerRef}
       className={styles.player}
       onPointerEnter={() => setPointerNear(true)}
       onPointerLeave={() => setPointerNear(false)}
     >
-      <video
-        ref={videoRef}
-        className={styles.video}
-        src={src}
-        poster={poster}
-        preload="metadata"
-        playsInline
-        onClick={toggle}
-      />
-
-      {!playing && (
-        <button
-          type="button"
-          className={styles.playButton}
+      <div className={styles.videoStage}>
+        <video
+          ref={videoRef}
+          className={styles.video}
+          src={src}
+          poster={poster}
+          preload="metadata"
+          playsInline
           onClick={toggle}
-          aria-label={`Play ${title}`}
-        >
-          <span className={styles.playGlyph} aria-hidden="true" />
-        </button>
-      )}
+        />
+
+        {!playing && (
+          <button
+            type="button"
+            className={styles.playButton}
+            onClick={toggle}
+            aria-label={`Play ${title}`}
+          >
+            <span className={styles.playGlyph} aria-hidden="true" />
+          </button>
+        )}
+      </div>
 
       <div className={styles.controls} data-hidden={chromeHidden || undefined}>
         <div className={styles.scrubber}>
