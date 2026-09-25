@@ -143,6 +143,44 @@
     padding-inline: calc(var(--s5) - 0.4rem);
   }
 
+   .callout {
+    width: 100%;
+  }
+
+  /* The address is the longest line in the panel. Give it a phone-specific
+     scale so it keeps comfortable, equal breathing room instead of visually
+     pressing into the right edge. */
+  .calloutTitle {
+    width: 100%;
+    max-width: none;
+    font-size: clamp(1.6rem, 7vw, 2.1rem);
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+  }
+
+  .calloutTitle a {
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+  }
+
+  /* Content-width flex made the second group start wherever the Site links
+     happened to end. Two equal tracks give Site / Elsewhere a deliberate,
+     balanced mobile alignment. */
+  .columns {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: clamp(1.5rem, 8vw, 3rem);
+    align-items: start;
+  }
+
+  .column {
+    width: 100%;
+    min-width: 0;
+    align-items: flex-start;
+  }
+  
   .bottom {
     flex-direction: column;
     align-items: flex-start;
