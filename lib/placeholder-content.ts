@@ -117,8 +117,6 @@ export const SITE = {
   ],
   socials: [
     { label: 'Instagram', short: 'IG', url: 'https://www.instagram.com/veerlabs?stkn=MTVqZXhrbGQ1NmE1bw%3D%3D&utm_source=qr' },
-    { label: 'Vimeo', short: 'Vimeo', url: 'https://vimeo.com' },
-    { label: 'YouTube', short: 'YT', url: 'https://youtube.com' },
     { label: 'LinkedIn', short: 'IN', url: 'https://www.linkedin.com/in/veer-sonawane-200004198/' },
   ],
   services: [
