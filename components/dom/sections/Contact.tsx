@@ -20,6 +20,7 @@ export function Contact({ standalone = true }: { standalone?: boolean }) {
   const Heading = standalone ? 'h1' : 'h2'
   return (
     <section
+      id="contact"
       className={`${styles.section} ${standalone ? '' : styles.stacked}`}
       aria-labelledby="contact-heading"
     >

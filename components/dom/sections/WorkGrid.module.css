@@ -3,6 +3,7 @@
 /* Standalone: this section opens the page, so it clears the fixed nav. */
 .section {
   position: relative;
+  scroll-margin-top: calc(var(--nav-h) + var(--s4));
   z-index: var(--z-content);
   padding-top: calc(var(--nav-h) + var(--s7));
   padding-bottom: calc(var(--s9) + var(--hud-inset));

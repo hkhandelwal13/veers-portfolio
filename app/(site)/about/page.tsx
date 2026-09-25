@@ -1,14 +1,5 @@
-import type { Metadata } from 'next'
-import { Hud } from '@/components/dom/chrome/Hud'
-import { About } from '@/components/dom/sections/About'
-
-export const metadata: Metadata = { title: 'About' }
+import { redirect } from 'next/navigation'
 
 export default function AboutPage() {
-  return (
-    <main>
-      <Hud />
-      <About />
-    </main>
-  )
+  redirect('/#about')
 }

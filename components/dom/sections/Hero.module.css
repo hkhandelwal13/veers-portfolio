@@ -36,6 +36,14 @@
 .eyebrow {
   display: block;
   margin-bottom: var(--s4);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 24px;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: rgb(255, 255, 255);
 }
 
 .taglineBlock {
@@ -52,13 +60,13 @@
 
 .intro {
   max-width: 320px;
-  font-size: var(--fs-body);
-  line-height: var(--lh-body);
-  color: var(--muted);
-}
-
-.mobileTelemetry {
-  display: none;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 24px;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: normal;
+  color: rgb(255, 255, 255);
 }
 
 /* Keep only a shallow overlap with the model's lower edge. */
@@ -142,37 +150,28 @@
 
   .top {
     grid-row: 3;
-    display: block;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s3);
     padding-top: 0;
   }
 
-  .taglineBlock {
-    display: none;
-  }
-
   .intro {
+    order: 1;
     max-width: 30ch;
-    font-family: var(--font-mono);
-    font-size: 16px;
-    line-height: 24px;
-    font-weight: 400;
-    color: #fff;
   }
 
-  .mobileTelemetry {
-    position: absolute;
-    left: var(--margin);
-    bottom: var(--hud-inset);
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    gap: var(--s3);
-    font-family: var(--font-mono);
-    font-size: 16px;
-    line-height: 24px;
-    font-weight: 400;
-    letter-spacing: var(--hud-tracking);
-    text-transform: uppercase;
-    color: #fff;
+  .taglineBlock {
+    order: 2;
+    display: block;
+    max-width: none;
+  }
+
+  .eyebrow {
+    margin-bottom: 0;
+  }
+
+  .tagline {
+    display: none;
   }
 }

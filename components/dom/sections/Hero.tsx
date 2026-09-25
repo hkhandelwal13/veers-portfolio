@@ -3,7 +3,6 @@ import { WebGLTarget } from '@/components/dom/WebGLTarget'
 import { SITE } from '@/lib/placeholder-content'
 import styles from './Hero.module.css'
 import { Scramble } from '@/components/dom/Scramble'
-import { HeroTelemetry } from './HeroTelemetry'
 
 /** The responsive grid reserves separate rows for the model and headline. */
 export function Hero() {
@@ -48,7 +47,6 @@ export function Hero() {
 
       </div>
 
-      <HeroTelemetry />
     </section>
   )
 }

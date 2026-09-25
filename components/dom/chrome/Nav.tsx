@@ -2,19 +2,20 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState, type MouseEvent } from 'react'
 import { useScrollFlag } from '@/lib/use-scroll'
 import { MobileMenu } from './MobileMenu'
 import { SoundToggle } from './SoundToggle'
 import { ThemeToggle } from './ThemeToggle'
 import { LiquidGlass } from './LiquidGlass'
+import { scrollToSection } from '@/lib/section-scroll'
 import styles from './Nav.module.css'
 
 export const NAV_LINKS = [
-  { href: '/work', label: 'Work' },
-  { href: '/about', label: 'About' },
-  { href: '/contact', label: 'Contact' },
-]
+  { href: '/#about', sectionId: 'about', label: 'About' },
+  { href: '/#work', sectionId: 'work', label: 'Work' },
+  { href: '/#contact', sectionId: 'contact', label: 'Contact' },
+] as const
 
 /**
  * Nav — default (transparent, over the hero), scrolled (tint + hairline, 56px)
@@ -33,7 +34,23 @@ export function Nav() {
   // so this costs one render per state change, not one per frame.
   const scrolled = useScrollFlag((s) => s.scrollTop > 24)
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`)
+  const goToSection = useCallback(
+    (event: MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+      if (pathname !== '/') return
+      event.preventDefault()
+      scrollToSection(sectionId)
+    },
+    [pathname],
+  )
+
+  useEffect(() => {
+    if (pathname !== '/' || !window.location.hash) return
+    const sectionId = window.location.hash.slice(1)
+    const first = requestAnimationFrame(() => {
+      requestAnimationFrame(() => scrollToSection(sectionId, false))
+    })
+    return () => cancelAnimationFrame(first)
+  }, [pathname])
 
   return (
     <>
@@ -48,8 +65,9 @@ export function Nav() {
             <li key={link.href}>
               <Link
                 href={link.href}
-                className={`${styles.link} ${isActive(link.href) ? styles.active : ''}`}
-                aria-current={isActive(link.href) ? 'page' : undefined}
+                scroll={false}
+                className={styles.link}
+                onClick={(event) => goToSection(event, link.sectionId)}
               >
                 {link.label}
               </Link>
