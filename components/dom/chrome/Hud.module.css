@@ -134,8 +134,8 @@
 .mobileScrollRing {
   --scroll-ring-scale: 0.72;
   display: none;
-  width: 32px;
-  height: 32px;
+  width: 22px;
+  height: 22px;
   flex: none;
   transform: scale(var(--scroll-ring-scale));
   transform-origin: center;
@@ -152,7 +152,7 @@
 .mobileScrollRingTrack,
 .mobileScrollRingProgress {
   fill: none;
-  stroke-width: 5;
+  stroke-width: 4;
 }
 
 .mobileScrollRingTrack {
@@ -282,7 +282,7 @@
   }
 
   .bottomRight {
-    gap: 8px;
+    gap: 6px;
   }
 
   .bottomRight .globe {
