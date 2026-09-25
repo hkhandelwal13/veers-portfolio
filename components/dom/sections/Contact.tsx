@@ -27,7 +27,7 @@ export function Contact({ standalone = true }: { standalone?: boolean }) {
       <WebGLTarget targetId="contact-field" className={styles.fieldTarget} aria-hidden="true" />
       <div className={styles.frame}>
         <Heading id="contact-heading" className={`display ${styles.heading}`}>
-          <Scramble neon text="Got something that needs cutting?" />
+          <Scramble neon text="Got something that needs direction?" />
         </Heading>
 
         {/* Reserved for the 3D wordmark / glass form — 720x300 @ 360,230 on the
