@@ -170,7 +170,7 @@ void main() {
 
   color += highlight;
   // A little plain Fresnel keeps the whole edge alive, not just the lit side.
-  color += uRimColor * fresnel * 0.035;
+  color += uRimColor * fresnel * 0.06;
 
   // The lens flare renders the glass a second time with this set, and keys off
   // the result. It has to be the specular alone: on a light page the glass body

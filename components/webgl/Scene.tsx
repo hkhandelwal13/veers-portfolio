@@ -79,9 +79,9 @@ export default function Scene() {
           render priority composites the final WebGL frame only in Hero/Contact. */}
       <FluidDistortion />
 
-      <ambientLight intensity={0.46} />
-      <directionalLight position={[3, 4, 5]} intensity={1.55} />
-      <directionalLight position={[-4, -1, -3]} intensity={0.45} color="#b8e614" />
+      <ambientLight intensity={0.6} />
+      <directionalLight position={[3, 4, 5]} intensity={2.2} />
+      <directionalLight position={[-4, -1, -3]} intensity={0.8} color="#b8e614" />
 
       {/* Mirrors need no assets, so they render outside Suspense and are not
           held up by the model download. */}
@@ -145,10 +145,10 @@ export default function Scene() {
         {/* Procedural environment — built from Lightformers rather than an HDRI
             preset, so nothing is fetched from a CDN at runtime. */}
         <Environment resolution={256}>
-          <Lightformer intensity={1.45} position={[0, 3, 4]} scale={[8, 3, 1]} color="#f4f2ed" />
-          <Lightformer intensity={1.0} position={[-4, 0, 2]} scale={[3, 6, 1]} color="#e4f0fa" />
-          <Lightformer intensity={0.65} position={[4, -1, 2]} scale={[3, 6, 1]} color="#b8e614" />
-          <Lightformer intensity={0.45} position={[0, -3, -3]} scale={[8, 3, 1]} color="#16205c" />
+          <Lightformer intensity={2} position={[0, 3, 4]} scale={[8, 3, 1]} color="#f4f2ed" />
+          <Lightformer intensity={1.4} position={[-4, 0, 2]} scale={[3, 6, 1]} color="#e4f0fa" />
+          <Lightformer intensity={1} position={[4, -1, 2]} scale={[3, 6, 1]} color="#b8e614" />
+          <Lightformer intensity={0.6} position={[0, -3, -3]} scale={[8, 3, 1]} color="#16205c" />
         </Environment>
 
         <Preload all />

@@ -110,9 +110,9 @@ export function RefractionPass() {
         // The specular is much hotter than it used to be, so the threshold has
         // to be higher: at 0.62 the whole lit side of every stroke passed and
         // the word grew a hedge of streaks instead of a few glints.
-        uThreshold: { value: 0.9 },
+        uThreshold: { value: 0.82 },
         uStreakScale: { value: 2.2 },
-        uIntensity: { value: 0.24 },
+        uIntensity: { value: 0.5 },
       },
       depthTest: false,
       depthWrite: false,
