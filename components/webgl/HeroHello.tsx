@@ -74,11 +74,11 @@ export function createGlassUniforms() {
     uDark: { value: 0 },
     uHighlightOnly: { value: 0 },
     uRimColor: { value: new THREE.Color('#FFF4DC') },
-    uRimPower: { value: 2.6 },
-    uRimStrength: { value: 0.7 },
+    uRimPower: { value: 2.9 },
+    uRimStrength: { value: 0.48 },
     // Tight and bright: the streak along the top of each stroke.
-    uSpecPower: { value: 48 },
-    uSpecStrength: { value: 1.15 },
+    uSpecPower: { value: 60 },
+    uSpecStrength: { value: 0.7 },
     uLightDirection: { value: new THREE.Vector3(0.4, 0.9, 0.6) },
 
     uDissolve: { value: 0 },

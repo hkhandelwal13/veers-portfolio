@@ -26,7 +26,7 @@ export function StarFlare() {
   const uniforms = useMemo(
     () => ({
       uStar: { value: null as THREE.Texture | null },
-      uOpacity: { value: 0.85 },
+      uOpacity: { value: 0.42 },
     }),
     [],
   )

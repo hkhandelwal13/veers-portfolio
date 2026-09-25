@@ -104,8 +104,9 @@ const COMPOSITE = [
   'float b=texture2D(uDensity,vUv-vec2(0.0,uSimTexel.y)).r;',
   'float t=texture2D(uDensity,vUv+vec2(0.0,uSimTexel.y)).r;',
   'vec2 dg=0.5*vec2(r-l,t-b); float den=texture2D(uDensity,vUv).r;',
-  'float trail=max(smoothstep(0.008,0.22,den),smoothstep(0.008,0.18,fl));',
-  'vec2 o=(flow+dg*0.7)*uStrength*trail*m;',
+  'float trail=max(smoothstep(0.02,0.14,den),smoothstep(0.02,0.12,fl))*0.55;',
+  'vec2 o=(flow*0.85+dg*0.25)*uStrength*trail*m;',
+  'o=clamp(o,vec2(-0.01),vec2(0.01));',
   'vec3 c; c.r=sceneAt(vUv+o*(1.0+uChroma)).r; c.g=sceneAt(vUv+o).g; c.b=sceneAt(vUv+o*(1.0-uChroma)).b;',
   'gl_FragColor=vec4(c,base.a);',
   '#include <tonemapping_fragment>',
@@ -114,17 +115,18 @@ const COMPOSITE = [
 ].join('\n')
 
 const TUNING = {
-  velocityDissipation: 0.985,
-  densityDissipation: 0.974,
-  vorticity: 16,
-  pointerForce: 0.62,
-  maxPointerForce: 1.35,
-  desktopRadius: 0.0024,
-  mobileRadius: 0.0038,
-  desktopStrength: 0.018,
-  mobileStrength: 0.013,
-  desktopChroma: 0.14,
-  mobileChroma: 0.08,
+  // Keep the fluid as a short interaction wake, not a persistent water warp.
+  velocityDissipation: 0.978,
+  densityDissipation: 0.94,
+  vorticity: 5.5,
+  pointerForce: 0.28,
+  maxPointerForce: 0.65,
+  desktopRadius: 0.0018,
+  mobileRadius: 0.0026,
+  desktopStrength: 0.0075,
+  mobileStrength: 0.0055,
+  desktopChroma: 0.025,
+  mobileChroma: 0.018,
 } as const
 
 const HERO_TARGET = 'hero-field'
@@ -296,7 +298,7 @@ function stepFluid(gl: THREE.WebGLRenderer, r: Resources, dt: number, compact: b
   if (point) {
     r.splat.uniforms.uTarget.value = r.density.read.texture
     r.splat.uniforms.uPoint.value.copy(point)
-    r.splat.uniforms.uValue.value.set(0.9, 0, 0, 0)
+    r.splat.uniforms.uValue.value.set(0.55, 0, 0, 0)
     renderPass(gl, r, r.splat, r.density.write); r.density.swap()
   }
 
