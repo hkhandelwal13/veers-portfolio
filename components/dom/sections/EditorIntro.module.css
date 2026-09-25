@@ -6,6 +6,7 @@
  */
 .section {
   position: relative;
+  scroll-margin-top: calc(var(--nav-h) + var(--s4));
   z-index: var(--z-content);
   background: var(--section-ground);
   color: var(--section-ink);

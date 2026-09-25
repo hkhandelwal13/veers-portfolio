@@ -1,9 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useRef } from 'react'
+import { usePathname } from 'next/navigation'
+import { useEffect, useRef, type MouseEvent } from 'react'
 import { SITE } from '@/lib/placeholder-content'
 import { getLenis } from '@/lib/lenis'
+import { scrollToSection } from '@/lib/section-scroll'
 import { DotMatrix } from './DotMatrix'
 import { NAV_LINKS } from './Nav'
 import { ThemeToggle } from './ThemeToggle'
@@ -29,6 +31,7 @@ export function MobileMenu({
   open: boolean
   onClose: () => void
 }) {
+  const pathname = usePathname()
   const panelRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const lastFocused = useRef<HTMLElement | null>(null)
@@ -84,6 +87,19 @@ export function MobileMenu({
     }
   }, [open, onClose])
 
+  const goToSection = (event: MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+    if (pathname !== '/') {
+      onClose()
+      return
+    }
+
+    event.preventDefault()
+    onClose()
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => scrollToSection(sectionId))
+    })
+  }
+
   return (
     <div
       id="mobile-menu"
@@ -109,7 +125,12 @@ export function MobileMenu({
           <ul className={styles.links}>
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className={styles.link} onClick={onClose}>
+                <Link
+                  href={link.href}
+                  scroll={false}
+                  className={styles.link}
+                  onClick={(event) => goToSection(event, link.sectionId)}
+                >
                   {link.label}
                 </Link>
               </li>

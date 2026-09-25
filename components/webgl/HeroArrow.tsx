@@ -30,7 +30,7 @@ import { rectToWorld } from './rect-space'
 
 /** Where it sits in the hero, as a fraction of the section. */
 const ANCHOR_X = 0.82
-const ANCHOR_Y = 0.72
+const ANCHOR_Y = 0.78
 
 /** Its height as a fraction of the section's — deliberately a small accent. */
 const RELATIVE_HEIGHT = 0.12

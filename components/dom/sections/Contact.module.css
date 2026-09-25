@@ -21,6 +21,7 @@
 
 .section {
   position: relative;
+  scroll-margin-top: calc(var(--nav-h) + var(--s4));
   z-index: var(--z-content);
   min-height: 100svh;
   padding-top: var(--nav-h);

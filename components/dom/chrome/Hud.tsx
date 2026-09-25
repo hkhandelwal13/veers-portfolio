@@ -277,10 +277,9 @@ export function Hud() {
             alike, so no suppressHydrationWarning is needed — and each is
             independent, so a missing temperature does not take the clock with
             it. */}
-        <span>
-          {[zone, cc, time, temperature === null ? null : `${temperature}°C`]
-            .filter(Boolean)
-            .join(' ')}
+        <span className={styles.zonePlace}>{[zone, cc].filter(Boolean).join(' ')}</span>
+        <span className={styles.clockWeather}>
+          {[time, temperature === null ? null : `${temperature}°C`].filter(Boolean).join(' ')}
         </span>
       </div>
 

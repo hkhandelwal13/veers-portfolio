@@ -171,6 +171,20 @@
     width: 21px;
     height: 14px;
   }
+
+  .bottomLeft {
+    display: flex;
+    left: var(--margin);
+    max-width: calc(100vw - (var(--margin) * 2) - 52px);
+  }
+
+  .zonePlace {
+    display: none;
+  }
+
+  .clockWeather {
+    white-space: nowrap;
+  }
 }
 
 /* See the note in Nav.module.css — a thumb needs 44px, a cursor does not. */
@@ -186,8 +200,4 @@
     min-width: 44px;
     justify-content: flex-start;
   }
-}
-
-@media (max-width: 1024px) {
-  .bottomLeft { display: none; }
 }

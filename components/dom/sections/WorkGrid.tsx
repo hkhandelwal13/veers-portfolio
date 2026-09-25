@@ -22,6 +22,7 @@ export function WorkGrid({
 }) {
   return (
     <section
+      id="work"
       className={`${styles.section} ${standalone ? '' : styles.stacked}`}
       aria-labelledby="work-heading"
     >
