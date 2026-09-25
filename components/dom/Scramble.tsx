@@ -1,5 +1,6 @@
 'use client'
 
+import styles from './Scramble.module.css'
 import { useEffect, useRef } from 'react'
 import { prefersReducedMotion } from '@/lib/lenis'
 import { scramble } from '@/lib/scramble'
@@ -22,7 +23,7 @@ import { isCurtainOpen, subscribeToCurtain } from '@/lib/stage-curtain'
  * Best on monospace: the scrambled characters have to be the same width as the
  * real ones or the line reflows on every tick.
  */
-export function Scramble({ text, className }: { text: string; className?: string }) {
+export function Scramble({ text, className, neon = false }: { text: string; className?: string; neon?: boolean }) {
   const ref = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
@@ -35,11 +36,16 @@ export function Scramble({ text, className }: { text: string; className?: string
     let cancelDecode: (() => void) | null = null
     let unsubscribeCurtain: (() => void) | null = null
     let seen = false
+    let colorAnimation: Animation | undefined
 
     const start = () => {
       unsubscribeCurtain?.()
       unsubscribeCurtain = null
       cancelDecode = scramble(element, text)
+      if (neon) {
+        const color = getComputedStyle(element).getPropertyValue('--accent-2').trim() || '#b8e614'
+        colorAnimation = element.animate([{ color }, { color, offset: 0.35 }, { color: '#fff' }], { duration: 800 })
+      }
     }
 
     const onVisible = () => {
@@ -70,15 +76,17 @@ export function Scramble({ text, className }: { text: string; className?: string
       observer.disconnect()
       unsubscribeCurtain?.()
       cancelDecode?.()
+      colorAnimation?.cancel()
     }
-  }, [text])
+  }, [text, neon])
 
   return (
     <span className={className}>
-      <span ref={ref} aria-hidden="true">
+      <span ref={ref} className={neon ? styles.neon : undefined} aria-hidden="true">
         {text}
       </span>
       <span className="visually-hidden">{text}</span>
     </span>
   )
 }
+

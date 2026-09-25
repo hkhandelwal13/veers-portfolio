@@ -4,6 +4,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
+import { markHeroReady } from '@/lib/hero-ready'
 import { getTargetRect } from '@/lib/rect-sampler'
 import { pointer } from '@/lib/pointer-bus'
 import { getCapabilities } from '@/lib/capabilities'
@@ -219,7 +220,7 @@ export function HeroHello() {
   return (
     <group ref={outer} visible={false}>
       <group position={[-measured.center.x, -measured.center.y, -measured.center.z]}>
-        <mesh ref={meshRef} geometry={measured.geometry}>
+        <mesh ref={meshRef} geometry={measured.geometry} onAfterRender={markHeroReady}>
           {/* One material now, on every screen. The small-screen fallback that
               used to sit here was an opaque standard material standing in for
               the refraction — and standing in badly, since the refraction is

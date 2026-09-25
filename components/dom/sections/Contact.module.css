@@ -84,6 +84,9 @@
     font-size: clamp(1.875rem, 4.5vw + 0.5rem, 3.25rem);
     line-height: 1.08;
     max-width: 24ch;
-    margin-top: calc(-1 * clamp(10px, 1.5svh, 18px));
+    margin-top: clamp(24px, 5svh, 44px);
+    text-align: center;
+    justify-self: center;
+    max-width: 20ch;
   }
 }

@@ -83,6 +83,7 @@ export default function Scene() {
           held up by the model download. */}
       <CardMirrors />
       <EditorFace />
+      <Suspense fallback={null}><HeroHello /></Suspense>
 
       <Suspense fallback={null}>
         {/* Behind the glass and on the content layer, so the refraction pass
@@ -131,7 +132,6 @@ export default function Scene() {
         />
         <ContactWord />
 
-        <HeroHello />
         <HeroArrow />
         <FinaleArrow />
         <StarFlare />

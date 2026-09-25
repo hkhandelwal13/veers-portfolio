@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useState } from 'react'
 import { getLenis, prefersReducedMotion } from '@/lib/lenis'
+import { isHeroReady, subscribeToHeroReady } from '@/lib/hero-ready'
 import { setCurtain } from '@/lib/stage-curtain'
 import { DotMatrix } from './DotMatrix'
 import styles from './Loader.module.css'
@@ -15,70 +16,30 @@ import styles from './Loader.module.css'
  * uncovered by a hole opening out from the middle. Same wipe as the route
  * transition and the mobile menu (see DotMatrix).
  *
- * Shown once per session so it doesn't tax repeat visits. Real asset progress
- * arrives with the content in Phase 5; until then it tracks font loading, which
- * is the one thing genuinely blocking first paint.
+ * Shown on every document load, including refresh. Waits for fonts and the
+ * hero model's first rendered frame before opening the shutter.
  */
 
-const SEEN_KEY = 'vl-loaded'
-
-/** How long the wipe runs: --dm-grow + --dm-stagger on .sheet, plus slack. */
 const WIPE_MS = 960
-
-/** A loader that flashes past is worse than none, so hold it for at least this
- *  long once shown. Caps at MAX_WAIT_MS if the real signal never arrives. */
 const MIN_VISIBLE_MS = 900
-const MAX_WAIT_MS = 2500
-
-/** The answer can't change during a session, so the subscription is a no-op —
- *  this is here to read an external store without an effect. */
-const noopSubscribe = () => () => {}
-
-/**
- * Latched on the first client read.
- *
- * React calls getSnapshot on every render, and this loader writes the flag
- * itself — so reading storage live would make the loader see "already loaded"
- * one render after it starts its own exit, and collapse mid-wipe. What matters
- * is whether the flag was set when the page opened.
- */
-let seenAtStart: boolean | null = null
-
-function readSeen(): boolean {
-  seenAtStart ??= sessionStorage.getItem(SEEN_KEY) === '1'
-  return seenAtStart
-}
-
-function useAlreadyLoaded() {
-  return useSyncExternalStore(
-    noopSubscribe,
-    readSeen,
-    // Server can't know; assume a first visit so the markup always includes
-    // the loader and the client can hide it immediately if it has been seen.
-    () => false,
-  )
-}
+const MAX_WAIT_MS = 8000
 
 type Phase = 'loading' | 'wiping' | 'done'
 
 export function Loader() {
-  const alreadyLoaded = useAlreadyLoaded()
   const [phase, setPhase] = useState<Phase>('loading')
   const [progress, setProgress] = useState(0)
 
-  const effective: Phase = alreadyLoaded ? 'done' : phase
+  const effective = phase
   const done = effective === 'done'
 
-  // Held only while the panel is solid. The wipe itself counts as open: things
-  // waiting on the curtain should start as the hole opens, not after it lands.
+  // Keep text reveals queued until the shutter has fully uncovered the model.
   useEffect(() => {
-    setCurtain('loader', effective === 'loading')
-    return () => setCurtain('loader', false)
-  }, [effective])
+    setCurtain('loader', !done)
+  }, [done])
+  useEffect(() => () => setCurtain('loader', false), [])
 
   useEffect(() => {
-    if (alreadyLoaded) return
-
     const lenis = getLenis()
     lenis?.stop()
 
@@ -91,12 +52,17 @@ export function Loader() {
     }, 90)
 
     let settle: ReturnType<typeof setTimeout>
+    let stopped = false
+    let finishing = false
+    let fontsReady = false
+    const needsHello = !!document.querySelector('[data-webgl="hero-hello"]')
     const finish = () => {
+      if (stopped || finishing) return
+      finishing = true
       clearInterval(creep)
       setProgress(100)
       const held = performance.now() - shownAt
       settle = setTimeout(() => {
-        sessionStorage.setItem(SEEN_KEY, '1')
         setPhase('wiping')
         // The wipe uncovers the site, so scrolling can resume the moment it
         // starts rather than after it finishes.
@@ -107,21 +73,21 @@ export function Loader() {
       }, Math.max(320, MIN_VISIBLE_MS - held))
     }
 
-    // document.fonts.ready can hang on a flaky network; cap the wait so the
-    // site is never held hostage by it.
+    // A rendered mesh is the readiness signal; never hold a failed WebGL page forever.
+    const check = () => { if (fontsReady && (!needsHello || isHeroReady())) finish() }
+    const unsubscribe = subscribeToHeroReady(check)
     const cap = setTimeout(finish, MAX_WAIT_MS)
-    document.fonts.ready.then(() => {
-      clearTimeout(cap)
-      finish()
-    })
+    document.fonts.ready.then(() => { fontsReady = true; check() })
 
     return () => {
+      stopped = true
+      unsubscribe()
       clearInterval(creep)
       clearTimeout(cap)
       clearTimeout(settle)
       getLenis()?.start()
     }
-  }, [alreadyLoaded])
+  }, [])
 
   // Nothing left to paint once the wipe is through, and the grid is a few
   // hundred nodes — drop the lot rather than leaving it hidden.
@@ -153,3 +119,4 @@ export function Loader() {
     </div>
   )
 }
+

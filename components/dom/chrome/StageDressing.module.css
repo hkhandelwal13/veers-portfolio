@@ -43,3 +43,15 @@
     --tile: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='280'%3E%3Cg fill='%23fff'%3E%3Crect y='139.5' width='95.5' height='1' opacity='.5'/%3E%3Crect x='123.5' y='139.5' width='96.5' height='1' opacity='.5'/%3E%3Crect x='109.5' width='1' height='125.5' opacity='.5'/%3E%3Crect x='109.5' y='153.5' width='1' height='126.5' opacity='.5'/%3E%3Crect x='102.5' y='139.5' width='14' height='1'/%3E%3Crect x='109.5' y='132.5' width='1' height='14'/%3E%3C/g%3E%3C/svg%3E");
   }
 }
+
+
+/* Two complete mobile columns: crosses at each gutter and the center. */
+@media (max-width: 640px) {
+  .grid {
+    --grid-cell-x: calc((100vw - 2 * var(--margin)) / 2);
+    --grid-cell-y: clamp(230px, 34svh, 300px);
+  }
+}
+@media (min-width: 641px) and (max-width: 1024px) {
+  .grid { --grid-cell-x: calc((100vw - 2 * var(--margin)) / 2); }
+}
