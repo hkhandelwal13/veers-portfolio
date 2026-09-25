@@ -90,6 +90,9 @@ export function scramble(element: HTMLElement, text: string) {
   }
 
   const job: Job = { element, text, settleAt, tick: 0 }
+  // Write the initial scrambled frame synchronously. A reveal can now expose
+  // this node immediately without flashing its completed text for one tick.
+  element.textContent = text.replace(/\S/g, randomChar)
   jobs.add(job)
 
   handle ??= setInterval(tick, TICK_MS)
@@ -102,3 +105,4 @@ export function scramble(element: HTMLElement, text: string) {
     }
   }
 }
+

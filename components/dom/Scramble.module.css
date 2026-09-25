@@ -1,1 +1,5 @@
 .neon { color: #fff; }
+.copy[data-pending='true'] { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .copy[data-pending='true'] { opacity: 1; }
+}

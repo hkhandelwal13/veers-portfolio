@@ -27,22 +27,22 @@ export function Hero() {
       <div className={styles.frame}>
         <div className={styles.top}>
           <div className={styles.taglineBlock}>
-            <Scramble neon
+            <Scramble neon reveal
               className={`label ${styles.eyebrow}`}
               text="Video editor — Color — Motion"
             />
             <p className={styles.tagline}>
-              <Scramble neon text="Cutting commercials, music videos and documentary from assembly to delivery." />
+              <Scramble neon reveal text="Cutting commercials, music videos and documentary from assembly to delivery." />
             </p>
           </div>
 
           <p className={styles.intro}>
-            <Scramble neon text={`Based in ${SITE.basedIn}. Working with agencies, labels and independent producers since ${SITE.since} — colour and finishing handled in-house.`} />
+            <Scramble neon reveal text={`Based in ${SITE.basedIn}. Working with agencies, labels and independent producers since ${SITE.since} — colour and finishing handled in-house.`} />
           </p>
         </div>
 
         <h1 id="hero-heading" className={`display ${styles.headline}`}>
-          <Scramble neon text="Story first. Everything else is finishing." />
+          <Scramble neon reveal text="Story first. Everything else is finishing." />
         </h1>
 
       </div>

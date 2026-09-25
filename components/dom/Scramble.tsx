@@ -23,7 +23,7 @@ import { isCurtainOpen, subscribeToCurtain } from '@/lib/stage-curtain'
  * Best on monospace: the scrambled characters have to be the same width as the
  * real ones or the line reflows on every tick.
  */
-export function Scramble({ text, className, neon = false }: { text: string; className?: string; neon?: boolean }) {
+export function Scramble({ text, className, neon = false, reveal = false }: { text: string; className?: string; neon?: boolean; reveal?: boolean }) {
   const ref = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
@@ -31,7 +31,11 @@ export function Scramble({ text, className, neon = false }: { text: string; clas
     if (!element) return
     // Reduced motion gets the finished text, which is what the markup already
     // says — so there is nothing to do but stay out of the way.
-    if (prefersReducedMotion()) return
+    if (prefersReducedMotion()) {
+      delete element.dataset.pending
+      return
+    }
+    if (reveal) element.dataset.pending = 'true' 
 
     let cancelDecode: (() => void) | null = null
     let unsubscribeCurtain: (() => void) | null = null
@@ -42,6 +46,7 @@ export function Scramble({ text, className, neon = false }: { text: string; clas
       unsubscribeCurtain?.()
       unsubscribeCurtain = null
       cancelDecode = scramble(element, text)
+      delete element.dataset.pending
       if (neon) {
         const color = getComputedStyle(element).getPropertyValue('--accent-2').trim() || '#b8e614'
         colorAnimation = element.animate([{ color }, { color, offset: 0.35 }, { color: '#fff' }], { duration: 800 })
@@ -78,14 +83,15 @@ export function Scramble({ text, className, neon = false }: { text: string; clas
       cancelDecode?.()
       colorAnimation?.cancel()
     }
-  }, [text, neon])
+  }, [text, neon, reveal])
 
   return (
     <span className={className}>
-      <span ref={ref} className={neon ? styles.neon : undefined} aria-hidden="true">
+      <span ref={ref} className={`${styles.copy} ${neon ? styles.neon : ''}`} data-pending={reveal ? 'true' : undefined} aria-hidden="true">
         {text}
       </span>
       <span className="visually-hidden">{text}</span>
+      {reveal && <noscript><style>{'[data-pending="true"] { opacity: 1 !important; }'}</style></noscript>}
     </span>
   )
 }
