@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     default: 'Veerlabs',
     template: '%s — Veerlabs',
   },
-  description: 'Editing, colour and motion graphics. Selected work by Veerlabs.',
+  description: 'Creative Director — Motion Designer — Video Editor',
 }
 
 export const viewport: Viewport = {
