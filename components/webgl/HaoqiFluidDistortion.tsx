@@ -6,7 +6,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { fluidPointer } from '@/lib/pointer-bus'
 import { getCapabilities } from '@/lib/capabilities'
 import { getTargetRect, type TargetRect } from '@/lib/rect-sampler'
-import { ALL_LAYERS_MASK } from './layers'
+import { ALL_LAYERS_MASK, LAYER_OVERLAY } from './layers'
 
 const HERO_TARGET = 'hero-field'
 const CONTACT_TARGET = 'contact-distortion'
@@ -373,7 +373,13 @@ export function HaoqiFluidDistortion() {
 
     const fluidActive = canUsePointer && performance.now() - lastMovedAt.current <= ACTIVE_WINDOW_MS
 
-    camera.layers.mask = ALL_LAYERS_MASK
+    // Keep the existing star-flare overlay out of the fluid source. If it is
+    // fed through the velocity/chromatic pass, each bright streak is sampled
+    // several times and reads much more sparkly than it did before the fluid
+    // effect was added. Distort the scene + glass, then draw the flare back on
+    // top unchanged so HELLO keeps its original highlight balance.
+    const baseMask = ALL_LAYERS_MASK & ~(1 << LAYER_OVERLAY)
+    camera.layers.mask = baseMask
     gl.setRenderTarget(targets.base)
     gl.clear()
     gl.render(scene, camera)
@@ -430,6 +436,15 @@ export function HaoqiFluidDistortion() {
     gl.setRenderTarget(oldTarget)
     gl.clear()
     gl.render(passScene, passCamera)
+
+    // Restore the flare as a true overlay instead of distorting/re-sampling it.
+    // This preserves the pre-fluid sparkle intensity while leaving the cursor
+    // fluid distortion itself untouched.
+    const oldAutoClear = gl.autoClear
+    gl.autoClear = false
+    camera.layers.set(LAYER_OVERLAY)
+    gl.render(scene, camera)
+    gl.autoClear = oldAutoClear
     camera.layers.mask = oldMask
   }, 1)
 
