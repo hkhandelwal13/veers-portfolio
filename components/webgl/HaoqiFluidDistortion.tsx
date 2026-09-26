@@ -5,7 +5,7 @@ import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { fluidPointer } from '@/lib/pointer-bus'
 import { getCapabilities } from '@/lib/capabilities'
-import { FINALE_TARGET_ID, getFinaleProgress, getGrowth } from '@/lib/finale-progress'
+import { FINALE, FINALE_TARGET_ID, getFinaleProgress, getGrowth } from '@/lib/finale-progress'
 import { getTargetRect, type TargetRect } from '@/lib/rect-sampler'
 import { ALL_LAYERS_MASK, LAYER_FINALE_ARROW, LAYER_OVERLAY } from './layers'
 
@@ -13,6 +13,7 @@ const HERO_TARGET = 'hero-field'
 const ABOUT_SECTION_TARGET = 'about-section'
 const ABOUT_TRANSITION_TARGET = 'about-transition'
 const CONTACT_TARGET = 'contact-distortion'
+const CONTACT_TRANSITION_TARGET = 'contact-field'
 const SIM_SHORT_SIDE = 160
 const SPLAT_RADIUS = 0.003
 const SPLAT_FORCE = 3000
@@ -154,9 +155,11 @@ const displayFragment = /* glsl */ `
   uniform float uEffectEnabled;
   uniform float uAboutTransitionStrength;
   uniform float uContactStrength;
+  uniform float uContactTransitionStrength;
   uniform vec4 uHeroRect;
   uniform vec4 uAboutTransitionRect;
   uniform vec4 uContactRect;
+  uniform vec4 uContactTransitionRect;
   varying vec2 vUv;
 
   float roundedRectMask(vec2 uv, vec4 r, float radius, float feather) {
@@ -198,7 +201,13 @@ const displayFragment = /* glsl */ `
     float contactMask =
       roundedRectMask(uv, uContactRect, 0.035, 0.03) *
       uContactStrength;
-    float sectionMask = max(max(heroMask, aboutTransitionMask), contactMask);
+    float contactTransitionMask =
+      roundedRectMask(uv, uContactTransitionRect, 0.08, 0.08) *
+      uContactTransitionStrength;
+    float sectionMask = max(
+      max(heroMask, aboutTransitionMask),
+      max(contactMask, contactTransitionMask)
+    );
     vec2 displacement = velocity / max(uSimSize, vec2(1.0)) * uDisplacementStrength * enabled * sectionMask;
     float velocityMagnitude = length(displacement);
 
@@ -338,9 +347,11 @@ export function HaoqiFluidDistortion() {
         uEffectEnabled: { value: 0 },
         uAboutTransitionStrength: { value: 0 },
         uContactStrength: { value: 1 },
+        uContactTransitionStrength: { value: 0 },
         uHeroRect: { value: new THREE.Vector4() },
         uAboutTransitionRect: { value: new THREE.Vector4() },
         uContactRect: { value: new THREE.Vector4() },
+        uContactTransitionRect: { value: new THREE.Vector4() },
       }),
     }
   }, [])
@@ -401,6 +412,7 @@ export function HaoqiFluidDistortion() {
     const aboutSection = getTargetRect(ABOUT_SECTION_TARGET)
     const aboutTransition = getTargetRect(ABOUT_TRANSITION_TARGET)
     const contact = getTargetRect(CONTACT_TARGET)
+    const contactTransition = getTargetRect(CONTACT_TRANSITION_TARGET)
     const finale = getTargetRect(FINALE_TARGET_ID)
 
     // Let the fluid reach into the first part of About while it is entering,
@@ -411,18 +423,28 @@ export function HaoqiFluidDistortion() {
         ? THREE.MathUtils.smoothstep(aboutSection.y, 0, size.height * 0.45)
         : 0
 
-    // Keep the finale arrow itself clean, but let the cursor-fluid return
-    // behind it during the shrinking exit into Contact. This makes the
-    // arrow -> contact hand-off feel continuous without putting the effect
-    // inside the 3D arrow/tunnel itself.
-    const arrowGrowth = finale?.valid ? getGrowth(getFinaleProgress()) : 0
+    // Keep the finale arrow itself clean, but bring the cursor-fluid back
+    // behind it across the whole shrinking exit. `contact-field` already
+    // reaches far above Contact, so using it as a transition mask lets the
+    // watery wake appear in the sticker/arrow exit frame before Contact is
+    // fully on screen. Gate it to the return leg only so the effect does not
+    // appear during the arrow's entrance.
+    const finaleProgress = finale?.valid ? getFinaleProgress() : 1
+    const arrowGrowth = finale?.valid ? getGrowth(finaleProgress) : 0
+    const isFinaleExit = finale?.valid && finaleProgress > FINALE.peak
+    const contactTransitionStrength = isFinaleExit
+      ? 1 - THREE.MathUtils.smoothstep(arrowGrowth, 0.45, 0.9)
+      : 0
     const contactStrength = finale?.valid
-      ? 1 - THREE.MathUtils.smoothstep(arrowGrowth, 0.18, 0.55)
+      ? isFinaleExit
+        ? 1 - THREE.MathUtils.smoothstep(arrowGrowth, 0.18, 0.58)
+        : 0
       : 1
 
     const sectionVisible =
       visible(hero, size.height) ||
       (aboutTransitionStrength > 0.001 && visible(aboutTransition, size.height)) ||
+      (contactTransitionStrength > 0.001 && visible(contactTransition, size.height)) ||
       (contactStrength > 0.001 && visible(contact, size.height))
     const desktop = size.width >= 1024
     const reducedMotion = getCapabilities().reducedMotion
@@ -528,8 +550,15 @@ export function HaoqiFluidDistortion() {
       size.height,
     )
     writeRect(materials.display.uniforms.uContactRect.value as THREE.Vector4, contact, size.width, size.height)
+    writeRect(
+      materials.display.uniforms.uContactTransitionRect.value as THREE.Vector4,
+      contactTransition,
+      size.width,
+      size.height,
+    )
     materials.display.uniforms.uAboutTransitionStrength.value = aboutTransitionStrength
     materials.display.uniforms.uContactStrength.value = contactStrength
+    materials.display.uniforms.uContactTransitionStrength.value = contactTransitionStrength
     materials.display.uniforms.tDiffuse.value = targets.base.texture
     materials.display.uniforms.uVelocity.value = targets.velocityRead.texture
     materials.display.uniforms.uEffectEnabled.value = effectFade.current
