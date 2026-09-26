@@ -11,7 +11,11 @@
 export const LAYER_CONTENT = 0 /** cards, stickers — everything the glass refracts */
 export const LAYER_GLASS = 1 /** the glass word alone */
 export const LAYER_OVERLAY = 2 /** the flare composite, drawn over the finished frame */
+export const LAYER_FINALE_ARROW = 3 /** finale arrow: glass pass yes, cursor-fluid no */
 
 /** Every layer, for the on-screen render. */
 export const ALL_LAYERS_MASK =
-  (1 << LAYER_CONTENT) | (1 << LAYER_GLASS) | (1 << LAYER_OVERLAY)
+  (1 << LAYER_CONTENT) |
+  (1 << LAYER_GLASS) |
+  (1 << LAYER_OVERLAY) |
+  (1 << LAYER_FINALE_ARROW)

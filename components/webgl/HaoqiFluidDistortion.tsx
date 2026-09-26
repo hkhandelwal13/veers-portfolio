@@ -7,7 +7,7 @@ import { fluidPointer } from '@/lib/pointer-bus'
 import { getCapabilities } from '@/lib/capabilities'
 import { FINALE_TARGET_ID, getFinaleProgress, getGrowth } from '@/lib/finale-progress'
 import { getTargetRect, type TargetRect } from '@/lib/rect-sampler'
-import { ALL_LAYERS_MASK, LAYER_OVERLAY } from './layers'
+import { ALL_LAYERS_MASK, LAYER_FINALE_ARROW, LAYER_OVERLAY } from './layers'
 
 const HERO_TARGET = 'hero-field'
 const ABOUT_SECTION_TARGET = 'about-section'
@@ -411,13 +411,13 @@ export function HaoqiFluidDistortion() {
         ? THREE.MathUtils.smoothstep(aboutSection.y, 0, size.height * 0.45)
         : 0
 
-    // Do not run the cursor fluid through the finale's 3D arrow/tunnel. On the
-    // home page the contact mask fades in only once that arrow has almost
-    // returned to its resting size. Standalone /contact has no finale target,
-    // so it keeps the normal contact effect.
+    // Keep the finale arrow itself clean, but let the cursor-fluid return
+    // behind it during the shrinking exit into Contact. This makes the
+    // arrow -> contact hand-off feel continuous without putting the effect
+    // inside the 3D arrow/tunnel itself.
     const arrowGrowth = finale?.valid ? getGrowth(getFinaleProgress()) : 0
     const contactStrength = finale?.valid
-      ? 1 - THREE.MathUtils.smoothstep(arrowGrowth, 0.02, 0.10)
+      ? 1 - THREE.MathUtils.smoothstep(arrowGrowth, 0.18, 0.55)
       : 1
 
     const sectionVisible =
@@ -463,7 +463,10 @@ export function HaoqiFluidDistortion() {
     // several times and reads much more sparkly than it did before the fluid
     // effect was added. Distort the scene + glass, then draw the flare back on
     // top unchanged so HELLO keeps its original highlight balance.
-    const baseMask = ALL_LAYERS_MASK & ~(1 << LAYER_OVERLAY)
+    const baseMask =
+      ALL_LAYERS_MASK &
+      ~(1 << LAYER_OVERLAY) &
+      ~(1 << LAYER_FINALE_ARROW)
     camera.layers.mask = baseMask
     gl.setRenderTarget(targets.base)
     gl.clear()
@@ -536,13 +539,18 @@ export function HaoqiFluidDistortion() {
     gl.clear()
     gl.render(passScene, passCamera)
 
-    // Restore the flare as a true overlay instead of distorting/re-sampling it.
-    // This preserves the pre-fluid sparkle intensity while leaving the cursor
-    // fluid distortion itself untouched.
+    // Draw the finale arrow after the fluid composite so the transition
+    // behind it can stay watery while the 3D arrow itself remains crisp.
+    // Then restore the flare as the final overlay.
     const oldAutoClear = gl.autoClear
     gl.autoClear = false
+
+    camera.layers.set(LAYER_FINALE_ARROW)
+    gl.render(scene, camera)
+
     camera.layers.set(LAYER_OVERLAY)
     gl.render(scene, camera)
+
     gl.autoClear = oldAutoClear
     camera.layers.mask = oldMask
   }, 1)

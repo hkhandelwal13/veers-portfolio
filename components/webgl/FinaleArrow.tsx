@@ -29,7 +29,7 @@ import {
 } from '@/shaders/portal-arrow'
 import { glassPasses } from './glass-passes'
 import { createGlassUniforms } from './HeroHello'
-import { LAYER_GLASS } from './layers'
+import { LAYER_FINALE_ARROW } from './layers'
 import { flattenModel } from './model-geometry'
 import { isRectVisible, rectToWorld } from './rect-space'
 
@@ -159,7 +159,7 @@ export function FinaleArrow() {
   const attitude = useMemo(() => computeArrowAttitude(model.geometry), [model])
 
   useEffect(() => {
-    meshRef.current?.layers.set(LAYER_GLASS)
+    meshRef.current?.layers.set(LAYER_FINALE_ARROW)
     ringLight.current = createRingLight(1)
   }, [])
 
