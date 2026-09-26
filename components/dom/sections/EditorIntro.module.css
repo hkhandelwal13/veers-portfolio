@@ -5,16 +5,21 @@
  * across the middle of that. See HeroStage.
  */
 
+.sectionTarget {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 .transitionTarget {
   position: absolute;
-  /* Keep the fluid only around the Hero ↔ About hand-off.
-     The target reaches above About so the transition works in both scroll
-     directions, but ends shortly after About enters so the fully-settled
-     About section is completely free of the effect. */
-  top: -40svh;
+  /* Reach far enough into About to wash over part of the editor portrait
+     during the hand-off. HaoqiFluidDistortion fades this target to zero as
+     About settles, so the fully-visible section remains clean. */
+  top: -45svh;
   left: 0;
   right: 0;
-  height: 55svh;
+  height: 115svh;
   pointer-events: none;
 }
 

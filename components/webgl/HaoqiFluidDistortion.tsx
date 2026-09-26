@@ -5,13 +5,14 @@ import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { fluidPointer } from '@/lib/pointer-bus'
 import { getCapabilities } from '@/lib/capabilities'
+import { FINALE_TARGET_ID, getFinaleProgress, getGrowth } from '@/lib/finale-progress'
 import { getTargetRect, type TargetRect } from '@/lib/rect-sampler'
 import { ALL_LAYERS_MASK, LAYER_OVERLAY } from './layers'
 
 const HERO_TARGET = 'hero-field'
+const ABOUT_SECTION_TARGET = 'about-section'
 const ABOUT_TRANSITION_TARGET = 'about-transition'
 const CONTACT_TARGET = 'contact-distortion'
-const CONTACT_TRANSITION_TARGET = 'contact-field'
 const SIM_SHORT_SIDE = 160
 const SPLAT_RADIUS = 0.003
 const SPLAT_FORCE = 3000
@@ -151,10 +152,11 @@ const displayFragment = /* glsl */ `
   uniform float uDisplacementStrength;
   uniform float uChromaticBoost;
   uniform float uEffectEnabled;
+  uniform float uAboutTransitionStrength;
+  uniform float uContactStrength;
   uniform vec4 uHeroRect;
   uniform vec4 uAboutTransitionRect;
   uniform vec4 uContactRect;
-  uniform vec4 uContactTransitionRect;
   varying vec2 vUv;
 
   float roundedRectMask(vec2 uv, vec4 r, float radius, float feather) {
@@ -190,13 +192,13 @@ const displayFragment = /* glsl */ `
     // feather and rounder silhouette so the fluid rolls into/out of the next
     // scene rather than ending on a straight section boundary.
     float heroMask = roundedRectMask(uv, uHeroRect, 0.035, 0.03);
-    float aboutTransitionMask = roundedRectMask(uv, uAboutTransitionRect, 0.07, 0.065);
-    float contactMask = roundedRectMask(uv, uContactRect, 0.035, 0.03);
-    float contactTransitionMask = roundedRectMask(uv, uContactTransitionRect, 0.07, 0.065);
-    float sectionMask = max(
-      max(heroMask, aboutTransitionMask),
-      max(contactMask, contactTransitionMask)
-    );
+    float aboutTransitionMask =
+      roundedRectMask(uv, uAboutTransitionRect, 0.07, 0.065) *
+      uAboutTransitionStrength;
+    float contactMask =
+      roundedRectMask(uv, uContactRect, 0.035, 0.03) *
+      uContactStrength;
+    float sectionMask = max(max(heroMask, aboutTransitionMask), contactMask);
     vec2 displacement = velocity / max(uSimSize, vec2(1.0)) * uDisplacementStrength * enabled * sectionMask;
     float velocityMagnitude = length(displacement);
 
@@ -334,10 +336,11 @@ export function HaoqiFluidDistortion() {
         uDisplacementStrength: { value: DISPLACEMENT_STRENGTH },
         uChromaticBoost: { value: CHROMATIC_BOOST },
         uEffectEnabled: { value: 0 },
+        uAboutTransitionStrength: { value: 0 },
+        uContactStrength: { value: 1 },
         uHeroRect: { value: new THREE.Vector4() },
         uAboutTransitionRect: { value: new THREE.Vector4() },
         uContactRect: { value: new THREE.Vector4() },
-        uContactTransitionRect: { value: new THREE.Vector4() },
       }),
     }
   }, [])
@@ -395,14 +398,32 @@ export function HaoqiFluidDistortion() {
     const oldMask = camera.layers.mask
     const drawing = gl.getDrawingBufferSize(new THREE.Vector2())
     const hero = getTargetRect(HERO_TARGET)
+    const aboutSection = getTargetRect(ABOUT_SECTION_TARGET)
     const aboutTransition = getTargetRect(ABOUT_TRANSITION_TARGET)
     const contact = getTargetRect(CONTACT_TARGET)
-    const contactTransition = getTargetRect(CONTACT_TRANSITION_TARGET)
+    const finale = getTargetRect(FINALE_TARGET_ID)
+
+    // Let the fluid reach into the first part of About while it is entering,
+    // then ease it completely away as About settles into the viewport. The
+    // same curve runs backwards when returning from About to Hero.
+    const aboutTransitionStrength =
+      aboutSection?.valid && size.height > 0
+        ? THREE.MathUtils.smoothstep(aboutSection.y, 0, size.height * 0.45)
+        : 0
+
+    // Do not run the cursor fluid through the finale's 3D arrow/tunnel. On the
+    // home page the contact mask fades in only once that arrow has almost
+    // returned to its resting size. Standalone /contact has no finale target,
+    // so it keeps the normal contact effect.
+    const arrowGrowth = finale?.valid ? getGrowth(getFinaleProgress()) : 0
+    const contactStrength = finale?.valid
+      ? 1 - THREE.MathUtils.smoothstep(arrowGrowth, 0.02, 0.10)
+      : 1
+
     const sectionVisible =
       visible(hero, size.height) ||
-      visible(aboutTransition, size.height) ||
-      visible(contact, size.height) ||
-      visible(contactTransition, size.height)
+      (aboutTransitionStrength > 0.001 && visible(aboutTransition, size.height)) ||
+      (contactStrength > 0.001 && visible(contact, size.height))
     const desktop = size.width >= 1024
     const reducedMotion = getCapabilities().reducedMotion
     const canUsePointer = fluidPointer.active && desktop && !reducedMotion && sectionVisible
@@ -504,12 +525,8 @@ export function HaoqiFluidDistortion() {
       size.height,
     )
     writeRect(materials.display.uniforms.uContactRect.value as THREE.Vector4, contact, size.width, size.height)
-    writeRect(
-      materials.display.uniforms.uContactTransitionRect.value as THREE.Vector4,
-      contactTransition,
-      size.width,
-      size.height,
-    )
+    materials.display.uniforms.uAboutTransitionStrength.value = aboutTransitionStrength
+    materials.display.uniforms.uContactStrength.value = contactStrength
     materials.display.uniforms.tDiffuse.value = targets.base.texture
     materials.display.uniforms.uVelocity.value = targets.velocityRead.texture
     materials.display.uniforms.uEffectEnabled.value = effectFade.current

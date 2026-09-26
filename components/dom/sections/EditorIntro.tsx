@@ -26,6 +26,7 @@ import styles from './EditorIntro.module.css'
 export function EditorIntro() {
   return (
     <section id="about" className={styles.section} aria-labelledby="editor-heading">
+      <WebGLTarget targetId="about-section" className={styles.sectionTarget} aria-hidden="true" />
       {/* Bridges the hero's cursor-fluid field into the opening of About.
           It intentionally overlaps both sections so the effect has no hard
           boundary while the hero hands the page over. */}
