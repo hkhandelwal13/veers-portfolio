@@ -19,6 +19,8 @@ const PRESSURE_ITERATIONS = 4
 const DISPLACEMENT_STRENGTH = 1
 const CHROMATIC_BOOST = 0.5
 const ACTIVE_WINDOW_MS = 600
+const EXIT_FADE_IN = 10
+const EXIT_FADE_OUT = 3.5
 
 const fullscreenVertex = /* glsl */ `
   varying vec2 vUv;
@@ -163,7 +165,7 @@ const displayFragment = /* glsl */ `
 
   vec4 fluidColor(vec2 uv) {
     vec2 velocity = texture2D(uVelocity, uv).xy;
-    float enabled = step(0.5, uEffectEnabled);
+    float enabled = clamp(uEffectEnabled, 0.0, 1.0);
     float sectionMask = max(rectMask(uv, uHeroRect), rectMask(uv, uContactRect));
     vec2 displacement = velocity / max(uSimSize, vec2(1.0)) * uDisplacementStrength * enabled * sectionMask;
     float velocityMagnitude = length(displacement);
@@ -237,12 +239,17 @@ function writeRect(out: THREE.Vector4, rect: TargetRect | null, width: number, h
   out.set(rect.x / width, 1 - (rect.y + rect.height) / height, rect.width / width, rect.height / height)
 }
 
+function damp(from: number, to: number, lambda: number, dt: number) {
+  return from + (to - from) * (1 - Math.exp(-lambda * dt))
+}
+
 export function HaoqiFluidDistortion() {
   const { camera, gl, scene, size } = useThree()
   const previousPointerPx = useRef(new THREE.Vector2(-1, -1))
   const pointerPx = useRef(new THREE.Vector2(-1, -1))
   const pointerDelta = useRef(new THREE.Vector2())
   const lastMovedAt = useRef(0)
+  const effectFade = useRef(0)
 
   const targets = useMemo(() => ({
     base: target(1, 1, false, true),
@@ -296,7 +303,7 @@ export function HaoqiFluidDistortion() {
         uSimSize: { value: new THREE.Vector2(1, 1) },
         uDisplacementStrength: { value: DISPLACEMENT_STRENGTH },
         uChromaticBoost: { value: CHROMATIC_BOOST },
-        uEffectEnabled: { value: 1 },
+        uEffectEnabled: { value: 0 },
         uHeroRect: { value: new THREE.Vector4() },
         uContactRect: { value: new THREE.Vector4() },
       }),
@@ -351,7 +358,7 @@ export function HaoqiFluidDistortion() {
     passMesh.geometry.dispose()
   }, [materials, passMesh, targets])
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     const oldTarget = gl.getRenderTarget()
     const oldMask = camera.layers.mask
     const drawing = gl.getDrawingBufferSize(new THREE.Vector2())
@@ -361,17 +368,36 @@ export function HaoqiFluidDistortion() {
     const desktop = size.width >= 1024
     const reducedMotion = getCapabilities().reducedMotion
     const canUsePointer = fluidPointer.active && desktop && !reducedMotion && sectionVisible
+    const now = performance.now()
 
     pointerPx.current.set(fluidPointer.x * drawing.x, (1 - fluidPointer.y) * drawing.y)
     if (canUsePointer && previousPointerPx.current.x >= 0) {
       pointerDelta.current.copy(pointerPx.current).sub(previousPointerPx.current)
-      if (pointerDelta.current.lengthSq() > 0.01) lastMovedAt.current = performance.now()
+      if (pointerDelta.current.lengthSq() > 0.01) lastMovedAt.current = now
     } else {
       pointerDelta.current.set(0, 0)
     }
     previousPointerPx.current.copy(pointerPx.current)
 
-    const fluidActive = canUsePointer && performance.now() - lastMovedAt.current <= ACTIVE_WINDOW_MS
+    const hasRecentMotion =
+      desktop &&
+      !reducedMotion &&
+      sectionVisible &&
+      now - lastMovedAt.current <= ACTIVE_WINDOW_MS
+
+    const targetFade = hasRecentMotion ? 1 : 0
+    effectFade.current = damp(
+      effectFade.current,
+      targetFade,
+      targetFade > effectFade.current ? EXIT_FADE_IN : EXIT_FADE_OUT,
+      Math.min(delta, 0.1),
+    )
+
+    const shouldSimulate =
+      desktop &&
+      !reducedMotion &&
+      sectionVisible &&
+      (hasRecentMotion || effectFade.current > 0.001)
 
     // Keep the existing star-flare overlay out of the fluid source. If it is
     // fed through the velocity/chromatic pass, each bright streak is sampled
@@ -387,7 +413,7 @@ export function HaoqiFluidDistortion() {
     let velocityRead = targets.velocityRead
     let velocityWrite = targets.velocityWrite
 
-    if (fluidActive) {
+    if (shouldSimulate) {
       const renderSimulation = (currentMaterial: THREE.ShaderMaterial, currentTarget: THREE.WebGLRenderTarget) => {
         passMesh.material = currentMaterial
         gl.setRenderTarget(currentTarget)
@@ -430,7 +456,7 @@ export function HaoqiFluidDistortion() {
     writeRect(materials.display.uniforms.uContactRect.value as THREE.Vector4, contact, size.width, size.height)
     materials.display.uniforms.tDiffuse.value = targets.base.texture
     materials.display.uniforms.uVelocity.value = targets.velocityRead.texture
-    materials.display.uniforms.uEffectEnabled.value = fluidActive ? 1 : 0
+    materials.display.uniforms.uEffectEnabled.value = effectFade.current
     passMesh.material = materials.display
 
     gl.setRenderTarget(oldTarget)
