@@ -5,12 +5,15 @@ import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { fluidPointer } from '@/lib/pointer-bus'
 import { getCapabilities } from '@/lib/capabilities'
-import { FINALE, FINALE_TARGET_ID, getFinaleProgress, getGrowth } from '@/lib/finale-progress'
+import {
+  getAboutTransitionFluidStrength,
+  getContactFluidStrength,
+  getFinaleExitFluidStrength,
+} from '@/lib/cursor-effects'
 import { getTargetRect, type TargetRect } from '@/lib/rect-sampler'
 import { ALL_LAYERS_MASK, LAYER_FINALE_ARROW, LAYER_OVERLAY } from './layers'
 
 const HERO_TARGET = 'hero-field'
-const ABOUT_SECTION_TARGET = 'about-section'
 const ABOUT_TRANSITION_TARGET = 'about-transition'
 const CONTACT_TARGET = 'contact-distortion'
 const CONTACT_TRANSITION_TARGET = 'contact-field'
@@ -409,37 +412,16 @@ export function HaoqiFluidDistortion() {
     const oldMask = camera.layers.mask
     const drawing = gl.getDrawingBufferSize(new THREE.Vector2())
     const hero = getTargetRect(HERO_TARGET)
-    const aboutSection = getTargetRect(ABOUT_SECTION_TARGET)
     const aboutTransition = getTargetRect(ABOUT_TRANSITION_TARGET)
     const contact = getTargetRect(CONTACT_TARGET)
     const contactTransition = getTargetRect(CONTACT_TRANSITION_TARGET)
-    const finale = getTargetRect(FINALE_TARGET_ID)
-
-    // Let the fluid reach into the first part of About while it is entering,
-    // then ease it completely away as About settles into the viewport. The
-    // same curve runs backwards when returning from About to Hero.
-    const aboutTransitionStrength =
-      aboutSection?.valid && size.height > 0
-        ? THREE.MathUtils.smoothstep(aboutSection.y, 0, size.height * 0.45)
-        : 0
-
-    // Keep the finale arrow itself clean, but bring the cursor-fluid back
-    // behind it across the whole shrinking exit. `contact-field` already
-    // reaches far above Contact, so using it as a transition mask lets the
-    // watery wake appear in the sticker/arrow exit frame before Contact is
-    // fully on screen. Gate it to the return leg only so the effect does not
-    // appear during the arrow's entrance.
-    const finaleProgress = finale?.valid ? getFinaleProgress() : 1
-    const arrowGrowth = finale?.valid ? getGrowth(finaleProgress) : 0
-    const isFinaleExit = finale?.valid && finaleProgress > FINALE.peak
-    const contactTransitionStrength = isFinaleExit
-      ? 1 - THREE.MathUtils.smoothstep(arrowGrowth, 0.45, 0.9)
-      : 0
-    const contactStrength = finale?.valid
-      ? isFinaleExit
-        ? 1 - THREE.MathUtils.smoothstep(arrowGrowth, 0.18, 0.58)
-        : 0
-      : 1
+    // Cursor treatments have a single owner in the transition regions.
+    // About gives fluid up once it has settled; the finale gives fluid back
+    // only on the arrow's shrinking exit into Contact.
+    const aboutTransitionStrength = getAboutTransitionFluidStrength()
+    const contactTransitionStrength = getFinaleExitFluidStrength()
+    const contactStrength = getContactFluidStrength()
+    const fluidAffectsFinaleArrow = contactTransitionStrength > 0.001
 
     const sectionVisible =
       visible(hero, size.height) ||
@@ -485,10 +467,10 @@ export function HaoqiFluidDistortion() {
     // several times and reads much more sparkly than it did before the fluid
     // effect was added. Distort the scene + glass, then draw the flare back on
     // top unchanged so HELLO keeps its original highlight balance.
-    const baseMask =
-      ALL_LAYERS_MASK &
-      ~(1 << LAYER_OVERLAY) &
-      ~(1 << LAYER_FINALE_ARROW)
+    let baseMask = ALL_LAYERS_MASK & ~(1 << LAYER_OVERLAY)
+    if (!fluidAffectsFinaleArrow) {
+      baseMask &= ~(1 << LAYER_FINALE_ARROW)
+    }
     camera.layers.mask = baseMask
     gl.setRenderTarget(targets.base)
     gl.clear()
@@ -574,8 +556,10 @@ export function HaoqiFluidDistortion() {
     const oldAutoClear = gl.autoClear
     gl.autoClear = false
 
-    camera.layers.set(LAYER_FINALE_ARROW)
-    gl.render(scene, camera)
+    if (!fluidAffectsFinaleArrow) {
+      camera.layers.set(LAYER_FINALE_ARROW)
+      gl.render(scene, camera)
+    }
 
     camera.layers.set(LAYER_OVERLAY)
     gl.render(scene, camera)

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { getCapabilities } from '@/lib/capabilities'
+import { isTransitionFluidRegion } from '@/lib/cursor-effects'
 import { getMidSectionPresence } from '@/lib/mid-sections'
 import { pointerRaw } from '@/lib/pointer-bus'
 import {
@@ -83,10 +84,12 @@ export function PointerTrail() {
     if (!mesh) return
 
     const caps = getCapabilities()
-    const strength = getMidSectionPresence()
+    const fluidOwnsCursor = isTransitionFluidRegion()
+    const strength = fluidOwnsCursor ? 0 : getMidSectionPresence()
 
-    // No trail without a pointer that can hover, and none under reduced motion:
-    // the whole effect is a thing that follows you around.
+    // Fluid and neon are mutually exclusive cursor treatments. The neon trail
+    // owns settled About + Work + the 3D-arrow scene; it switches fully off
+    // once the finale exit hands cursor ownership back to the fluid effect.
     if (caps.reducedMotion || !caps.hoverCapable || strength <= 0.001) {
       mesh.visible = false
       trail.current.length = 0
