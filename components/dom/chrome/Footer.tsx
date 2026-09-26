@@ -23,7 +23,7 @@ export function Footer() {
       <div className={styles.content}>
         <div className={styles.top}>
           <div className={styles.callout}>
-            <span className={styles.calloutLabel}>Let&rsquo;s cut something good</span>
+            <span className={styles.calloutLabel}>Let&rsquo;s connect!</span>
             <p className={styles.calloutTitle}>
               <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
             </p>
