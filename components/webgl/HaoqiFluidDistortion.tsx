@@ -20,7 +20,7 @@ const DISPLACEMENT_STRENGTH = 1
 const CHROMATIC_BOOST = 0.5
 const ACTIVE_WINDOW_MS = 600
 const EXIT_FADE_IN = 10
-const EXIT_FADE_OUT = 3.5
+const EXIT_FADE_OUT = 2.0
 
 const fullscreenVertex = /* glsl */ `
   varying vec2 vUv;
@@ -397,7 +397,7 @@ export function HaoqiFluidDistortion() {
       desktop &&
       !reducedMotion &&
       sectionVisible &&
-      (hasRecentMotion || effectFade.current > 0.001)
+      (hasRecentMotion || effectFade.current > 0.0002)
 
     // Keep the existing star-flare overlay out of the fluid source. If it is
     // fed through the velocity/chromatic pass, each bright streak is sampled
