@@ -4,6 +4,25 @@
  * the dot matrix — a section with its own opaque background would put a line
  * across the middle of that. See HeroStage.
  */
+
+.sectionTarget {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.transitionTarget {
+  position: absolute;
+  /* Reach far enough into About to wash over part of the editor portrait
+     during the hand-off. HaoqiFluidDistortion fades this target to zero as
+     About settles, so the fully-visible section remains clean. */
+  top: -45svh;
+  left: 0;
+  right: 0;
+  height: 115svh;
+  pointer-events: none;
+}
+
 .section {
   position: relative;
   scroll-margin-top: calc(var(--nav-h) + var(--s4));

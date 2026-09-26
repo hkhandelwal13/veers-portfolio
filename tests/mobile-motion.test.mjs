@@ -13,10 +13,12 @@ function load(path, globals = {}) {
   return context.exports
 }
 
-test('touch scrolling never drives model parallax; mouse still does', () => {
+test('touch drives fluid input without driving model parallax; mouse drives both', () => {
   const window = new EventTarget()
   Object.assign(window, { innerWidth: 390, innerHeight: 844 })
-  const api = load('lib/pointer-bus.ts', { window, document: new EventTarget() })
+  const document = new EventTarget()
+  document.hidden = false
+  const api = load('lib/pointer-bus.ts', { window, document })
   const detach = api.attachPointerBus()
   const move = (pointerType) => {
     const event = new Event('pointermove')
@@ -28,13 +30,15 @@ test('touch scrolling never drives model parallax; mouse still does', () => {
   assert.equal(api.pointer.cx, 0)
   assert.equal(api.pointer.cy, 0)
   assert.equal(api.pointer.inside, false)
+  assert.ok(api.fluidPointer.x > 0.9)
+  assert.ok(api.fluidPointer.y > 0.9)
+  assert.equal(api.fluidPointer.active, true)
   move('mouse')
   assert.ok(api.pointer.cx > 0)
   assert.equal(api.pointer.inside, true)
-  move('touch')
-  assert.equal(api.pointer.inside, false)
-  assert.equal(api.pointerRaw.x, 0.5)
+  assert.equal(api.fluidPointer.active, true)
   detach()
+  assert.equal(api.fluidPointer.active, false)
 })
 
 test('mobile and tablet retain curl; reduced motion disables it', () => {
@@ -44,6 +48,8 @@ test('mobile and tablet retain curl; reduced motion disables it', () => {
     assert.equal(api.canCurlOnScroll(caps), true)
     assert.equal(api.canRenderGlass(), true)
     assert.equal(api.canRenderStarFlare(caps), false)
+    assert.equal(api.canRenderFluidDistortion(caps), true)
+    assert.equal(api.canRenderFluidDistortion({ ...caps, reducedMotion: true }), false)
     assert.equal(api.canCurlOnScroll({ ...caps, reducedMotion: true }), false)
   }
 })

@@ -15,7 +15,13 @@ import { getHeroObjectDissolve } from '@/lib/hero-progress'
 import { isPageSurfaceDark } from '@/lib/surface'
 import { subscribeToTheme } from '@/lib/theme'
 import { glassPasses } from './glass-passes'
-import { ALL_LAYERS_MASK, LAYER_CONTENT, LAYER_GLASS, LAYER_OVERLAY } from './layers'
+import {
+  ALL_LAYERS_MASK,
+  LAYER_CONTENT,
+  LAYER_FINALE_ARROW,
+  LAYER_GLASS,
+  LAYER_OVERLAY,
+} from './layers'
 
 /**
  * How much of the screen the refraction target gets on a small one.
@@ -173,6 +179,7 @@ export function RefractionPass() {
     if ((camera.layers.mask & ALL_LAYERS_MASK) !== ALL_LAYERS_MASK) {
       camera.layers.enable(LAYER_GLASS)
       camera.layers.enable(LAYER_OVERLAY)
+      camera.layers.enable(LAYER_FINALE_ARROW)
     }
 
     const caps = getCapabilities()
@@ -188,7 +195,8 @@ export function RefractionPass() {
     let needsRefraction = false
     scene.traverseVisible((object) => {
       const mesh = object as THREE.Mesh
-      if (!mesh.isMesh || !(mesh.layers.mask & (1 << LAYER_GLASS))) return
+      const glassMask = (1 << LAYER_GLASS) | (1 << LAYER_FINALE_ARROW)
+      if (!mesh.isMesh || !(mesh.layers.mask & glassMask)) return
       const material = mesh.material as THREE.ShaderMaterial
       if ((material.uniforms?.uDissolve?.value ?? 0) < 0.999) needsRefraction = true
     })
@@ -239,6 +247,7 @@ export function RefractionPass() {
       if (glassMaterial) glassMaterial.uniforms.uHighlightOnly.value = 1
 
       camera.layers.set(LAYER_GLASS)
+      camera.layers.enable(LAYER_FINALE_ARROW)
       gl.setClearColor(BLACK, 0)
       gl.setRenderTarget(glassOnly)
       gl.clear()

@@ -24,6 +24,13 @@ export function Contact({ standalone = true }: { standalone?: boolean }) {
       className={`${styles.section} ${standalone ? '' : styles.stacked}`}
       aria-labelledby="contact-heading"
     >
+      {/* Exact contact bounds for the fluid post-process. The existing field
+          target deliberately extends far above this section for its transition. */}
+      <WebGLTarget
+        targetId="contact-distortion"
+        className={styles.distortionTarget}
+        aria-hidden="true"
+      />
       {/* The WebGL ground is seated on this. */}
       <WebGLTarget targetId="contact-field" className={styles.fieldTarget} aria-hidden="true" />
       <div className={styles.frame}>
