@@ -9,7 +9,9 @@ import { getTargetRect, type TargetRect } from '@/lib/rect-sampler'
 import { ALL_LAYERS_MASK, LAYER_OVERLAY } from './layers'
 
 const HERO_TARGET = 'hero-field'
+const ABOUT_TRANSITION_TARGET = 'about-transition'
 const CONTACT_TARGET = 'contact-distortion'
+const CONTACT_TRANSITION_TARGET = 'contact-field'
 const SIM_SHORT_SIDE = 160
 const SPLAT_RADIUS = 0.003
 const SPLAT_FORCE = 3000
@@ -150,14 +152,28 @@ const displayFragment = /* glsl */ `
   uniform float uChromaticBoost;
   uniform float uEffectEnabled;
   uniform vec4 uHeroRect;
+  uniform vec4 uAboutTransitionRect;
   uniform vec4 uContactRect;
+  uniform vec4 uContactTransitionRect;
   varying vec2 vUv;
 
-  float rectMask(vec2 uv, vec4 r) {
+  float roundedRectMask(vec2 uv, vec4 r, float radius, float feather) {
     if (r.z <= 0.0 || r.w <= 0.0) return 0.0;
-    vec2 p = (uv - r.xy) / r.zw;
-    float e = min(min(p.x, 1.0 - p.x), min(p.y, 1.0 - p.y));
-    return smoothstep(0.0, 0.025, e);
+
+    vec2 size = max(r.zw, vec2(0.0001));
+    vec2 p = (uv - (r.xy + size * 0.5)) / size;
+    vec2 q = abs(p) - vec2(0.5 - radius);
+    float distanceToRoundRect =
+      length(max(q, vec2(0.0))) +
+      min(max(q.x, q.y), 0.0) -
+      radius;
+
+    return 1.0 - smoothstep(-feather, feather, distanceToRoundRect);
+  }
+
+  float smootherstep01(float t) {
+    t = clamp(t, 0.0, 1.0);
+    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
   }
 
   vec3 spectrum(float x) {
@@ -166,8 +182,21 @@ const displayFragment = /* glsl */ `
 
   vec4 fluidColor(vec2 uv) {
     vec2 velocity = texture2D(uVelocity, uv).xy;
-    float enabled = smoothstep(0.0, 1.0, clamp(uEffectEnabled, 0.0, 1.0));
-    float sectionMask = max(rectMask(uv, uHeroRect), rectMask(uv, uContactRect));
+    // Quintic easing gives the fade a rounded start and finish instead of
+    // reading like a linear opacity ramp.
+    float enabled = smootherstep01(uEffectEnabled);
+
+    // The main sections stay strong, while the hand-off regions use a wider
+    // feather and rounder silhouette so the fluid rolls into/out of the next
+    // scene rather than ending on a straight section boundary.
+    float heroMask = roundedRectMask(uv, uHeroRect, 0.035, 0.03);
+    float aboutTransitionMask = roundedRectMask(uv, uAboutTransitionRect, 0.07, 0.065);
+    float contactMask = roundedRectMask(uv, uContactRect, 0.035, 0.03);
+    float contactTransitionMask = roundedRectMask(uv, uContactTransitionRect, 0.07, 0.065);
+    float sectionMask = max(
+      max(heroMask, aboutTransitionMask),
+      max(contactMask, contactTransitionMask)
+    );
     vec2 displacement = velocity / max(uSimSize, vec2(1.0)) * uDisplacementStrength * enabled * sectionMask;
     float velocityMagnitude = length(displacement);
 
@@ -306,7 +335,9 @@ export function HaoqiFluidDistortion() {
         uChromaticBoost: { value: CHROMATIC_BOOST },
         uEffectEnabled: { value: 0 },
         uHeroRect: { value: new THREE.Vector4() },
+        uAboutTransitionRect: { value: new THREE.Vector4() },
         uContactRect: { value: new THREE.Vector4() },
+        uContactTransitionRect: { value: new THREE.Vector4() },
       }),
     }
   }, [])
@@ -364,8 +395,14 @@ export function HaoqiFluidDistortion() {
     const oldMask = camera.layers.mask
     const drawing = gl.getDrawingBufferSize(new THREE.Vector2())
     const hero = getTargetRect(HERO_TARGET)
+    const aboutTransition = getTargetRect(ABOUT_TRANSITION_TARGET)
     const contact = getTargetRect(CONTACT_TARGET)
-    const sectionVisible = visible(hero, size.height) || visible(contact, size.height)
+    const contactTransition = getTargetRect(CONTACT_TRANSITION_TARGET)
+    const sectionVisible =
+      visible(hero, size.height) ||
+      visible(aboutTransition, size.height) ||
+      visible(contact, size.height) ||
+      visible(contactTransition, size.height)
     const desktop = size.width >= 1024
     const reducedMotion = getCapabilities().reducedMotion
     const canUsePointer = fluidPointer.active && desktop && !reducedMotion && sectionVisible
@@ -460,7 +497,19 @@ export function HaoqiFluidDistortion() {
     }
 
     writeRect(materials.display.uniforms.uHeroRect.value as THREE.Vector4, hero, size.width, size.height)
+    writeRect(
+      materials.display.uniforms.uAboutTransitionRect.value as THREE.Vector4,
+      aboutTransition,
+      size.width,
+      size.height,
+    )
     writeRect(materials.display.uniforms.uContactRect.value as THREE.Vector4, contact, size.width, size.height)
+    writeRect(
+      materials.display.uniforms.uContactTransitionRect.value as THREE.Vector4,
+      contactTransition,
+      size.width,
+      size.height,
+    )
     materials.display.uniforms.tDiffuse.value = targets.base.texture
     materials.display.uniforms.uVelocity.value = targets.velocityRead.texture
     materials.display.uniforms.uEffectEnabled.value = effectFade.current

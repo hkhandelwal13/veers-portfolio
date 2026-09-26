@@ -4,6 +4,16 @@
  * the dot matrix — a section with its own opaque background would put a line
  * across the middle of that. See HeroStage.
  */
+
+.transitionTarget {
+  position: absolute;
+  top: -45svh;
+  left: 0;
+  right: 0;
+  height: 110svh;
+  pointer-events: none;
+}
+
 .section {
   position: relative;
   scroll-margin-top: calc(var(--nav-h) + var(--s4));
