@@ -20,7 +20,8 @@ const DISPLACEMENT_STRENGTH = 1
 const CHROMATIC_BOOST = 0.5
 const ACTIVE_WINDOW_MS = 600
 const EXIT_FADE_IN = 10
-const EXIT_FADE_OUT = 2.0
+const EXIT_FADE_OUT = 1.6
+const EXIT_DISSIPATION = 1.35
 
 const fullscreenVertex = /* glsl */ `
   varying vec2 vUv;
@@ -165,7 +166,7 @@ const displayFragment = /* glsl */ `
 
   vec4 fluidColor(vec2 uv) {
     vec2 velocity = texture2D(uVelocity, uv).xy;
-    float enabled = clamp(uEffectEnabled, 0.0, 1.0);
+    float enabled = smoothstep(0.0, 1.0, clamp(uEffectEnabled, 0.0, 1.0));
     float sectionMask = max(rectMask(uv, uHeroRect), rectMask(uv, uContactRect));
     vec2 displacement = velocity / max(uSimSize, vec2(1.0)) * uDisplacementStrength * enabled * sectionMask;
     float velocityMagnitude = length(displacement);
@@ -445,6 +446,12 @@ export function HaoqiFluidDistortion() {
       materials.gradient.uniforms.uPressure.value = pressureRead.texture
       renderSimulation(materials.gradient, targets.projected)
 
+      // During the exit, let the remaining velocity dissipate more slowly.
+      // This gives the wake a softer, more watery settling motion without
+      // changing the active hover response.
+      materials.advect.uniforms.uDissipation.value = hasRecentMotion
+        ? DISSIPATION
+        : THREE.MathUtils.lerp(EXIT_DISSIPATION, DISSIPATION, effectFade.current)
       materials.advect.uniforms.uProjectedVelocity.value = targets.projected.texture
       renderSimulation(materials.advect, velocityWrite)
       ;[velocityRead, velocityWrite] = [velocityWrite, velocityRead]
