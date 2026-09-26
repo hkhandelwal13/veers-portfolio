@@ -7,10 +7,14 @@
 
 .transitionTarget {
   position: absolute;
-  top: -45svh;
+  /* Keep the fluid only around the Hero ↔ About hand-off.
+     The target reaches above About so the transition works in both scroll
+     directions, but ends shortly after About enters so the fully-settled
+     About section is completely free of the effect. */
+  top: -40svh;
   left: 0;
   right: 0;
-  height: 110svh;
+  height: 55svh;
   pointer-events: none;
 }
 
