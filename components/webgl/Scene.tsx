@@ -24,7 +24,7 @@ import { HeroHello } from './HeroHello'
 import { PointerTrail } from './PointerTrail'
 import { RectSampler } from './RectSampler'
 import { RefractionPass } from './RefractionPass'
-import { FluidDistortion } from './FluidDistortion'
+import { HaoqiFluidDistortion } from './HaoqiFluidDistortion'
 import { StarFlare } from './StarFlare'
 import { Stickers } from './Stickers'
 
@@ -75,9 +75,10 @@ export default function Scene() {
       {/* Renders the offscreen targets the glass and the flare read. Sits at
           useFrame priority -2, after the meshes have updated for this frame. */}
       <RefractionPass />
-      {/* Fluid simulation runs after mesh/refraction updates, then its positive
-          render priority composites the final WebGL frame only in Hero/Contact. */}
-      <FluidDistortion />
+      {/* Haoqi-matched pointer-velocity fluid solver + chromatic displacement.
+          It composites only the hero/contact regions on desktop, matching the
+          recovered production behavior while leaving the rest of the scene intact. */}
+      <HaoqiFluidDistortion />
 
       <ambientLight intensity={0.6} />
       <directionalLight position={[3, 4, 5]} intensity={2.2} />
